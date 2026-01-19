@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -159,19 +159,20 @@ export default function Calcuares() {
 
   // Actualizar campo y guardar automáticamente
   const handleInputChange = useCallback((id, field, value) => {
-    setProducts(prev => {
-      const updated = prev.map(p => 
-        p.id === id ? { ...p, [field]: value } : p
-      );
-      
-      // Guardar automáticamente después de 1 segundo
-      const product = updated.find(p => p.id === id);
-      if (product) {
-        setTimeout(() => saveProduct(product), 1000);
-      }
-      
-      return updated;
-    });
+    setProducts(prev => prev.map(p => 
+      p.id === id ? { ...p, [field]: value } : p
+    ));
+    
+    // Guardar automáticamente después de 1 segundo (sin afectar el estado)
+    setTimeout(() => {
+      setProducts(current => {
+        const product = current.find(p => p.id === id);
+        if (product) {
+          saveProduct(product);
+        }
+        return current; // No cambiar el estado aquí
+      });
+    }, 1000);
   }, []);
 
   // Cálculos de backend
@@ -313,18 +314,18 @@ export default function Calcuares() {
     URL.revokeObjectURL(url);
   };
 
-  // Filtrar productos por búsqueda
-  const filteredProducts = products.filter(p => {
-    if (!searchTerm) return true;
+  // Filtrar productos por búsqueda (memoizado)
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm) return products;
     const search = searchTerm.toLowerCase();
-    return (
+    return products.filter(p => (
       p.cod?.toLowerCase().includes(search) ||
       p.brand?.toLowerCase().includes(search) ||
       p.ori?.toLowerCase().includes(search) ||
       p.prod?.toLowerCase().includes(search) ||
       p.cat?.toLowerCase().includes(search)
-    );
-  });
+    ));
+  }, [products, searchTerm]);
 
   if (loading) {
     return (
