@@ -321,7 +321,7 @@ export default function Calcuares() {
   return (
     <div className="app-container">
       {/* Header */}
-      <div className="card header-card">
+      <div className="card header-card" style={{ background: '#567C8D' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
             <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.5rem' }}>
