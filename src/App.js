@@ -11,30 +11,13 @@ export default function Calcuares() {
   const [exchangeRate, setExchangeRate] = useState(1.10);
   const [globalInterest, setGlobalInterest] = useState(12);
   const [searchTerm, setSearchTerm] = useState('');
-  const [view, setView] = useState('admin'); // 'admin' o 'ventas'
-  const [localSearchTerm, setLocalSearchTerm] = useState(''); // Para el input local
+  const [view, setView] = useState('admin');
 
   const categories = ['UC', 'HP', 'ACC', 'CONS', 'SRVP'];
 
-  // Cargar productos desde Supabase al iniciar
   useEffect(() => {
     fetchProducts();
   }, []);
-
-  // Actualizar searchTerm con delay para evitar re-renders constantes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchTerm(localSearchTerm);
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [localSearchTerm]);
-
-  // Limpiar búsqueda al cambiar de vista
-  useEffect(() => {
-    setLocalSearchTerm('');
-    setSearchTerm('');
-  }, [view]);
 
   const fetchProducts = async () => {
     try {
@@ -54,7 +37,6 @@ export default function Calcuares() {
     }
   };
 
-  // Guardar/actualizar producto en Supabase
   const saveProduct = async (product) => {
     try {
       setSaving(true);
@@ -78,7 +60,6 @@ export default function Calcuares() {
       };
       
       if (product.id && product.id > 0) {
-        // Actualizar producto existente
         const { error } = await supabase
           .from('productos')
           .update(productData)
@@ -86,7 +67,6 @@ export default function Calcuares() {
         
         if (error) throw error;
       } else {
-        // Crear nuevo producto
         const { data, error } = await supabase
           .from('productos')
           .insert([productData])
@@ -94,7 +74,6 @@ export default function Calcuares() {
         
         if (error) throw error;
         
-        // Reemplazar el producto temporal con el real
         setProducts(prev => prev.map(p => 
           p.id === product.id ? data[0] : p
         ));
@@ -107,12 +86,10 @@ export default function Calcuares() {
     }
   };
 
-  // Eliminar producto
   const deleteProduct = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar este producto?')) return;
     
     try {
-      // Si es un producto temporal (id negativo), solo eliminarlo del estado
       if (id < 0) {
         setProducts(prev => prev.filter(p => p.id !== id));
         return;
@@ -132,9 +109,8 @@ export default function Calcuares() {
     }
   };
 
-  // Agregar nuevo producto (con ID temporal negativo)
   const addProduct = () => {
-    const tempId = -Date.now(); // ID temporal negativo
+    const tempId = -Date.now();
     const newProduct = {
       id: tempId,
       cod: '',
@@ -157,25 +133,20 @@ export default function Calcuares() {
     setProducts(prev => [newProduct, ...prev]);
   };
 
-  // Actualizar campo y guardar automáticamente
   const handleInputChange = useCallback((id, field, value) => {
     setProducts(prev => prev.map(p => 
       p.id === id ? { ...p, [field]: value } : p
     ));
     
-    // Guardar automáticamente después de 1 segundo (sin afectar el estado)
     setTimeout(() => {
       setProducts(current => {
         const product = current.find(p => p.id === id);
-        if (product) {
-          saveProduct(product);
-        }
-        return current; // No cambiar el estado aquí
+        if (product) saveProduct(product);
+        return current;
       });
     }, 1000);
   }, []);
 
-  // Cálculos de backend
   const calculateBackend = useCallback((product) => {
     const ppOriginal = parseFloat(product.pp || 0);
     const rate = parseFloat(exchangeRate);
@@ -189,7 +160,6 @@ export default function Calcuares() {
     return { fob, gtia, desp, kst, ppOriginal, ppInUSD, isEUR: product.price_in_eur };
   }, [exchangeRate]);
 
-  // Cálculos de venta
   const calculateSales = useCallback((kst, margin, interest, fixedPrice = null) => {
     const cashNet = fixedPrice && parseFloat(fixedPrice) > 0 
       ? parseFloat(fixedPrice) 
@@ -228,7 +198,6 @@ export default function Calcuares() {
     }).format(value);
   };
 
-  // Importar archivo Excel/CSV
   const handleFileImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -237,14 +206,12 @@ export default function Calcuares() {
       let data = [];
       
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        // Importar Excel
         const arrayBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer);
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         data = XLSX.utils.sheet_to_json(worksheet);
       } else {
-        // Importar CSV
         const text = await file.text();
         const lines = text.split('\n').filter(line => line.trim());
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
@@ -259,7 +226,6 @@ export default function Calcuares() {
         });
       }
 
-      // Convertir datos importados a formato de productos
       const newProducts = data.map(row => ({
         cod: row.cod || row.codigo || '',
         brand: row.brand || row.marca || '',
@@ -278,7 +244,6 @@ export default function Calcuares() {
         price_in_eur: (row.priceineur || row.eur || '').toLowerCase() === 'true'
       }));
 
-      // Guardar cada producto en Supabase
       for (const product of newProducts) {
         const { error } = await supabase
           .from('productos')
@@ -287,7 +252,6 @@ export default function Calcuares() {
         if (error) console.error('Error importing product:', error);
       }
       
-      // Recargar productos
       await fetchProducts();
       alert(`✅ ${newProducts.length} productos importados exitosamente`);
     } catch (error) {
@@ -298,7 +262,6 @@ export default function Calcuares() {
     e.target.value = '';
   };
 
-  // Exportar datos a CSV
   const exportData = () => {
     let csv = 'COD,BRAND,ORI,PROD,CAT,PP,FRT,BNK,ADU,SERV,TRNG,EXTR,MARGIN,FIXEDPRICE,PRICEINEUR\n';
     products.forEach(p => {
@@ -314,7 +277,6 @@ export default function Calcuares() {
     URL.revokeObjectURL(url);
   };
 
-  // Filtrar productos por búsqueda (memoizado)
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
     const search = searchTerm.toLowerCase();
@@ -336,555 +298,516 @@ export default function Calcuares() {
     );
   }
 
-  // ==================== VISTA DE VENTAS ====================
-  const VentasView = () => (
+  return (
     <div className="app-container">
-      {/* Header Vista Ventas */}
-      <div className="card header-card" style={{ background: '#567C8D' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-              💰 Lista de Precios - Ares
-            </h1>
-            <p style={{ color: 'white', fontSize: '1.1rem' }}>Catálogo de Productos y Cotizaciones</p>
-          </div>
-          <button
-            onClick={() => setView('admin')}
-            className="btn btn-success"
-            style={{ background: 'white', color: '#567C8D' }}
-          >
-            <DollarSign size={20} />
-            Panel Admin
-          </button>
-        </div>
-
-        {/* Info global */}
-        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
-          <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
-            <div>
-              <strong>💵 Interés Anual:</strong> {globalInterest}%
-            </div>
-            <div>
-              <strong>💱 Tipo de Cambio EUR→USD:</strong> {exchangeRate}
-            </div>
-            <div>
-              <strong>📊 Total Productos:</strong> {products.length}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Búsqueda */}
-      <div className="card">
-        <div className="search-container" style={{ margin: 0 }}>
-          <Search className="search-icon" size={20} />
-          <input
-            type="text"
-            value={localSearchTerm}
-            onChange={(e) => setLocalSearchTerm(e.target.value)}
-            placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
-            className="input search-input"
-          />
-        </div>
-        <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
-          📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'disponibles'}
-        </div>
-      </div>
-
-      {/* Lista de Productos - Vista de Ventas */}
-      {filteredProducts.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p style={{ color: '#64748b', fontSize: '1.1rem' }}>
-            {products.length === 0 ? '📦 No hay productos disponibles' : '🔍 No se encontraron productos'}
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
-          {filteredProducts.map(product => {
-            const calc = calculateBackend(product);
-            const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
-            
-            return (
-              <div key={product.id} className="card" style={{ border: '2px solid #e2e8f0', padding: '1.5rem' }}>
-                {/* Header del producto */}
-                <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>
-                    {product.cod}
-                  </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
-                    {product.prod || 'Sin nombre'}
-                  </h3>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span className="badge badge-blue">{product.brand}</span>
-                    <span className="badge badge-purple">{product.ori}</span>
-                    <span className="badge badge-green">{product.cat}</span>
-                  </div>
-                </div>
-
-                {/* Precios de Venta */}
-                <div style={{ background: '#d1fae5', borderRadius: '10px', padding: '1rem', border: '2px solid #10b981' }}>
-                  <h4 style={{ color: '#065f46', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
-                    💵 Precios de Venta
-                    {sales.isFixedPrice && (
-                      <span className="badge badge-orange" style={{ marginLeft: '0.5rem', fontSize: '0.65rem' }}>
-                        PRECIO ESPECIAL
-                      </span>
-                    )}
-                  </h4>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
-                      <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
-                      <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
-                    </div>
-                    
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      paddingTop: '0.5rem', 
-                      borderTop: '2px solid #10b981',
-                      marginTop: '0.25rem'
-                    }}>
-                      <span style={{ color: '#047857', fontWeight: '700' }}>💰 Financiado + IVA:</span>
-                      <span style={{ color: '#047857', fontWeight: '700', fontSize: '1rem' }}>
-                        ${formatCurrency(sales.finIva)}
-                      </span>
-                    </div>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
-                      <span style={{ fontWeight: '600', color: '#059669' }}>${formatCurrency(sales.cuot)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info adicional */}
-                <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b', textAlign: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
-                  Interés: {globalInterest}% anual | Pago inicial: 50%
-                </div>
+      {view === 'ventas' ? (
+        // VISTA DE VENTAS
+        <>
+          <div className="card header-card" style={{ background: '#567C8D' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
+                  💰 Lista de Precios - Ares
+                </h1>
+                <p style={{ color: 'white', fontSize: '1.1rem' }}>Catálogo de Productos y Cotizaciones</p>
               </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  // ==================== VISTA ADMIN ====================
-  const AdminView = () => (
-    <div className="app-container">
-      {/* Header */}
-      <div className="card header-card" style={{ background: '#567C8D' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-              💰 Calcuares
-            </h1>
-            <p style={{ color: 'white', fontSize: '1.1rem' }}>Calculadora de Precios - Ares Medical Equipment</p>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            {saving && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: '600', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px' }}>
-                <RefreshCw className="animate-spin" size={20} />
-                <span>Guardando...</span>
-              </div>
-            )}
-            <button
-              onClick={() => setView('ventas')}
-              className="btn btn-success"
-              style={{ background: 'white', color: '#567C8D' }}
-            >
-              <Eye size={20} />
-              Vista de Ventas
-            </button>
-          </div>
-        </div>
-
-        {/* Configuración Global */}
-        <div className="grid grid-3">
-          <div>
-            <label className="input-label" style={{ color: 'white' }}>💵 Interés Anual Global (%)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={globalInterest}
-              onChange={(e) => setGlobalInterest(e.target.value)}
-              className="input"
-              placeholder="Ej: 12"
-            />
-          </div>
-
-          <div>
-            <label className="input-label" style={{ color: 'white' }}>💱 Tipo de Cambio EUR → USD</label>
-            <input
-              type="number"
-              step="0.01"
-              value={exchangeRate}
-              onChange={(e) => setExchangeRate(e.target.value)}
-              className="input"
-              placeholder="Ej: 1.10"
-            />
-          </div>
-
-          <div>
-            <label className="input-label" style={{ color: 'white' }}>📁 Importar / Exportar</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <label className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer' }}>
-                <Upload size={18} />
-                Importar
-                <input
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileImport}
-                  style={{ display: 'none' }}
-                />
-              </label>
-              <button onClick={exportData} className="btn btn-secondary">
-                <Download size={18} />
+              <button onClick={() => setView('admin')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
+                <DollarSign size={20} />
+                Panel Admin
               </button>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Búsqueda y Agregar */}
-      <div className="card">
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div className="search-container" style={{ flex: 1, margin: 0 }}>
-            <Search className="search-icon" size={20} />
-            <input
-              type="text"
-              value={localSearchTerm}
-              onChange={(e) => setLocalSearchTerm(e.target.value)}
-              placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
-              className="input search-input"
-            />
+            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
+              <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
+                <div><strong>💵 Interés Anual:</strong> {globalInterest}%</div>
+                <div><strong>💱 Tipo de Cambio EUR→USD:</strong> {exchangeRate}</div>
+                <div><strong>📊 Total Productos:</strong> {products.length}</div>
+              </div>
+            </div>
           </div>
-          <button onClick={addProduct} className="btn btn-success">
-            <Plus size={20} />
-            Agregar Producto
-          </button>
-          <button onClick={fetchProducts} className="btn btn-secondary" title="Recargar productos">
-            <RefreshCw size={20} />
-          </button>
-        </div>
-        <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
-          📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'totales'}
-        </div>
-      </div>
 
-      {/* Lista de Productos */}
-      {filteredProducts.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '1.1rem' }}>
-            {products.length === 0 ? '📦 No hay productos registrados' : '🔍 No se encontraron productos'}
-          </p>
-          {products.length === 0 && (
-            <button onClick={addProduct} className="btn btn-primary">
-              <Plus size={20} />
-              Agregar Primer Producto
-            </button>
+          <div className="card">
+            <div className="search-container" style={{ margin: 0 }}>
+              <Search className="search-icon" size={20} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
+                className="input search-input"
+              />
+            </div>
+            <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
+              📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'disponibles'}
+            </div>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+              <p style={{ color: '#64748b', fontSize: '1.1rem' }}>
+                {products.length === 0 ? '📦 No hay productos disponibles' : '🔍 No se encontraron productos'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+              {filteredProducts.map(product => {
+                const calc = calculateBackend(product);
+                const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+                
+                return (
+                  <div key={product.id} className="card" style={{ border: '2px solid #e2e8f0', padding: '1.5rem' }}>
+                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>{product.cod}</div>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
+                        {product.prod || 'Sin nombre'}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span className="badge badge-blue">{product.brand}</span>
+                        <span className="badge badge-purple">{product.ori}</span>
+                        <span className="badge badge-green">{product.cat}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#d1fae5', borderRadius: '10px', padding: '1rem', border: '2px solid #10b981' }}>
+                      <h4 style={{ color: '#065f46', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                        💵 Precios de Venta
+                        {sales.isFixedPrice && (
+                          <span className="badge badge-orange" style={{ marginLeft: '0.5rem', fontSize: '0.65rem' }}>PRECIO ESPECIAL</span>
+                        )}
+                      </h4>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
+                          <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
+                          <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
+                        </div>
+                        
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          paddingTop: '0.5rem', 
+                          borderTop: '2px solid #10b981',
+                          marginTop: '0.25rem'
+                        }}>
+                          <span style={{ color: '#047857', fontWeight: '700' }}>💰 Financiado + IVA:</span>
+                          <span style={{ color: '#047857', fontWeight: '700', fontSize: '1rem' }}>
+                            ${formatCurrency(sales.finIva)}
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
+                          <span style={{ fontWeight: '600', color: '#059669' }}>${formatCurrency(sales.cuot)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b', textAlign: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                      Interés: {globalInterest}% anual | Pago inicial: 50%
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
-        </div>
+        </>
       ) : (
-        filteredProducts.map(product => {
-          const calc = calculateBackend(product);
-          const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
-          
-          return (
-            <div key={product.id} className="card product-card">
-              <div className="product-header">
-                <div>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1e293b' }}>
-                    {product.cod || `🆕 Producto Nuevo`}
-                  </h2>
-                  <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                    {product.prod || 'Sin modelo definido'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => deleteProduct(product.id)}
-                  className="btn btn-danger"
-                  style={{ padding: '0.5rem 1rem' }}
-                >
-                  <Trash2 size={18} />
-                  Eliminar
+        // VISTA ADMIN
+        <>
+          <div className="card header-card" style={{ background: '#567C8D' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
+                  💰 Calcuares
+                </h1>
+                <p style={{ color: 'white', fontSize: '1.1rem' }}>Calculadora de Precios - Ares Medical Equipment</p>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                {saving && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: '600', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                    <RefreshCw className="animate-spin" size={20} />
+                    <span>Guardando...</span>
+                  </div>
+                )}
+                <button onClick={() => setView('ventas')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
+                  <Eye size={20} />
+                  Vista de Ventas
                 </button>
               </div>
+            </div>
 
-              {/* Campos del Producto */}
-              <div className="grid grid-4">
-                <div>
-                  <label className="input-label">📝 Código (COD)</label>
-                  <input
-                    type="text"
-                    defaultValue={product.cod}
-                    onBlur={(e) => handleInputChange(product.id, 'cod', e.target.value)}
-                    className="input"
-                    placeholder="Ej: VOL-001"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">🏢 Marca (BRAND)</label>
-                  <input
-                    type="text"
-                    defaultValue={product.brand}
-                    onBlur={(e) => handleInputChange(product.id, 'brand', e.target.value)}
-                    className="input"
-                    placeholder="Ej: Classys"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">🌍 Origen (ORI)</label>
-                  <input
-                    type="text"
-                    defaultValue={product.ori}
-                    onBlur={(e) => handleInputChange(product.id, 'ori', e.target.value)}
-                    className="input"
-                    placeholder="Ej: Corea"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">📦 Producto/Modelo (PROD)</label>
-                  <input
-                    type="text"
-                    defaultValue={product.prod}
-                    onBlur={(e) => handleInputChange(product.id, 'prod', e.target.value)}
-                    className="input"
-                    placeholder="Ej: Ultraformer III"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">🏷️ Categoría (CAT)</label>
-                  <select
-                    defaultValue={product.cat}
-                    onChange={(e) => handleInputChange(product.id, 'cat', e.target.value)}
-                    className="input"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="input-label">
-                    💰 Precio (PP) {product.price_in_eur && <span className="badge badge-green">EUR</span>}
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.pp}
-                    onBlur={(e) => handleInputChange(product.id, 'pp', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                  {product.price_in_eur && calc.ppInUSD > 0 && (
-                    <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.25rem' }}>
-                      ≈ ${formatCurrency(calc.ppInUSD)} USD
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="input-label">💶 ¿Precio en EUR?</label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginTop: '0.5rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={product.price_in_eur}
-                      onChange={(e) => handleInputChange(product.id, 'price_in_eur', e.target.checked)}
-                      style={{ width: '1.25rem', height: '1.25rem' }}
-                    />
-                    <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
-                      {product.price_in_eur ? '✅ Sí' : '❌ No'}
-                    </span>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="input-label">🚚 Flete (FRT)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.frt}
-                    onBlur={(e) => handleInputChange(product.id, 'frt', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">🏦 Banco (BNK)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.bnk}
-                    onBlur={(e) => handleInputChange(product.id, 'bnk', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">📋 Aduana % (ADU)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.adu}
-                    onBlur={(e) => handleInputChange(product.id, 'adu', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">🔧 Servicio (SERV)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.serv}
-                    onBlur={(e) => handleInputChange(product.id, 'serv', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">👨‍🏫 Capacitación (TRNG)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.trng}
-                    onBlur={(e) => handleInputChange(product.id, 'trng', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">⚠️ Imprevistos (EXTR)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.extr}
-                    onBlur={(e) => handleInputChange(product.id, 'extr', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div>
-                  <label className="input-label">📊 Margen % (MARGIN)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.margin}
-                    onBlur={(e) => handleInputChange(product.id, 'margin', e.target.value)}
-                    className="input"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="input-label">🎯 Precio Fijo Manual (Opcional)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={product.fixed_price || ''}
-                    onBlur={(e) => handleInputChange(product.id, 'fixed_price', e.target.value)}
-                    placeholder="Dejar en 0 para usar cálculo automático"
-                    className="input"
-                    style={{ background: '#fff7ed', borderColor: '#fb923c' }}
-                  />
-                  <p style={{ fontSize: '0.75rem', color: '#9a3412', marginTop: '0.25rem' }}>
-                    💡 Si ingresas un precio fijo, se usará en lugar del cálculo automático
-                  </p>
-                </div>
+            <div className="grid grid-3">
+              <div>
+                <label className="input-label" style={{ color: 'white' }}>💵 Interés Anual Global (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={globalInterest}
+                  onChange={(e) => setGlobalInterest(e.target.value)}
+                  className="input"
+                  placeholder="Ej: 12"
+                />
               </div>
 
-              {/* Resultados de Cálculos */}
-              <div className="grid grid-2" style={{ marginTop: '2rem' }}>
-                {/* Costos Backend */}
-                <div className="cost-section" style={{ background: '#f1f5f9', border: '2px solid #cbd5e1' }}>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                    💼 Costos Backend
-                  </h3>
-                  {calc.isEUR && (
-                    <div className="cost-row" style={{ background: '#d1fae5', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #10b981' }}>
-                      <span style={{ color: '#065f46', fontWeight: '600' }}>💶 PP Original (EUR):</span>
-                      <span style={{ color: '#065f46', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
-                    </div>
-                  )}
-                  {calc.isEUR && (
-                    <div className="cost-row">
-                      <span>💵 PP Convertido (USD):</span>
-                      <span>${formatCurrency(calc.ppInUSD)}</span>
-                    </div>
-                  )}
-                  <div className="cost-row">
-                    <span>📦 FOB:</span>
-                    <span>${formatCurrency(calc.fob)}</span>
-                  </div>
-                  <div className="cost-row">
-                    <span>🛡️ Garantía (3%):</span>
-                    <span>${formatCurrency(calc.gtia)}</span>
-                  </div>
-                  <div className="cost-row">
-                    <span>📋 Despacho:</span>
-                    <span>${formatCurrency(calc.desp)}</span>
-                  </div>
-                  <div className="cost-row total">
-                    <span style={{ color: '#2563eb', fontSize: '1.1rem' }}>💰 KST Total:</span>
-                    <span style={{ color: '#2563eb', fontSize: '1.1rem' }}>${formatCurrency(calc.kst)}</span>
-                  </div>
-                </div>
+              <div>
+                <label className="input-label" style={{ color: 'white' }}>💱 Tipo de Cambio EUR → USD</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={exchangeRate}
+                  onChange={(e) => setExchangeRate(e.target.value)}
+                  className="input"
+                  placeholder="Ej: 1.10"
+                />
+              </div>
 
-                {/* Precios de Venta */}
-                <div className="cost-section" style={{ background: '#d1fae5', border: '2px solid #10b981' }}>
-                  <h3 style={{ color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                    💵 Precios de Venta
-                    {sales.isFixedPrice && (
-                      <span className="badge badge-orange">PRECIO FIJO</span>
-                    )}
-                  </h3>
-                  <div className="cost-row">
-                    <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
-                    <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
-                  </div>
-                  <div className="cost-row">
-                    <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
-                    <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
-                  </div>
-                  <div className="cost-row total" style={{ borderColor: '#10b981', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
-                    <span style={{ color: '#047857', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
-                    <span style={{ color: '#047857', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
-                  </div>
-                  <div className="cost-row">
-                    <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
-                    <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cuot)}</span>
-                  </div>
-                  <div className="cost-row total" style={{ borderColor: '#10b981', background: '#a7f3d0', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
-                    <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
-                    <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
-                  </div>
+              <div>
+                <label className="input-label" style={{ color: 'white' }}>📁 Importar / Exportar</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <label className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer' }}>
+                    <Upload size={18} />
+                    Importar
+                    <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileImport} style={{ display: 'none' }} />
+                  </label>
+                  <button onClick={exportData} className="btn btn-secondary">
+                    <Download size={18} />
+                  </button>
                 </div>
               </div>
             </div>
-          );
-        })
+          </div>
+
+          <div className="card">
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div className="search-container" style={{ flex: 1, margin: 0 }}>
+                <Search className="search-icon" size={20} />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
+                  className="input search-input"
+                />
+              </div>
+              <button onClick={addProduct} className="btn btn-success">
+                <Plus size={20} />
+                Agregar Producto
+              </button>
+              <button onClick={fetchProducts} className="btn btn-secondary" title="Recargar productos">
+                <RefreshCw size={20} />
+              </button>
+            </div>
+            <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
+              📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'totales'}
+            </div>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+              <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '1.1rem' }}>
+                {products.length === 0 ? '📦 No hay productos registrados' : '🔍 No se encontraron productos'}
+              </p>
+              {products.length === 0 && (
+                <button onClick={addProduct} className="btn btn-primary">
+                  <Plus size={20} />
+                  Agregar Primer Producto
+                </button>
+              )}
+            </div>
+          ) : (
+            filteredProducts.map(product => {
+              const calc = calculateBackend(product);
+              const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+              
+              return (
+                <div key={product.id} className="card product-card">
+                  <div className="product-header">
+                    <div>
+                      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1e293b' }}>
+                        {product.cod || `🆕 Producto Nuevo`}
+                      </h2>
+                      <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                        {product.prod || 'Sin modelo definido'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => deleteProduct(product.id)}
+                      className="btn btn-danger"
+                      style={{ padding: '0.5rem 1rem' }}
+                    >
+                      <Trash2 size={18} />
+                      Eliminar
+                    </button>
+                  </div>
+
+                  <div className="grid grid-4">
+                    <div>
+                      <label className="input-label">📝 Código (COD)</label>
+                      <input
+                        type="text"
+                        defaultValue={product.cod}
+                        onBlur={(e) => handleInputChange(product.id, 'cod', e.target.value)}
+                        className="input"
+                        placeholder="Ej: VOL-001"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">🏢 Marca (BRAND)</label>
+                      <input
+                        type="text"
+                        defaultValue={product.brand}
+                        onBlur={(e) => handleInputChange(product.id, 'brand', e.target.value)}
+                        className="input"
+                        placeholder="Ej: Classys"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">🌍 Origen (ORI)</label>
+                      <input
+                        type="text"
+                        defaultValue={product.ori}
+                        onBlur={(e) => handleInputChange(product.id, 'ori', e.target.value)}
+                        className="input"
+                        placeholder="Ej: Corea"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">📦 Producto/Modelo (PROD)</label>
+                      <input
+                        type="text"
+                        defaultValue={product.prod}
+                        onBlur={(e) => handleInputChange(product.id, 'prod', e.target.value)}
+                        className="input"
+                        placeholder="Ej: Ultraformer III"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">🏷️ Categoría (CAT)</label>
+                      <select
+                        defaultValue={product.cat}
+                        onChange={(e) => handleInputChange(product.id, 'cat', e.target.value)}
+                        className="input"
+                      >
+                        {categories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="input-label">
+                        💰 Precio (PP) {product.price_in_eur && <span className="badge badge-green">EUR</span>}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.pp}
+                        onBlur={(e) => handleInputChange(product.id, 'pp', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                      {product.price_in_eur && calc.ppInUSD > 0 && (
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.25rem' }}>
+                          ≈ ${formatCurrency(calc.ppInUSD)} USD
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="input-label">💶 ¿Precio en EUR?</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginTop: '0.5rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={product.price_in_eur}
+                          onChange={(e) => handleInputChange(product.id, 'price_in_eur', e.target.checked)}
+                          style={{ width: '1.25rem', height: '1.25rem' }}
+                        />
+                        <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                          {product.price_in_eur ? '✅ Sí' : '❌ No'}
+                        </span>
+                      </label>
+                    </div>
+
+                    <div>
+                      <label className="input-label">🚚 Flete (FRT)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.frt}
+                        onBlur={(e) => handleInputChange(product.id, 'frt', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">🏦 Banco (BNK)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.bnk}
+                        onBlur={(e) => handleInputChange(product.id, 'bnk', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">📋 Aduana % (ADU)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.adu}
+                        onBlur={(e) => handleInputChange(product.id, 'adu', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">🔧 Servicio (SERV)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.serv}
+                        onBlur={(e) => handleInputChange(product.id, 'serv', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">👨‍🏫 Capacitación (TRNG)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.trng}
+                        onBlur={(e) => handleInputChange(product.id, 'trng', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">⚠️ Imprevistos (EXTR)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.extr}
+                        onBlur={(e) => handleInputChange(product.id, 'extr', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="input-label">📊 Margen % (MARGIN)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.margin}
+                        onBlur={(e) => handleInputChange(product.id, 'margin', e.target.value)}
+                        className="input"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label className="input-label">🎯 Precio Fijo Manual (Opcional)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        defaultValue={product.fixed_price || ''}
+                        onBlur={(e) => handleInputChange(product.id, 'fixed_price', e.target.value)}
+                        placeholder="Dejar en 0 para usar cálculo automático"
+                        className="input"
+                        style={{ background: '#fff7ed', borderColor: '#fb923c' }}
+                      />
+                      <p style={{ fontSize: '0.75rem', color: '#9a3412', marginTop: '0.25rem' }}>
+                        💡 Si ingresas un precio fijo, se usará en lugar del cálculo automático
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-2" style={{ marginTop: '2rem' }}>
+                    <div className="cost-section" style={{ background: '#f1f5f9', border: '2px solid #cbd5e1' }}>
+                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        💼 Costos Backend
+                      </h3>
+                      {calc.isEUR && (
+                        <div className="cost-row" style={{ background: '#d1fae5', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #10b981' }}>
+                          <span style={{ color: '#065f46', fontWeight: '600' }}>💶 PP Original (EUR):</span>
+                          <span style={{ color: '#065f46', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
+                        </div>
+                      )}
+                      {calc.isEUR && (
+                        <div className="cost-row">
+                          <span>💵 PP Convertido (USD):</span>
+                          <span>${formatCurrency(calc.ppInUSD)}</span>
+                        </div>
+                      )}
+                      <div className="cost-row">
+                        <span>📦 FOB:</span>
+                        <span>${formatCurrency(calc.fob)}</span>
+                      </div>
+                      <div className="cost-row">
+                        <span>🛡️ Garantía (3%):</span>
+                        <span>${formatCurrency(calc.gtia)}</span>
+                      </div>
+                      <div className="cost-row">
+                        <span>📋 Despacho:</span>
+                        <span>${formatCurrency(calc.desp)}</span>
+                      </div>
+                      <div className="cost-row total">
+                        <span style={{ color: '#2563eb', fontSize: '1.1rem' }}>💰 KST Total:</span>
+                        <span style={{ color: '#2563eb', fontSize: '1.1rem' }}>${formatCurrency(calc.kst)}</span>
+                      </div>
+                    </div>
+
+                    <div className="cost-section" style={{ background: '#d1fae5', border: '2px solid #10b981' }}>
+                      <h3 style={{ color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        💵 Precios de Venta
+                        {sales.isFixedPrice && (
+                          <span className="badge badge-orange">PRECIO FIJO</span>
+                        )}
+                      </h3>
+                      <div className="cost-row">
+                        <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
+                        <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
+                      </div>
+                      <div className="cost-row">
+                        <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
+                        <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
+                      </div>
+                      <div className="cost-row total" style={{ borderColor: '#10b981', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
+                        <span style={{ color: '#047857', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
+                        <span style={{ color: '#047857', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
+                      </div>
+                      <div className="cost-row">
+                        <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
+                        <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cuot)}</span>
+                      </div>
+                      <div className="cost-row total" style={{ borderColor: '#10b981', background: '#a7f3d0', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
+                        <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
+                        <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </>
       )}
     </div>
   );
-
-  // Renderizar vista según estado
-  return view === 'ventas' ? <VentasView /> : <AdminView />;
 }
