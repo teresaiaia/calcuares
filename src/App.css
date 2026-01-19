@@ -1,4 +1,4 @@
-/* Variables de colores */
+/* Variables de colores - Paleta Mejorada */
 :root {
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
@@ -8,11 +8,16 @@
   --danger-hover: #dc2626;
   --secondary: #64748b;
   --secondary-hover: #475569;
+  --purple: #9333ea;
+  --purple-hover: #7e22ce;
   --background: #f8fafc;
   --card-bg: #ffffff;
   --border: #e2e8f0;
   --text-primary: #1e293b;
   --text-secondary: #64748b;
+  --blue-light: #dbeafe;
+  --green-light: #d1fae5;
+  --purple-light: #f3e8ff;
 }
 
 * {
@@ -50,6 +55,7 @@
 .header-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  border: none;
 }
 
 .header-card h1,
@@ -128,6 +134,15 @@
   background: var(--secondary-hover);
 }
 
+.btn-purple {
+  background: var(--purple);
+  color: white;
+}
+
+.btn-purple:hover {
+  background: var(--purple-hover);
+}
+
 /* Inputs */
 .input-label {
   display: block;
@@ -156,6 +171,17 @@
 
 .input::placeholder {
   color: #94a3b8;
+}
+
+/* Input especial para precio en EUR */
+.input-eur {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.input-eur:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 /* Grid layouts */
@@ -206,6 +232,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   margin-top: 1rem;
+  border: 2px solid var(--border);
 }
 
 .cost-section h3 {
@@ -321,6 +348,141 @@
   }
 }
 
+/* Configuración Global - Secciones con colores */
+.config-section-blue {
+  background: var(--blue-light);
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.config-section-green {
+  background: var(--green-light);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.config-section-purple {
+  background: var(--purple-light);
+  border: 2px solid #9333ea;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+/* Botón de importar mejorado */
+.import-section {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.import-btn {
+  flex: 1;
+  background: var(--purple);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(147, 51, 234, 0.3);
+}
+
+.import-btn:hover {
+  background: var(--purple-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(147, 51, 234, 0.4);
+}
+
+.export-icon-btn {
+  background: var(--secondary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(100, 116, 139, 0.3);
+}
+
+.export-icon-btn:hover {
+  background: var(--secondary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(100, 116, 139, 0.4);
+}
+
+/* Estilos para checkbox de EUR */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.checkbox-input {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: var(--success);
+}
+
+.checkbox-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* Precio fijo manual - Estilo especial */
+.fixed-price-input {
+  background: #fff7ed;
+  border-color: #fb923c;
+  border-width: 2px;
+}
+
+.fixed-price-input:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.1);
+}
+
+.fixed-price-note {
+  font-size: 0.75rem;
+  color: #9a3412;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+/* Indicador de guardado */
+.saving-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--success);
+  font-weight: 600;
+  background: var(--green-light);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--success);
+}
+
+/* Contador de productos */
+.product-count {
+  margin-top: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 /* Scrollbar personalizado */
 ::-webkit-scrollbar {
   width: 10px;
@@ -342,13 +504,31 @@
 }
 
 /* Transitions suaves */
-* {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
 button,
 a,
 input,
 select {
   transition: all 0.3s ease;
+}
+
+/* Mejoras visuales adicionales */
+.card-shadow-sm {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.card-shadow-md {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.card-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+/* Estados de hover mejorados */
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
 }
