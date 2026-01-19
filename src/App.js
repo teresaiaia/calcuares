@@ -12,6 +12,7 @@ export default function Calcuares() {
   const [globalInterest, setGlobalInterest] = useState(12);
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin'); // 'admin' o 'ventas'
+  const [localSearchTerm, setLocalSearchTerm] = useState(''); // Para el input local
 
   const categories = ['UC', 'HP', 'ACC', 'CONS', 'SRVP'];
 
@@ -19,6 +20,21 @@ export default function Calcuares() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Actualizar searchTerm con delay para evitar re-renders constantes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(localSearchTerm);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [localSearchTerm]);
+
+  // Limpiar búsqueda al cambiar de vista
+  useEffect(() => {
+    setLocalSearchTerm('');
+    setSearchTerm('');
+  }, [view]);
 
   const fetchProducts = async () => {
     try {
@@ -363,8 +379,8 @@ export default function Calcuares() {
           <Search className="search-icon" size={20} />
           <input
             type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={localSearchTerm}
+            onChange={(e) => setLocalSearchTerm(e.target.value)}
             placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
             className="input search-input"
           />
@@ -542,8 +558,8 @@ export default function Calcuares() {
             <Search className="search-icon" size={20} />
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={localSearchTerm}
+              onChange={(e) => setLocalSearchTerm(e.target.value)}
               placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
               className="input search-input"
             />
