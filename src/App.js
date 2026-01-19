@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './App.css';
 
@@ -11,6 +11,7 @@ export default function Calcuares() {
   const [exchangeRate, setExchangeRate] = useState(1.10);
   const [globalInterest, setGlobalInterest] = useState(12);
   const [searchTerm, setSearchTerm] = useState('');
+  const [view, setView] = useState('admin'); // 'admin' o 'ventas'
 
   const categories = ['UC', 'HP', 'ACC', 'CONS', 'SRVP'];
 
@@ -318,29 +319,179 @@ export default function Calcuares() {
     );
   }
 
-  return (
+  // ==================== VISTA DE VENTAS ====================
+  const VentasView = () => (
+    <div className="app-container">
+      {/* Header Vista Ventas */}
+      <div className="card header-card" style={{ background: '#567C8D' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
+              💰 Lista de Precios - Ares
+            </h1>
+            <p style={{ color: 'white', fontSize: '1.1rem' }}>Catálogo de Productos y Cotizaciones</p>
+          </div>
+          <button
+            onClick={() => setView('admin')}
+            className="btn btn-success"
+            style={{ background: 'white', color: '#567C8D' }}
+          >
+            <DollarSign size={20} />
+            Panel Admin
+          </button>
+        </div>
+
+        {/* Info global */}
+        <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
+          <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
+            <div>
+              <strong>💵 Interés Anual:</strong> {globalInterest}%
+            </div>
+            <div>
+              <strong>💱 Tipo de Cambio EUR→USD:</strong> {exchangeRate}
+            </div>
+            <div>
+              <strong>📊 Total Productos:</strong> {products.length}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Búsqueda */}
+      <div className="card">
+        <div className="search-container" style={{ margin: 0 }}>
+          <Search className="search-icon" size={20} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
+            className="input search-input"
+          />
+        </div>
+        <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
+          📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'disponibles'}
+        </div>
+      </div>
+
+      {/* Lista de Productos - Vista de Ventas */}
+      {filteredProducts.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <p style={{ color: '#64748b', fontSize: '1.1rem' }}>
+            {products.length === 0 ? '📦 No hay productos disponibles' : '🔍 No se encontraron productos'}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+          {filteredProducts.map(product => {
+            const calc = calculateBackend(product);
+            const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+            
+            return (
+              <div key={product.id} className="card" style={{ border: '2px solid #e2e8f0', padding: '1.5rem' }}>
+                {/* Header del producto */}
+                <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>
+                    {product.cod}
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
+                    {product.prod || 'Sin nombre'}
+                  </h3>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span className="badge badge-blue">{product.brand}</span>
+                    <span className="badge badge-purple">{product.ori}</span>
+                    <span className="badge badge-green">{product.cat}</span>
+                  </div>
+                </div>
+
+                {/* Precios de Venta */}
+                <div style={{ background: '#d1fae5', borderRadius: '10px', padding: '1rem', border: '2px solid #10b981' }}>
+                  <h4 style={{ color: '#065f46', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                    💵 Precios de Venta
+                    {sales.isFixedPrice && (
+                      <span className="badge badge-orange" style={{ marginLeft: '0.5rem', fontSize: '0.65rem' }}>
+                        PRECIO ESPECIAL
+                      </span>
+                    )}
+                  </h4>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
+                      <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
+                      <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
+                    </div>
+                    
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      paddingTop: '0.5rem', 
+                      borderTop: '2px solid #10b981',
+                      marginTop: '0.25rem'
+                    }}>
+                      <span style={{ color: '#047857', fontWeight: '700' }}>💰 Financiado + IVA:</span>
+                      <span style={{ color: '#047857', fontWeight: '700', fontSize: '1rem' }}>
+                        ${formatCurrency(sales.finIva)}
+                      </span>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
+                      <span style={{ fontWeight: '600', color: '#059669' }}>${formatCurrency(sales.cuot)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info adicional */}
+                <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b', textAlign: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                  Interés: {globalInterest}% anual | Pago inicial: 50%
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  // ==================== VISTA ADMIN ====================
+  const AdminView = () => (
     <div className="app-container">
       {/* Header */}
       <div className="card header-card" style={{ background: '#567C8D' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.5rem' }}>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
               💰 Calcuares
             </h1>
-            <p style={{ color: '#64748b', fontSize: '1.1rem' }}>Calculadora de Precios - Ares Medical Equipment</p>
+            <p style={{ color: 'white', fontSize: '1.1rem' }}>Calculadora de Precios - Ares Medical Equipment</p>
           </div>
-          {saving && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: '600' }}>
-              <RefreshCw className="animate-spin" size={20} />
-              <span>Guardando...</span>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {saving && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: '600', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                <RefreshCw className="animate-spin" size={20} />
+                <span>Guardando...</span>
+              </div>
+            )}
+            <button
+              onClick={() => setView('ventas')}
+              className="btn btn-success"
+              style={{ background: 'white', color: '#567C8D' }}
+            >
+              <Eye size={20} />
+              Vista de Ventas
+            </button>
+          </div>
         </div>
 
         {/* Configuración Global */}
         <div className="grid grid-3">
           <div>
-            <label className="input-label">💵 Interés Anual Global (%)</label>
+            <label className="input-label" style={{ color: 'white' }}>💵 Interés Anual Global (%)</label>
             <input
               type="number"
               step="0.01"
@@ -352,7 +503,7 @@ export default function Calcuares() {
           </div>
 
           <div>
-            <label className="input-label">💱 Tipo de Cambio EUR → USD</label>
+            <label className="input-label" style={{ color: 'white' }}>💱 Tipo de Cambio EUR → USD</label>
             <input
               type="number"
               step="0.01"
@@ -364,7 +515,7 @@ export default function Calcuares() {
           </div>
 
           <div>
-            <label className="input-label">📁 Importar / Exportar</label>
+            <label className="input-label" style={{ color: 'white' }}>📁 Importar / Exportar</label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <label className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer' }}>
                 <Upload size={18} />
@@ -716,4 +867,7 @@ export default function Calcuares() {
       )}
     </div>
   );
+
+  // Renderizar vista según estado
+  return view === 'ventas' ? <VentasView /> : <AdminView />;
 }
