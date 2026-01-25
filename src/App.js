@@ -421,7 +421,7 @@ export default function Calcuares() {
       </head>
       <body>
         <div class="header">
-          <h1>💰 Lista de Precios - Ares</h1>
+          <h1>Lista de Precios - Ares</h1>
           <p>Catálogo de Productos y Cotizaciones</p>
           <p style="font-size: 8pt; margin-top: 5px;">
             Interés Anual: ${globalInterest}% | Tipo de Cambio EUR→USD: ${exchangeRate} | 
@@ -519,7 +519,7 @@ export default function Calcuares() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <div>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-                  💰 Lista de Precios - Ares
+                  Lista de Precios - Ares
                 </h1>
                 <p style={{ color: 'white', fontSize: '1.1rem' }}>Catálogo de Productos y Cotizaciones</p>
               </div>
@@ -677,7 +677,7 @@ export default function Calcuares() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <div>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-                  💰 Calcuares
+                  Calcuares
                 </h1>
                 <p style={{ color: 'white', fontSize: '1.1rem' }}>Calculadora de Precios - Ares Medical Equipment</p>
               </div>
