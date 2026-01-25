@@ -617,7 +617,7 @@ export default function Calcuares() {
 
                     <div style={{ background: '#C8D9E6', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
                       <h4 style={{ color: '#2F4156', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
-                        💰 Precios de Venta
+                        Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>
                         )}
@@ -1070,7 +1070,7 @@ export default function Calcuares() {
 
                     <div className="cost-section" style={{ background: '#C8D9E6', border: '2px solid #567C8D' }}>
                       <h3 style={{ color: '#2F4156', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                        💰 Precios de Venta
+                        Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange">PRECIO FIJO</span>
                         )}
