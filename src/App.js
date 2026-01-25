@@ -489,6 +489,272 @@ export default function Calcuares() {
     };
   };
 
+  // Exportar Panel Admin completo a PDF
+  const exportAdminToPDF = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Panel Administrativo - Calcuares</title>
+        <style>
+          @page { size: A4 landscape; margin: 10mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif; 
+            font-size: 8pt;
+            line-height: 1.2;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 10px; 
+            border-bottom: 2px solid #567C8D;
+            padding-bottom: 8px;
+          }
+          .header h1 { 
+            color: #567C8D; 
+            font-size: 16pt; 
+            margin-bottom: 3px;
+          }
+          .header p { 
+            color: #666; 
+            font-size: 9pt;
+          }
+          .product { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            border-radius: 4px;
+            page-break-inside: avoid;
+            margin-bottom: 8px;
+          }
+          .product-header {
+            background: #f8fafc;
+            padding: 6px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            border-left: 3px solid #567C8D;
+          }
+          .product-code { 
+            font-size: 7pt; 
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .product-title { 
+            font-size: 10pt; 
+            font-weight: bold; 
+            color: #1e293b; 
+            margin: 2px 0;
+          }
+          .product-obs { 
+            font-size: 7pt; 
+            color: #1e293b; 
+            font-style: italic;
+            font-weight: bold;
+            margin: 3px 0;
+          }
+          .product-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 6px;
+          }
+          .section {
+            background: #f8fafc;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+          }
+          .section-title {
+            font-weight: bold;
+            font-size: 8pt;
+            color: #1e293b;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 2px;
+          }
+          .data-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 7pt;
+            padding: 2px 0;
+          }
+          .data-row.highlight {
+            background: #C8D9E6;
+            padding: 3px 4px;
+            margin: 2px -4px;
+            border-radius: 3px;
+            font-weight: bold;
+          }
+          .data-row.profit {
+            background: #d1fae5;
+            padding: 3px 4px;
+            margin: 2px -4px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #065f46;
+          }
+          .label { color: #64748b; }
+          .value { font-weight: 600; color: #1e293b; }
+          .footer { 
+            text-align: center; 
+            margin-top: 10px; 
+            padding-top: 8px;
+            border-top: 1px solid #ddd;
+            font-size: 7pt; 
+            color: #666; 
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📊 Panel Administrativo - Calcuares</h1>
+          <p>Reporte Completo de Productos y Costos</p>
+          <p style="font-size: 7pt; margin-top: 3px;">
+            Interés: ${globalInterest}% | Tipo de Cambio: ${exchangeRate} EUR→USD | 
+            Fecha: ${new Date().toLocaleDateString('es-PY')} ${new Date().toLocaleTimeString('es-PY')}
+          </p>
+        </div>
+        ${filteredProducts.map(product => {
+          const calc = calculateBackend(product);
+          const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+          const profit = sales.cashNet - calc.kst;
+          
+          return `
+            <div class="product">
+              <div class="product-header">
+                <div class="product-code">${product.cod || 'SIN CÓDIGO'}</div>
+                <div class="product-title">${product.prod || 'Sin nombre'}</div>
+                ${product.observaciones ? `<div class="product-obs">${product.observaciones}</div>` : ''}
+              </div>
+              
+              <div class="product-body">
+                <!-- DATOS BÁSICOS -->
+                <div class="section">
+                  <div class="section-title">📋 Datos Básicos</div>
+                  <div class="data-row">
+                    <span class="label">Marca:</span>
+                    <span class="value">${product.brand}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Origen:</span>
+                    <span class="value">${product.ori}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Categoría:</span>
+                    <span class="value">${product.cat}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Precio PP:</span>
+                    <span class="value">${product.price_in_eur ? '€' : '$'}${formatCurrency(product.pp)}</span>
+                  </div>
+                  ${calc.isEUR ? `
+                    <div class="data-row">
+                      <span class="label">PP en USD:</span>
+                      <span class="value">$${formatCurrency(calc.ppInUSD)}</span>
+                    </div>
+                  ` : ''}
+                  <div class="data-row">
+                    <span class="label">Margen:</span>
+                    <span class="value">${product.margin}%</span>
+                  </div>
+                  ${sales.isFixedPrice ? `
+                    <div class="data-row" style="color: #fb923c;">
+                      <span class="label">⚠️ Precio Fijo:</span>
+                      <span class="value">$${formatCurrency(product.fixed_price)}</span>
+                    </div>
+                  ` : ''}
+                </div>
+                
+                <!-- COSTOS BACKEND -->
+                <div class="section">
+                  <div class="section-title">💼 Costos Backend</div>
+                  <div class="data-row">
+                    <span class="label">Flete:</span>
+                    <span class="value">$${formatCurrency(product.frt)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Banco:</span>
+                    <span class="value">$${formatCurrency(product.bnk)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Aduana (${product.adu}%):</span>
+                    <span class="value">$${formatCurrency(calc.desp)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Servicio:</span>
+                    <span class="value">$${formatCurrency(product.serv)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Garantía (3%):</span>
+                    <span class="value">$${formatCurrency(calc.gtia)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Capacitación:</span>
+                    <span class="value">$${formatCurrency(product.trng)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Imprevistos:</span>
+                    <span class="value">$${formatCurrency(product.extr)}</span>
+                  </div>
+                  <div class="data-row highlight">
+                    <span>FOB:</span>
+                    <span>$${formatCurrency(calc.fob)}</span>
+                  </div>
+                  <div class="data-row highlight">
+                    <span>KST TOTAL:</span>
+                    <span>$${formatCurrency(calc.kst)}</span>
+                  </div>
+                </div>
+                
+                <!-- PRECIOS DE VENTA Y GANANCIA -->
+                <div class="section">
+                  <div class="section-title">💰 Precios de Venta</div>
+                  <div class="data-row">
+                    <span class="label">Contado (Neto):</span>
+                    <span class="value">$${formatCurrency(sales.cashNet)}</span>
+                  </div>
+                  <div class="data-row highlight">
+                    <span>Cont. IVA inc.:</span>
+                    <span>$${formatCurrency(sales.cashIva)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Financiado + IVA:</span>
+                    <span class="value">$${formatCurrency(sales.finIva)}</span>
+                  </div>
+                  <div class="data-row">
+                    <span class="label">Cuota (12 meses):</span>
+                    <span class="value">$${formatCurrency(sales.cuot)}</span>
+                  </div>
+                  <div class="data-row profit">
+                    <span>✅ GANANCIA NETA:</span>
+                    <span>$${formatCurrency(profit)}</span>
+                  </div>
+                  <div class="data-row" style="font-size: 6pt; color: #059669;">
+                    <span>% sobre KST:</span>
+                    <span>${((profit / calc.kst) * 100).toFixed(2)}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        <div class="footer">
+          <p>Calcuares - Panel Administrativo | Documento Confidencial</p>
+          <p>Este documento contiene información sensible de costos y márgenes de ganancia</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
+
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
     const search = searchTerm.toLowerCase();
@@ -751,6 +1017,10 @@ export default function Calcuares() {
               <button onClick={addProduct} className="btn btn-success">
                 <Plus size={20} />
                 Agregar Producto
+              </button>
+              <button onClick={exportAdminToPDF} className="btn btn-primary" title="Exportar Panel Admin a PDF">
+                <Download size={20} />
+                Exportar PDF
               </button>
               <button onClick={fetchProducts} className="btn btn-secondary" title="Recargar productos">
                 <RefreshCw size={20} />
