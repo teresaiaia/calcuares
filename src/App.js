@@ -354,8 +354,9 @@ export default function Calcuares() {
           }
           .product-obs { 
             font-size: 7pt; 
-            color: #666; 
+            color: #1e293b; 
             font-style: italic;
+            font-weight: bold;
             margin: 3px 0;
             line-height: 1.2;
           }
@@ -569,14 +570,38 @@ export default function Calcuares() {
                         {product.prod || 'Sin nombre'}
                       </h3>
                       {product.observaciones && (
-                        <p style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.5rem', fontStyle: 'italic', lineHeight: '1.3' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#1e293b', marginBottom: '0.5rem', fontWeight: '700', lineHeight: '1.3', fontStyle: 'italic' }}>
                           {product.observaciones}
                         </p>
                       )}
                       <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                        <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>{product.brand}</span>
-                        <span className="badge badge-purple" style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>{product.ori}</span>
-                        <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>{product.cat}</span>
+                        <span style={{ 
+                          fontSize: '0.6rem', 
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          background: '#f1f5f9',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          border: '1px solid #e2e8f0'
+                        }}>{product.brand}</span>
+                        <span style={{ 
+                          fontSize: '0.6rem', 
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          background: '#f1f5f9',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          border: '1px solid #e2e8f0'
+                        }}>{product.ori}</span>
+                        <span style={{ 
+                          fontSize: '0.6rem', 
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          background: '#f1f5f9',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          border: '1px solid #e2e8f0'
+                        }}>{product.cat}</span>
                       </div>
                     </div>
 
@@ -746,18 +771,38 @@ export default function Calcuares() {
               return (
                 <div key={product.id} className="card product-card" style={{ padding: '1rem' }}>
                   <div className="product-header" style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem' }}>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {product.cod || '🆕 NUEVO'}
                       </div>
-                      <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', lineHeight: '1.3' }}>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', lineHeight: '1.3', marginBottom: '0.5rem' }}>
                         {product.prod || 'Sin modelo definido'}
                       </h2>
+                      
+                      {/* OBSERVACIONES DESTACADAS */}
+                      {product.observaciones && (
+                        <div style={{ 
+                          marginTop: '0.5rem',
+                          paddingTop: '0.5rem',
+                          borderTop: '1px solid #e2e8f0'
+                        }}>
+                          <p style={{ 
+                            fontSize: '0.85rem', 
+                            color: '#1e293b', 
+                            fontWeight: '700',
+                            lineHeight: '1.4',
+                            margin: 0,
+                            fontStyle: 'italic'
+                          }}>
+                            {product.observaciones}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => deleteProduct(product.id)}
                       className="btn btn-danger"
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', alignSelf: 'flex-start' }}
                     >
                       <Trash2 size={16} />
                       Eliminar
@@ -957,18 +1002,24 @@ export default function Calcuares() {
                     </div>
 
                     <div style={{ gridColumn: 'span 4' }}>
-                      <label className="input-label">📝 Observaciones</label>
+                      <label className="input-label" style={{ 
+                        fontSize: '0.75rem', 
+                        fontWeight: '700'
+                      }}>
+                        📝 Observaciones (aparecerá en Vista de Ventas)
+                      </label>
                       <textarea
                         defaultValue={product.observaciones || ''}
                         onBlur={(e) => handleInputChange(product.id, 'observaciones', e.target.value)}
-                        placeholder="Descripción del producto, características, beneficios..."
+                        placeholder="Ej: Incluye 6 HP (IPL)"
                         className="input"
-                        rows="3"
-                        style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                        rows="2"
+                        style={{ 
+                          resize: 'vertical', 
+                          fontFamily: 'inherit',
+                          fontSize: '0.85rem'
+                        }}
                       />
-                      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                        💡 Este texto aparecerá en la vista de ventas debajo del título del producto
-                      </p>
                     </div>
                   </div>
 
