@@ -744,27 +744,27 @@ export default function Calcuares() {
               const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
               
               return (
-                <div key={product.id} className="card product-card">
-                  <div className="product-header">
+                <div key={product.id} className="card product-card" style={{ padding: '1rem' }}>
+                  <div className="product-header" style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem' }}>
                     <div>
-                      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1e293b' }}>
-                        {product.cod || `🆕 Producto Nuevo`}
-                      </h2>
-                      <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                      <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {product.cod || '🆕 NUEVO'}
+                      </div>
+                      <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', lineHeight: '1.3' }}>
                         {product.prod || 'Sin modelo definido'}
-                      </p>
+                      </h2>
                     </div>
                     <button
                       onClick={() => deleteProduct(product.id)}
                       className="btn btn-danger"
-                      style={{ padding: '0.5rem 1rem' }}
+                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                       Eliminar
                     </button>
                   </div>
 
-                  <div className="grid grid-4">
+                  <div className="grid grid-4" style={{ gap: '0.6rem' }}>
                     <div>
                       <label className="input-label">📝 Código (COD)</label>
                       <input
