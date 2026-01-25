@@ -10,7 +10,7 @@ export default function Calcuares() {
   const [saving, setSaving] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(() => {
     const saved = localStorage.getItem('exchangeRate');
-    return saved ? parseFloat(saved) : 1.10;
+    return saved ? parseFloat(saved) : 1.20;
   });
   const [globalInterest, setGlobalInterest] = useState(() => {
     const saved = localStorage.getItem('globalInterest');
