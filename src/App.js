@@ -327,15 +327,23 @@ export default function Calcuares() {
             font-size: 10pt;
           }
           .products { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 10px; 
+            display: block;
+            width: 100%;
           }
           .product { 
             border: 1px solid #ddd; 
-            padding: 8px; 
+            padding: 10px; 
             border-radius: 6px;
             page-break-inside: avoid;
+            margin-bottom: 8px;
+            display: flex;
+            gap: 12px;
+          }
+          .product-info {
+            flex: 1;
+          }
+          .product-prices {
+            flex: 1;
           }
           .product-header { 
             border-bottom: 1px solid #ddd; 
@@ -375,9 +383,9 @@ export default function Calcuares() {
           }
           .prices { 
             background: #C8D9E6; 
-            padding: 6px; 
+            padding: 8px; 
             border-radius: 6px;
-            margin-top: 5px;
+            height: 100%;
           }
           .price-row { 
             display: flex; 
@@ -427,7 +435,7 @@ export default function Calcuares() {
             
             return `
               <div class="product">
-                <div class="product-header">
+                <div class="product-info">
                   <div class="product-code">${product.cod}</div>
                   <div class="product-title">${product.prod || 'Sin nombre'}</div>
                   ${product.observaciones ? `<div class="product-obs">${product.observaciones}</div>` : ''}
@@ -437,25 +445,27 @@ export default function Calcuares() {
                     <span class="badge">${product.cat}</span>
                   </div>
                 </div>
-                <div class="prices">
-                  <div class="price-row">
-                    <span>💳 Contado (Neto):</span>
-                    <span>$${formatCurrency(sales.cashNet)}</span>
-                  </div>
-                  <div class="price-highlight">
-                    <div class="price-row" style="color: white;">
-                      <span>💳 CONTADO + IVA:</span>
-                      <span>$${formatCurrency(sales.cashIva)}</span>
-                    </div>
-                  </div>
-                  <div class="price-small">
+                <div class="product-prices">
+                  <div class="prices">
                     <div class="price-row">
-                      <span>💰 Financiado + IVA:</span>
-                      <span>$${formatCurrency(sales.finIva)}</span>
+                      <span>💳 Contado (Neto):</span>
+                      <span>$${formatCurrency(sales.cashNet)}</span>
                     </div>
-                    <div class="price-row">
-                      <span>📅 Cuota (12 meses):</span>
-                      <span>$${formatCurrency(sales.cuot)}</span>
+                    <div class="price-highlight">
+                      <div class="price-row" style="color: white;">
+                        <span>💳 CONTADO + IVA:</span>
+                        <span>$${formatCurrency(sales.cashIva)}</span>
+                      </div>
+                    </div>
+                    <div class="price-small">
+                      <div class="price-row">
+                        <span>💰 Financiado + IVA:</span>
+                        <span>$${formatCurrency(sales.finIva)}</span>
+                      </div>
+                      <div class="price-row">
+                        <span>📅 Cuota (12 meses):</span>
+                        <span>$${formatCurrency(sales.cuot)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
