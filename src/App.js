@@ -56,7 +56,8 @@ export default function Calcuares() {
         extr: parseFloat(product.extr || 0),
         margin: parseFloat(product.margin || 0),
         fixed_price: parseFloat(product.fixed_price || 0),
-        price_in_eur: product.price_in_eur || false
+        price_in_eur: product.price_in_eur || false,
+        observaciones: product.observaciones || ''
       };
       
       if (product.id && product.id > 0) {
@@ -127,7 +128,8 @@ export default function Calcuares() {
       extr: 0,
       margin: 0,
       fixed_price: 0,
-      price_in_eur: false
+      price_in_eur: false,
+      observaciones: ''
     };
     
     setProducts(prev => [newProduct, ...prev]);
@@ -361,6 +363,11 @@ export default function Calcuares() {
                       <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
                         {product.prod || 'Sin nombre'}
                       </h3>
+                      {product.observaciones && (
+                        <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+                          {product.observaciones}
+                        </p>
+                      )}
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <span className="badge badge-blue">{product.brand}</span>
                         <span className="badge badge-purple">{product.ori}</span>
@@ -734,6 +741,21 @@ export default function Calcuares() {
                       />
                       <p style={{ fontSize: '0.75rem', color: '#9a3412', marginTop: '0.25rem' }}>
                         💡 Si ingresas un precio fijo, se usará en lugar del cálculo automático
+                      </p>
+                    </div>
+
+                    <div style={{ gridColumn: 'span 4' }}>
+                      <label className="input-label">📝 Observaciones</label>
+                      <textarea
+                        defaultValue={product.observaciones || ''}
+                        onBlur={(e) => handleInputChange(product.id, 'observaciones', e.target.value)}
+                        placeholder="Descripción del producto, características, beneficios..."
+                        className="input"
+                        rows="3"
+                        style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                      />
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                        💡 Este texto aparecerá en la vista de ventas debajo del título del producto
                       </p>
                     </div>
                   </div>
