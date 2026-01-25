@@ -373,7 +373,7 @@ export default function Calcuares() {
             color: #1e293b;
           }
           .prices { 
-            background: #C5D9E3; 
+            background: #C8D9E6; 
             padding: 6px; 
             border-radius: 6px;
             margin-top: 5px;
@@ -385,7 +385,7 @@ export default function Calcuares() {
             font-size: 8pt;
           }
           .price-highlight { 
-            background: #3D5A6B; 
+            background: #2F4156; 
             color: white; 
             padding: 4px; 
             border-radius: 4px;
@@ -395,7 +395,7 @@ export default function Calcuares() {
           }
           .price-small {
             font-size: 6pt;
-            color: #2D4A5B;
+            color: #2F4156;
             border-top: 1px solid #567C8D;
             padding-top: 3px;
             margin-top: 3px;
@@ -580,8 +580,8 @@ export default function Calcuares() {
                       </div>
                     </div>
 
-                    <div style={{ background: '#C5D9E3', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
-                      <h4 style={{ color: '#2D4A5B', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+                    <div style={{ background: '#C8D9E6', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
+                      <h4 style={{ color: '#2F4156', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
                         💵 Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>
@@ -590,7 +590,7 @@ export default function Calcuares() {
                       
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#2D4A5B', fontSize: '0.7rem' }}>💳 Contado (Neto):</span>
+                          <span style={{ color: '#2F4156', fontSize: '0.7rem' }}>💳 Contado (Neto):</span>
                           <span style={{ fontWeight: '600', fontSize: '0.7rem' }}>${formatCurrency(sales.cashNet)}</span>
                         </div>
                         
@@ -598,7 +598,7 @@ export default function Calcuares() {
                         <div style={{ 
                           display: 'flex', 
                           justifyContent: 'space-between',
-                          background: '#3D5A6B',
+                          background: '#2F4156',
                           padding: '0.5rem',
                           borderRadius: '6px',
                           margin: '0.25rem 0'
@@ -614,12 +614,12 @@ export default function Calcuares() {
                           marginTop: '0.25rem'
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
-                            <span style={{ color: '#2D4A5B', fontSize: '0.6rem' }}>💰 Financiado + IVA:</span>
+                            <span style={{ color: '#2F4156', fontSize: '0.6rem' }}>💰 Financiado + IVA:</span>
                             <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.finIva)}</span>
                           </div>
                           
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: '#2D4A5B', fontSize: '0.6rem' }}>📅 Cuota (12 meses):</span>
+                            <span style={{ color: '#2F4156', fontSize: '0.6rem' }}>📅 Cuota (12 meses):</span>
                             <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.cuot)}</span>
                           </div>
                         </div>
@@ -638,7 +638,7 @@ export default function Calcuares() {
       ) : (
         // VISTA ADMIN
         <>
-          <div className="card header-card" style={{ background: '#7A9BAE' }}>
+          <div className="card header-card" style={{ background: '#567C8D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <div>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
@@ -978,9 +978,9 @@ export default function Calcuares() {
                         💼 Costos Backend
                       </h3>
                       {calc.isEUR && (
-                        <div className="cost-row" style={{ background: '#C5D9E3', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #567C8D' }}>
-                          <span style={{ color: '#2D4A5B', fontWeight: '600' }}>💶 PP Original (EUR):</span>
-                          <span style={{ color: '#2D4A5B', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
+                        <div className="cost-row" style={{ background: '#C8D9E6', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #567C8D' }}>
+                          <span style={{ color: '#2F4156', fontWeight: '600' }}>💶 PP Original (EUR):</span>
+                          <span style={{ color: '#2F4156', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
                         </div>
                       )}
                       {calc.isEUR && (
@@ -1007,32 +1007,32 @@ export default function Calcuares() {
                       </div>
                     </div>
 
-                    <div className="cost-section" style={{ background: '#C5D9E3', border: '2px solid #567C8D' }}>
-                      <h3 style={{ color: '#2D4A5B', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <div className="cost-section" style={{ background: '#C8D9E6', border: '2px solid #567C8D' }}>
+                      <h3 style={{ color: '#2F4156', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                         💵 Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange">PRECIO FIJO</span>
                         )}
                       </h3>
                       <div className="cost-row">
-                        <span style={{ color: '#2D4A5B' }}>💳 Contado (Neto):</span>
+                        <span style={{ color: '#2F4156' }}>💳 Contado (Neto):</span>
                         <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
                       </div>
                       <div className="cost-row">
-                        <span style={{ color: '#2D4A5B' }}>💳 Contado + IVA (10%):</span>
+                        <span style={{ color: '#2F4156' }}>💳 Contado + IVA (10%):</span>
                         <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
                       </div>
                       <div className="cost-row total" style={{ borderColor: '#567C8D', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
-                        <span style={{ color: '#3D5A6B', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
-                        <span style={{ color: '#3D5A6B', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
+                        <span style={{ color: '#2F4156', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
+                        <span style={{ color: '#2F4156', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
                       </div>
                       <div className="cost-row">
-                        <span style={{ color: '#2D4A5B' }}>📅 Cuota Mensual (12 meses):</span>
+                        <span style={{ color: '#2F4156' }}>📅 Cuota Mensual (12 meses):</span>
                         <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cuot)}</span>
                       </div>
-                      <div className="cost-row total" style={{ borderColor: '#567C8D', background: '#A8C5D6', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
-                        <span style={{ color: '#3D5A6B', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
-                        <span style={{ color: '#3D5A6B', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
+                      <div className="cost-row total" style={{ borderColor: '#567C8D', background: '#C8D9E6', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
+                        <span style={{ color: '#2F4156', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
+                        <span style={{ color: '#2F4156', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
                       </div>
                     </div>
                   </div>
