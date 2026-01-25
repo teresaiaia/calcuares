@@ -453,7 +453,7 @@ export default function Calcuares() {
                     </div>
                     <div class="price-highlight">
                       <div class="price-row" style="color: white;">
-                        <span>💳 CONTADO + IVA:</span>
+                        <span>💳 Cont. IVA inc.:</span>
                         <span>$${formatCurrency(sales.cashIva)}</span>
                       </div>
                     </div>
@@ -617,7 +617,7 @@ export default function Calcuares() {
 
                     <div style={{ background: '#C8D9E6', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
                       <h4 style={{ color: '#2F4156', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
-                        💵 Precios de Venta
+                        💰 Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>
                         )}
@@ -629,7 +629,7 @@ export default function Calcuares() {
                           <span style={{ fontWeight: '600', fontSize: '0.7rem' }}>${formatCurrency(sales.cashNet)}</span>
                         </div>
                         
-                        {/* PRECIO DESTACADO - CONTADO + IVA */}
+                        {/* PRECIO DESTACADO - CONTADO IVA INCLUIDO */}
                         <div style={{ 
                           display: 'flex', 
                           justifyContent: 'space-between',
@@ -638,7 +638,7 @@ export default function Calcuares() {
                           borderRadius: '6px',
                           margin: '0.25rem 0'
                         }}>
-                          <span style={{ color: 'white', fontWeight: '700', fontSize: '0.85rem' }}>💳 CONTADO + IVA:</span>
+                          <span style={{ color: 'white', fontWeight: '700', fontSize: '0.85rem' }}>💳 Cont. IVA inc.:</span>
                           <span style={{ color: 'white', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashIva)}</span>
                         </div>
                         
@@ -1070,7 +1070,7 @@ export default function Calcuares() {
 
                     <div className="cost-section" style={{ background: '#C8D9E6', border: '2px solid #567C8D' }}>
                       <h3 style={{ color: '#2F4156', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                        💵 Precios de Venta
+                        💰 Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange">PRECIO FIJO</span>
                         )}
@@ -1080,7 +1080,7 @@ export default function Calcuares() {
                         <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
                       </div>
                       <div className="cost-row">
-                        <span style={{ color: '#2F4156' }}>💳 Contado + IVA (10%):</span>
+                        <span style={{ color: '#2F4156' }}>💳 Cont. IVA inc.:</span>
                         <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
                       </div>
                       <div className="cost-row total" style={{ borderColor: '#567C8D', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
