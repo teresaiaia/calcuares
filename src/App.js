@@ -851,17 +851,17 @@ export default function Calcuares() {
                       )}
                       <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                         <span style={{ 
-                          fontSize: '0.6rem', 
-                          padding: '0.15rem 0.45rem',
+                          fontSize: '0.7rem', 
+                          padding: '0.2rem 0.5rem',
                           borderRadius: '4px',
                           background: '#f1f5f9',
-                          color: '#64748b',
-                          fontWeight: '500',
+                          color: '#1e293b',
+                          fontWeight: '700',
                           border: '1px solid #e2e8f0'
                         }}>{product.brand}</span>
                         <span style={{ 
-                          fontSize: '0.6rem', 
-                          padding: '0.15rem 0.45rem',
+                          fontSize: '0.7rem', 
+                          padding: '0.2rem 0.5rem',
                           borderRadius: '4px',
                           background: '#f1f5f9',
                           color: '#64748b',
@@ -869,8 +869,8 @@ export default function Calcuares() {
                           border: '1px solid #e2e8f0'
                         }}>{product.ori}</span>
                         <span style={{ 
-                          fontSize: '0.6rem', 
-                          padding: '0.15rem 0.45rem',
+                          fontSize: '0.7rem', 
+                          padding: '0.2rem 0.5rem',
                           borderRadius: '4px',
                           background: '#f1f5f9',
                           color: '#64748b',
