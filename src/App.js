@@ -8,12 +8,27 @@ export default function Calcuares() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState(1.10);
-  const [globalInterest, setGlobalInterest] = useState(12);
+  const [exchangeRate, setExchangeRate] = useState(() => {
+    const saved = localStorage.getItem('exchangeRate');
+    return saved ? parseFloat(saved) : 1.10;
+  });
+  const [globalInterest, setGlobalInterest] = useState(() => {
+    const saved = localStorage.getItem('globalInterest');
+    return saved ? parseFloat(saved) : 12;
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin');
 
   const categories = ['UC', 'HP', 'ACC', 'CONS', 'SRVP'];
+
+  // Guardar en localStorage cuando cambian
+  useEffect(() => {
+    localStorage.setItem('exchangeRate', exchangeRate);
+  }, [exchangeRate]);
+
+  useEffect(() => {
+    localStorage.setItem('globalInterest', globalInterest);
+  }, [globalInterest]);
 
   useEffect(() => {
     fetchProducts();
@@ -358,7 +373,7 @@ export default function Calcuares() {
             color: #1e293b;
           }
           .prices { 
-            background: #d1fae5; 
+            background: #C5D9E3; 
             padding: 6px; 
             border-radius: 6px;
             margin-top: 5px;
@@ -370,7 +385,7 @@ export default function Calcuares() {
             font-size: 8pt;
           }
           .price-highlight { 
-            background: #047857; 
+            background: #3D5A6B; 
             color: white; 
             padding: 4px; 
             border-radius: 4px;
@@ -380,8 +395,8 @@ export default function Calcuares() {
           }
           .price-small {
             font-size: 6pt;
-            color: #065f46;
-            border-top: 1px solid #10b981;
+            color: #2D4A5B;
+            border-top: 1px solid #567C8D;
             padding-top: 3px;
             margin-top: 3px;
           }
@@ -565,8 +580,8 @@ export default function Calcuares() {
                       </div>
                     </div>
 
-                    <div style={{ background: '#d1fae5', borderRadius: '8px', padding: '0.75rem', border: '2px solid #10b981' }}>
-                      <h4 style={{ color: '#065f46', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+                    <div style={{ background: '#C5D9E3', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
+                      <h4 style={{ color: '#2D4A5B', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
                         💵 Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>
@@ -575,7 +590,7 @@ export default function Calcuares() {
                       
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#065f46', fontSize: '0.7rem' }}>💳 Contado (Neto):</span>
+                          <span style={{ color: '#2D4A5B', fontSize: '0.7rem' }}>💳 Contado (Neto):</span>
                           <span style={{ fontWeight: '600', fontSize: '0.7rem' }}>${formatCurrency(sales.cashNet)}</span>
                         </div>
                         
@@ -583,7 +598,7 @@ export default function Calcuares() {
                         <div style={{ 
                           display: 'flex', 
                           justifyContent: 'space-between',
-                          background: '#047857',
+                          background: '#3D5A6B',
                           padding: '0.5rem',
                           borderRadius: '6px',
                           margin: '0.25rem 0'
@@ -595,16 +610,16 @@ export default function Calcuares() {
                         {/* Precios financiados - tipografía muy pequeña */}
                         <div style={{ 
                           paddingTop: '0.35rem', 
-                          borderTop: '1px solid #10b981',
+                          borderTop: '1px solid #567C8D',
                           marginTop: '0.25rem'
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
-                            <span style={{ color: '#065f46', fontSize: '0.6rem' }}>💰 Financiado + IVA:</span>
+                            <span style={{ color: '#2D4A5B', fontSize: '0.6rem' }}>💰 Financiado + IVA:</span>
                             <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.finIva)}</span>
                           </div>
                           
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: '#065f46', fontSize: '0.6rem' }}>📅 Cuota (12 meses):</span>
+                            <span style={{ color: '#2D4A5B', fontSize: '0.6rem' }}>📅 Cuota (12 meses):</span>
                             <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.cuot)}</span>
                           </div>
                         </div>
@@ -623,7 +638,7 @@ export default function Calcuares() {
       ) : (
         // VISTA ADMIN
         <>
-          <div className="card header-card" style={{ background: '#567C8D' }}>
+          <div className="card header-card" style={{ background: '#7A9BAE' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <div>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
@@ -633,7 +648,7 @@ export default function Calcuares() {
               </div>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 {saving && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: '600', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#567C8D', fontWeight: '600', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px' }}>
                     <RefreshCw className="animate-spin" size={20} />
                     <span>Guardando...</span>
                   </div>
@@ -820,7 +835,7 @@ export default function Calcuares() {
                         placeholder="0.00"
                       />
                       {product.price_in_eur && calc.ppInUSD > 0 && (
-                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.25rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#567C8D', marginTop: '0.25rem' }}>
                           ≈ ${formatCurrency(calc.ppInUSD)} USD
                         </div>
                       )}
@@ -963,9 +978,9 @@ export default function Calcuares() {
                         💼 Costos Backend
                       </h3>
                       {calc.isEUR && (
-                        <div className="cost-row" style={{ background: '#d1fae5', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #10b981' }}>
-                          <span style={{ color: '#065f46', fontWeight: '600' }}>💶 PP Original (EUR):</span>
-                          <span style={{ color: '#065f46', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
+                        <div className="cost-row" style={{ background: '#C5D9E3', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #567C8D' }}>
+                          <span style={{ color: '#2D4A5B', fontWeight: '600' }}>💶 PP Original (EUR):</span>
+                          <span style={{ color: '#2D4A5B', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
                         </div>
                       )}
                       {calc.isEUR && (
@@ -992,32 +1007,32 @@ export default function Calcuares() {
                       </div>
                     </div>
 
-                    <div className="cost-section" style={{ background: '#d1fae5', border: '2px solid #10b981' }}>
-                      <h3 style={{ color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <div className="cost-section" style={{ background: '#C5D9E3', border: '2px solid #567C8D' }}>
+                      <h3 style={{ color: '#2D4A5B', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                         💵 Precios de Venta
                         {sales.isFixedPrice && (
                           <span className="badge badge-orange">PRECIO FIJO</span>
                         )}
                       </h3>
                       <div className="cost-row">
-                        <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
+                        <span style={{ color: '#2D4A5B' }}>💳 Contado (Neto):</span>
                         <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
                       </div>
                       <div className="cost-row">
-                        <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
+                        <span style={{ color: '#2D4A5B' }}>💳 Contado + IVA (10%):</span>
                         <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
                       </div>
-                      <div className="cost-row total" style={{ borderColor: '#10b981', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
-                        <span style={{ color: '#047857', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
-                        <span style={{ color: '#047857', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
+                      <div className="cost-row total" style={{ borderColor: '#567C8D', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
+                        <span style={{ color: '#3D5A6B', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
+                        <span style={{ color: '#3D5A6B', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
                       </div>
                       <div className="cost-row">
-                        <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
+                        <span style={{ color: '#2D4A5B' }}>📅 Cuota Mensual (12 meses):</span>
                         <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cuot)}</span>
                       </div>
-                      <div className="cost-row total" style={{ borderColor: '#10b981', background: '#a7f3d0', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
-                        <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
-                        <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
+                      <div className="cost-row total" style={{ borderColor: '#567C8D', background: '#A8C5D6', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
+                        <span style={{ color: '#3D5A6B', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
+                        <span style={{ color: '#3D5A6B', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
                       </div>
                     </div>
                   </div>
