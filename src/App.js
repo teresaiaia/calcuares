@@ -638,7 +638,7 @@ export default function Calcuares() {
                           borderRadius: '6px',
                           margin: '0.25rem 0'
                         }}>
-                          <span style={{ color: 'white', fontWeight: '700', fontSize: '0.7rem' }}>CONT. IVA INC.:</span>
+                          <span style={{ color: 'white', fontWeight: '700', fontSize: '0.55rem' }}>CONT. IVA INC.:</span>
                           <span style={{ color: 'white', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashIva)}</span>
                         </div>
                         
