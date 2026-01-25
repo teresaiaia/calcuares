@@ -498,7 +498,7 @@ export default function Calcuares() {
         <meta charset="UTF-8">
         <title>Panel Administrativo - Calcuares</title>
         <style>
-          @page { size: A4 landscape; margin: 10mm; }
+          @page { size: A4 portrait; margin: 15mm; }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
@@ -554,9 +554,7 @@ export default function Calcuares() {
             margin: 3px 0;
           }
           .product-body {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
+            display: block;
             margin-top: 6px;
           }
           .section {
@@ -564,6 +562,7 @@ export default function Calcuares() {
             padding: 6px;
             border-radius: 4px;
             border: 1px solid #e2e8f0;
+            margin-bottom: 6px;
           }
           .section-title {
             font-weight: bold;
