@@ -243,7 +243,8 @@ export default function Calcuares() {
         extr: parseFloat(row.extr || row.imprevistos || 0),
         margin: parseFloat(row.margin || row.margen || 0),
         fixed_price: parseFloat(row.fixedprice || row.precio_fijo || 0),
-        price_in_eur: (row.priceineur || row.eur || '').toLowerCase() === 'true'
+        price_in_eur: (row.priceineur || row.eur || '').toLowerCase() === 'true',
+        observaciones: row.observaciones || row.obs || ''
       }));
 
       for (const product of newProducts) {
@@ -277,6 +278,189 @@ export default function Calcuares() {
     a.download = `productos_ares_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Exportar vista de ventas a PDF
+  const exportToPDF = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Lista de Precios - Ares Medical Equipment</title>
+        <style>
+          @page { size: A4; margin: 15mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif; 
+            font-size: 9pt;
+            line-height: 1.3;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 15px; 
+            border-bottom: 2px solid #567C8D;
+            padding-bottom: 10px;
+          }
+          .header h1 { 
+            color: #567C8D; 
+            font-size: 18pt; 
+            margin-bottom: 5px;
+          }
+          .header p { 
+            color: #666; 
+            font-size: 10pt;
+          }
+          .products { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 10px; 
+          }
+          .product { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            border-radius: 6px;
+            page-break-inside: avoid;
+          }
+          .product-header { 
+            border-bottom: 1px solid #ddd; 
+            padding-bottom: 5px; 
+            margin-bottom: 5px; 
+          }
+          .product-code { 
+            font-size: 7pt; 
+            color: #666; 
+          }
+          .product-title { 
+            font-size: 10pt; 
+            font-weight: bold; 
+            color: #1e293b; 
+            margin: 3px 0;
+          }
+          .product-obs { 
+            font-size: 7pt; 
+            color: #666; 
+            font-style: italic;
+            margin: 3px 0;
+            line-height: 1.2;
+          }
+          .badges { 
+            display: flex; 
+            gap: 3px; 
+            margin-top: 3px;
+            flex-wrap: wrap;
+          }
+          .badge { 
+            font-size: 6pt; 
+            padding: 2px 5px; 
+            border-radius: 10px; 
+            background: #e8ecf1;
+            color: #1e293b;
+          }
+          .prices { 
+            background: #d1fae5; 
+            padding: 6px; 
+            border-radius: 6px;
+            margin-top: 5px;
+          }
+          .price-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 2px 0;
+            font-size: 8pt;
+          }
+          .price-highlight { 
+            background: #047857; 
+            color: white; 
+            padding: 4px; 
+            border-radius: 4px;
+            margin: 3px 0;
+            font-weight: bold;
+            font-size: 9pt;
+          }
+          .price-small {
+            font-size: 6pt;
+            color: #065f46;
+            border-top: 1px solid #10b981;
+            padding-top: 3px;
+            margin-top: 3px;
+          }
+          .footer { 
+            text-align: center; 
+            margin-top: 15px; 
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+            font-size: 7pt; 
+            color: #666; 
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>💰 Lista de Precios - Ares</h1>
+          <p>Catálogo de Productos y Cotizaciones</p>
+          <p style="font-size: 8pt; margin-top: 5px;">
+            Interés Anual: ${globalInterest}% | Tipo de Cambio EUR→USD: ${exchangeRate} | 
+            Fecha: ${new Date().toLocaleDateString('es-PY')}
+          </p>
+        </div>
+        <div class="products">
+          ${filteredProducts.map(product => {
+            const calc = calculateBackend(product);
+            const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+            
+            return `
+              <div class="product">
+                <div class="product-header">
+                  <div class="product-code">${product.cod}</div>
+                  <div class="product-title">${product.prod || 'Sin nombre'}</div>
+                  ${product.observaciones ? `<div class="product-obs">${product.observaciones}</div>` : ''}
+                  <div class="badges">
+                    <span class="badge">${product.brand}</span>
+                    <span class="badge">${product.ori}</span>
+                    <span class="badge">${product.cat}</span>
+                  </div>
+                </div>
+                <div class="prices">
+                  <div class="price-row">
+                    <span>💳 Contado (Neto):</span>
+                    <span>$${formatCurrency(sales.cashNet)}</span>
+                  </div>
+                  <div class="price-highlight">
+                    <div class="price-row" style="color: white;">
+                      <span>💳 CONTADO + IVA:</span>
+                      <span>$${formatCurrency(sales.cashIva)}</span>
+                    </div>
+                  </div>
+                  <div class="price-small">
+                    <div class="price-row">
+                      <span>💰 Financiado + IVA:</span>
+                      <span>$${formatCurrency(sales.finIva)}</span>
+                    </div>
+                    <div class="price-row">
+                      <span>📅 Cuota (12 meses):</span>
+                      <span>$${formatCurrency(sales.cuot)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div class="footer">
+          <p>Ares Medical Equipment | Lista de Precios</p>
+          <p>Interés: ${globalInterest}% anual | Pago inicial: 50% | Precios sujetos a cambios sin previo aviso</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
   };
 
   const filteredProducts = useMemo(() => {
@@ -329,15 +513,21 @@ export default function Calcuares() {
           </div>
 
           <div className="card">
-            <div className="search-container" style={{ margin: 0 }}>
-              <Search className="search-icon" size={20} />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
-                className="input search-input"
-              />
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div className="search-container" style={{ flex: 1, margin: 0 }}>
+                <Search className="search-icon" size={20} />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
+                  className="input search-input"
+                />
+              </div>
+              <button onClick={exportToPDF} className="btn btn-primary" title="Exportar a PDF">
+                <Download size={20} />
+                Exportar PDF
+              </button>
             </div>
             <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
               📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'disponibles'}
@@ -351,70 +541,77 @@ export default function Calcuares() {
               </p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
               {filteredProducts.map(product => {
                 const calc = calculateBackend(product);
                 const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
                 
                 return (
-                  <div key={product.id} className="card" style={{ border: '2px solid #e2e8f0', padding: '1.5rem' }}>
-                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.25rem' }}>{product.cod}</div>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
+                  <div key={product.id} className="card" style={{ border: '2px solid #e2e8f0', padding: '1rem' }}>
+                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '0.75rem' }}>
+                      <div style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: '0.25rem' }}>{product.cod}</div>
+                      <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.25rem', lineHeight: '1.2' }}>
                         {product.prod || 'Sin nombre'}
                       </h3>
                       {product.observaciones && (
-                        <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.75rem', fontStyle: 'italic' }}>
+                        <p style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.5rem', fontStyle: 'italic', lineHeight: '1.3' }}>
                           {product.observaciones}
                         </p>
                       )}
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <span className="badge badge-blue">{product.brand}</span>
-                        <span className="badge badge-purple">{product.ori}</span>
-                        <span className="badge badge-green">{product.cat}</span>
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                        <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>{product.brand}</span>
+                        <span className="badge badge-purple" style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>{product.ori}</span>
+                        <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '0.15rem 0.5rem' }}>{product.cat}</span>
                       </div>
                     </div>
 
-                    <div style={{ background: '#d1fae5', borderRadius: '10px', padding: '1rem', border: '2px solid #10b981' }}>
-                      <h4 style={{ color: '#065f46', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                    <div style={{ background: '#d1fae5', borderRadius: '8px', padding: '0.75rem', border: '2px solid #10b981' }}>
+                      <h4 style={{ color: '#065f46', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
                         💵 Precios de Venta
                         {sales.isFixedPrice && (
-                          <span className="badge badge-orange" style={{ marginLeft: '0.5rem', fontSize: '0.65rem' }}>PRECIO ESPECIAL</span>
+                          <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>
                         )}
                       </h4>
                       
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
-                          <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
+                          <span style={{ color: '#065f46', fontSize: '0.7rem' }}>💳 Contado (Neto):</span>
+                          <span style={{ fontWeight: '600', fontSize: '0.7rem' }}>${formatCurrency(sales.cashNet)}</span>
                         </div>
                         
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
-                          <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
-                        </div>
-                        
+                        {/* PRECIO DESTACADO - CONTADO + IVA */}
                         <div style={{ 
                           display: 'flex', 
-                          justifyContent: 'space-between', 
-                          paddingTop: '0.5rem', 
-                          borderTop: '2px solid #10b981',
-                          marginTop: '0.25rem'
+                          justifyContent: 'space-between',
+                          background: '#047857',
+                          padding: '0.5rem',
+                          borderRadius: '6px',
+                          margin: '0.25rem 0'
                         }}>
-                          <span style={{ color: '#047857', fontWeight: '700' }}>💰 Financiado + IVA:</span>
-                          <span style={{ color: '#047857', fontWeight: '700', fontSize: '1rem' }}>
-                            ${formatCurrency(sales.finIva)}
-                          </span>
+                          <span style={{ color: 'white', fontWeight: '700', fontSize: '0.85rem' }}>💳 CONTADO + IVA:</span>
+                          <span style={{ color: 'white', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashIva)}</span>
                         </div>
                         
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
-                          <span style={{ fontWeight: '600', color: '#059669' }}>${formatCurrency(sales.cuot)}</span>
+                        {/* Precios financiados - tipografía muy pequeña */}
+                        <div style={{ 
+                          paddingTop: '0.35rem', 
+                          borderTop: '1px solid #10b981',
+                          marginTop: '0.25rem'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
+                            <span style={{ color: '#065f46', fontSize: '0.6rem' }}>💰 Financiado + IVA:</span>
+                            <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.finIva)}</span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#065f46', fontSize: '0.6rem' }}>📅 Cuota (12 meses):</span>
+                            <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.cuot)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#64748b', textAlign: 'center', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.6rem', color: '#64748b', textAlign: 'center', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
                       Interés: {globalInterest}% anual | Pago inicial: 50%
                     </div>
                   </div>
