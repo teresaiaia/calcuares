@@ -162,6 +162,7 @@ export default function Calcuares() {
         fixed_price: parseFloat(product.fixed_price || 0),
         price_in_eur: product.price_in_eur || false,
         observaciones: product.observaciones || '',
+        precio_verificado: product.precio_verificado || false,
         flete_alto: parseFloat(product.flete_alto || 0),
         flete_ancho: parseFloat(product.flete_ancho || 0),
         flete_profundidad: parseFloat(product.flete_profundidad || 0),
@@ -266,6 +267,7 @@ export default function Calcuares() {
       fixed_price: 0,
       price_in_eur: false,
       observaciones: '',
+      precio_verificado: false,
       flete_alto: 0,
       flete_ancho: 0,
       flete_profundidad: 0,
@@ -1131,10 +1133,26 @@ export default function Calcuares() {
                     </div>
 
                     <div style={{ background: '#C8D9E6', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
-                      <h4 style={{ color: '#2F4156', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>
+                      <h4 style={{ color: '#2F4156', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                         PRECIOS DE VENTA
                         {!!sales.isFixedPrice && (
                           <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>
+                        )}
+                        {product.precio_verificado && (
+                          <span style={{ 
+                            background: '#10b981', 
+                            color: 'white', 
+                            fontSize: '0.6rem', 
+                            padding: '0.2rem 0.5rem', 
+                            borderRadius: '4px',
+                            fontWeight: '700',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            border: '1px solid #059669'
+                          }}>
+                            ✓ VERIFICADO
+                          </span>
                         )}
                       </h4>
                       
@@ -1535,6 +1553,40 @@ export default function Calcuares() {
                       <p style={{ fontSize: '0.75rem', color: '#9a3412', marginTop: '0.25rem' }}>
                         💡 Si ingresas un precio fijo, se usará en lugar del cálculo automático
                       </p>
+                    </div>
+
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label className="input-label" style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.75rem',
+                        cursor: 'pointer',
+                        padding: '0.5rem',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px',
+                        marginTop: '0.25rem'
+                      }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#567C8D' }}>
+                          Precio Verificado:
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={product.precio_verificado || false}
+                          onChange={(e) => handleInputChange(product.id, 'precio_verificado', e.target.checked)}
+                          style={{ 
+                            width: '1.25rem', 
+                            height: '1.25rem', 
+                            cursor: 'pointer',
+                            accentColor: '#10b981'
+                          }}
+                        />
+                        {product.precio_verificado && (
+                          <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '600' }}>
+                            ✓ Verificado
+                          </span>
+                        )}
+                      </label>
                     </div>
 
                     <div style={{ gridColumn: 'span 4' }}>
