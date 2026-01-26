@@ -72,7 +72,17 @@ export default function Calcuares() {
         margin: parseFloat(product.margin || 0),
         fixed_price: parseFloat(product.fixed_price || 0),
         price_in_eur: product.price_in_eur || false,
-        observaciones: product.observaciones || ''
+        observaciones: product.observaciones || '',
+        flete_alto: parseFloat(product.flete_alto || 0),
+        flete_ancho: parseFloat(product.flete_ancho || 0),
+        flete_profundidad: parseFloat(product.flete_profundidad || 0),
+        flete_peso_real: parseFloat(product.flete_peso_real || 0),
+        flete_coeficiente: parseFloat(product.flete_coeficiente || 5000),
+        flete_precio_kg_real: parseFloat(product.flete_precio_kg_real || 0),
+        flete_precio_kg_vol: parseFloat(product.flete_precio_kg_vol || 0),
+        flete_precio_fijo: parseFloat(product.flete_precio_fijo || 0),
+        flete_origen: product.flete_origen || '',
+        flete_obs: product.flete_obs || ''
       };
       
       if (product.id && product.id > 0) {
@@ -125,6 +135,28 @@ export default function Calcuares() {
     }
   };
 
+  // ============= FUNCIÓN DE CÁLCULO DE FLETE (solo para categoría UC) =============
+  
+  const calculateFleteProduct = useCallback((product) => {
+    const alto = parseFloat(product.flete_alto || 0);
+    const ancho = parseFloat(product.flete_ancho || 0);
+    const prof = parseFloat(product.flete_profundidad || 0);
+    const pesoReal = parseFloat(product.flete_peso_real || 0);
+    const coef = parseFloat(product.flete_coeficiente || 5000);
+    const precioKgReal = parseFloat(product.flete_precio_kg_real || 0);
+    const precioKgVol = parseFloat(product.flete_precio_kg_vol || 0);
+    
+    const pesoVolumetrico = (alto * ancho * prof) / coef;
+    const diferencia = pesoVolumetrico - pesoReal;
+    const costoTotal = (pesoReal * precioKgReal) + (Math.max(0, diferencia) * precioKgVol);
+    
+    return {
+      pesoVolumetrico,
+      diferencia,
+      costoTotal
+    };
+  }, []);
+
   const addProduct = () => {
     const tempId = -Date.now();
     const newProduct = {
@@ -144,7 +176,17 @@ export default function Calcuares() {
       margin: 0,
       fixed_price: 0,
       price_in_eur: false,
-      observaciones: ''
+      observaciones: '',
+      flete_alto: 0,
+      flete_ancho: 0,
+      flete_profundidad: 0,
+      flete_peso_real: 0,
+      flete_coeficiente: 5000,
+      flete_precio_kg_real: 0,
+      flete_precio_kg_vol: 0,
+      flete_precio_fijo: 0,
+      flete_origen: '',
+      flete_obs: ''
     };
     
     setProducts(prev => [newProduct, ...prev]);
@@ -1366,12 +1408,199 @@ export default function Calcuares() {
                       </div>
                     </div>
                   </div>
+
+                  {/* COTIZACIÓN DE FLETES - Solo para categoría UC */}
+                  {product.cat === 'UC' && (
+                    <div style={{ marginTop: '1.5rem', borderTop: '2px solid #e2e8f0', paddingTop: '1rem' }}>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        📦 Cotización de Flete (Referencia)
+                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '400' }}>
+                          • Solo para cálculo - No afecta precio final
+                        </span>
+                      </h4>
+                      
+                      {(() => {
+                        const fleteCalc = calculateFleteProduct(product);
+                        return (
+                          <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                              {/* Fila 1: Dimensiones y peso */}
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Alto (cm)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  defaultValue={product.flete_alto}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_alto', e.target.value)}
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Ancho (cm)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  defaultValue={product.flete_ancho}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_ancho', e.target.value)}
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Prof (cm)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  defaultValue={product.flete_profundidad}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_profundidad', e.target.value)}
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Peso Real (kg)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  defaultValue={product.flete_peso_real}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_peso_real', e.target.value)}
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Coeficiente
+                                </label>
+                                <input
+                                  type="number"
+                                  step="1"
+                                  defaultValue={product.flete_coeficiente}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_coeficiente', e.target.value)}
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                                <div style={{ background: '#f0f9ff', padding: '0.3rem 0.4rem', borderRadius: '4px', border: '1px solid #bae6fd', textAlign: 'center' }}>
+                                  <div style={{ fontSize: '0.6rem', color: '#0369a1', fontWeight: '600' }}>Peso Vol</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#0c4a6e', fontWeight: '700' }}>
+                                    {fleteCalc.pesoVolumetrico.toFixed(2)} kg
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                              {/* Fila 2: Precios */}
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  $/kg Real
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  defaultValue={product.flete_precio_kg_real}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_precio_kg_real', e.target.value)}
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  $/kg Vol
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  defaultValue={product.flete_precio_kg_vol}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_precio_kg_vol', e.target.value)}
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Precio Fijo
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  defaultValue={product.flete_precio_fijo || ''}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_precio_fijo', e.target.value)}
+                                  placeholder="Opcional"
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem', background: '#fffbeb' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Origen
+                                </label>
+                                <input
+                                  type="text"
+                                  defaultValue={product.flete_origen}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_origen', e.target.value)}
+                                  placeholder="País"
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
+                                  Observación
+                                </label>
+                                <input
+                                  type="text"
+                                  defaultValue={product.flete_obs}
+                                  onBlur={(e) => handleInputChange(product.id, 'flete_obs', e.target.value)}
+                                  placeholder="Ej: Dic 2024"
+                                  className="input"
+                                  style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                <div style={{ 
+                                  background: fleteCalc.diferencia > 0 ? '#fee2e2' : '#d1fae5', 
+                                  padding: '0.2rem 0.4rem', 
+                                  borderRadius: '4px', 
+                                  border: `1px solid ${fleteCalc.diferencia > 0 ? '#fca5a5' : '#86efac'}`,
+                                  textAlign: 'center'
+                                }}>
+                                  <div style={{ fontSize: '0.6rem', color: fleteCalc.diferencia > 0 ? '#991b1b' : '#065f46', fontWeight: '600' }}>
+                                    Diferencia
+                                  </div>
+                                  <div style={{ fontSize: '0.7rem', color: fleteCalc.diferencia > 0 ? '#7f1d1d' : '#064e3b', fontWeight: '700' }}>
+                                    {fleteCalc.diferencia > 0 ? '+' : ''}{fleteCalc.diferencia.toFixed(2)}
+                                  </div>
+                                </div>
+                                <div style={{ background: '#C8D9E6', padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid #567C8D', textAlign: 'center' }}>
+                                  <div style={{ fontSize: '0.6rem', color: '#2F4156', fontWeight: '600' }}>Costo Total</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#2F4156', fontWeight: '700' }}>
+                                    ${formatCurrency(fleteCalc.costoTotal)}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               );
             })
           )}
-        </>
-      )}
+
     </div>
   );
 }
