@@ -39,12 +39,6 @@ export default function Calcuares() {
   }, [globalInterest]);
 
   useEffect(() => {
-    checkSession();
-  }, []);
-
-  // ============= FUNCIONES DE AUTENTICACIÓN =============
-  
-  const checkSession = () => {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       const user = JSON.parse(savedUser);
@@ -55,7 +49,9 @@ export default function Calcuares() {
     } else {
       setLoading(false);
     }
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ============= FUNCIONES DE AUTENTICACIÓN =============
 
   const handleLogin = async (e) => {
     e.preventDefault();
