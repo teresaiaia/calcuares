@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './App.css';
 
@@ -18,6 +18,14 @@ export default function Calcuares() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin');
+  
+  // Estados de autenticación
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const categories = ['UC', 'HP', 'ACC', 'CONS', 'SRVP'];
 
@@ -31,8 +39,93 @@ export default function Calcuares() {
   }, [globalInterest]);
 
   useEffect(() => {
-    fetchProducts();
+    checkSession();
   }, []);
+
+  // ============= FUNCIONES DE AUTENTICACIÓN =============
+  
+  const checkSession = () => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      setView(user.rol === 'admin' ? 'admin' : 'ventas');
+      fetchProducts();
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoggingIn(true);
+
+    try {
+      // Buscar usuario en Supabase
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('email', loginEmail.toLowerCase().trim())
+        .eq('activo', true)
+        .single();
+
+      if (error || !data) {
+        setLoginError('Usuario o contraseña incorrectos');
+        setLoggingIn(false);
+        return;
+      }
+
+      // Por simplicidad, comparamos contraseña directamente
+      // En producción real, deberías usar bcrypt o similar
+      // Por ahora aceptamos cualquier contraseña que coincida
+      const isValidPassword = loginPassword === 'admin123' || loginPassword === 'vendedor123';
+      
+      if (!isValidPassword) {
+        setLoginError('Usuario o contraseña incorrectos');
+        setLoggingIn(false);
+        return;
+      }
+
+      // Actualizar último login
+      await supabase
+        .from('usuarios')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', data.id);
+
+      // Guardar usuario en localStorage
+      const userSession = {
+        id: data.id,
+        email: data.email,
+        nombre: data.nombre,
+        rol: data.rol
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(userSession));
+      setCurrentUser(userSession);
+      setIsAuthenticated(true);
+      setView(userSession.rol === 'admin' ? 'admin' : 'ventas');
+      
+      // Cargar productos
+      await fetchProducts();
+      
+    } catch (error) {
+      console.error('Error en login:', error);
+      setLoginError('Error al iniciar sesión. Intenta de nuevo.');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setLoginEmail('');
+    setLoginPassword('');
+    setView('admin');
+  };
 
   const fetchProducts = async () => {
     try {
@@ -817,6 +910,114 @@ export default function Calcuares() {
     );
   }
 
+  // Pantalla de Login
+  if (!isAuthenticated) {
+    return (
+      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div className="card" style={{ maxWidth: '450px', width: '100%', padding: '3rem', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '700', color: '#567C8D', marginBottom: '0.5rem' }}>
+              Calcuares
+            </h1>
+            <p style={{ color: '#64748b', fontSize: '1rem' }}>
+              Sistema de Gestión de Precios
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+              Ares Medical Equipment
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
+                📧 Correo Electrónico
+              </label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="usuario@ares.com"
+                className="input"
+                required
+                autoFocus
+                style={{ fontSize: '0.95rem', padding: '0.75rem' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
+                🔒 Contraseña
+              </label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input"
+                required
+                style={{ fontSize: '0.95rem', padding: '0.75rem' }}
+              />
+            </div>
+
+            {loginError && (
+              <div style={{ 
+                background: '#fee2e2', 
+                border: '1px solid #fca5a5', 
+                color: '#991b1b', 
+                padding: '0.75rem', 
+                borderRadius: '6px', 
+                marginBottom: '1.5rem',
+                fontSize: '0.875rem',
+                textAlign: 'center'
+              }}>
+                {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loggingIn}
+              className="btn btn-primary"
+              style={{ 
+                width: '100%', 
+                padding: '0.875rem', 
+                fontSize: '1rem', 
+                fontWeight: '600',
+                background: '#567C8D',
+                opacity: loggingIn ? 0.7 : 1,
+                cursor: loggingIn ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {loggingIn ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <RefreshCw className="animate-spin" size={18} />
+                  Iniciando sesión...
+                </span>
+              ) : (
+                'Iniciar Sesión'
+              )}
+            </button>
+          </form>
+
+          <div style={{ 
+            marginTop: '2rem', 
+            paddingTop: '1.5rem', 
+            borderTop: '1px solid #e2e8f0',
+            fontSize: '0.75rem',
+            color: '#94a3b8',
+            textAlign: 'center'
+          }}>
+            <p style={{ marginBottom: '0.5rem' }}>
+              <strong>Usuarios de prueba:</strong>
+            </p>
+            <p>Admin: admin@ares.com / admin123</p>
+            <p>Vendedor: vendedor@ares.com / vendedor123</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-container">
       {view === 'ventas' ? (
@@ -830,10 +1031,21 @@ export default function Calcuares() {
                 </h1>
                 <p style={{ color: 'white', fontSize: '1.1rem' }}>Catálogo de Productos y Cotizaciones</p>
               </div>
-              <button onClick={() => setView('admin')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
-                <DollarSign size={20} />
-                Panel Admin
-              </button>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                  <User size={16} />
+                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Usuario'}</span>
+                </div>
+                {currentUser?.rol === 'admin' && (
+                  <button onClick={() => setView('admin')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
+                    <DollarSign size={20} />
+                    Panel Admin
+                  </button>
+                )}
+                <button onClick={handleLogout} className="btn btn-danger" style={{ background: '#ef4444', color: 'white', border: 'none' }} title="Cerrar Sesión">
+                  <LogOut size={20} />
+                </button>
+              </div>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
@@ -998,6 +1210,13 @@ export default function Calcuares() {
                 <button onClick={() => setView('ventas')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
                   <Eye size={20} />
                   Vista de Ventas
+                </button>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                  <User size={16} />
+                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Admin'}</span>
+                </div>
+                <button onClick={handleLogout} className="btn btn-danger" style={{ background: '#ef4444', color: 'white', border: 'none' }} title="Cerrar Sesión">
+                  <LogOut size={20} />
                 </button>
               </div>
             </div>
