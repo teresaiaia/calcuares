@@ -997,20 +997,7 @@ export default function Calcuares() {
             </button>
           </form>
 
-          <div style={{ 
-            marginTop: '2rem', 
-            paddingTop: '1.5rem', 
-            borderTop: '1px solid #e2e8f0',
-            fontSize: '0.75rem',
-            color: '#94a3b8',
-            textAlign: 'center'
-          }}>
-            <p style={{ marginBottom: '0.5rem' }}>
-              <strong>Usuarios de prueba:</strong>
-            </p>
-            <p>Admin: admin@ares.com / admin123</p>
-            <p>Vendedor: vendedor@ares.com / vendedor123</p>
-          </div>
+
         </div>
       </div>
     );
