@@ -893,14 +893,30 @@ export default function Calcuares() {
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
-    const search = searchTerm.toLowerCase();
-    return products.filter(p => (
-      p.cod?.toLowerCase().includes(search) ||
-      p.brand?.toLowerCase().includes(search) ||
-      p.ori?.toLowerCase().includes(search) ||
-      p.prod?.toLowerCase().includes(search) ||
-      p.cat?.toLowerCase().includes(search)
-    ));
+    
+    // Separar términos de búsqueda por espacios
+    const searchTerms = searchTerm.toLowerCase().split(' ').filter(t => t.length > 0);
+    
+    return products.filter(p => {
+      // Concatenar todos los campos buscables en un solo string
+      const searchableText = [
+        p.cod,
+        p.brand,
+        p.ori,
+        p.prod,
+        p.cat,
+        p.observaciones,
+        // Agregar descripción si la categoría es relevante
+        p.cat === 'UC' ? 'unidad central equipo' : '',
+        p.cat === 'HP' ? 'handpiece pieza mano' : '',
+        p.cat === 'ACC' ? 'accesorio' : '',
+        p.cat === 'CONS' ? 'consumible' : '',
+        p.cat === 'SRVP' ? 'servicio' : ''
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      // Verificar que TODOS los términos de búsqueda estén presentes
+      return searchTerms.every(term => searchableText.includes(term));
+    });
   }, [products, searchTerm]);
 
   if (loading) {
