@@ -13,7 +13,9 @@ export default function Proveedores() {
 
   const [formData, setFormData] = useState({
     nombre_comercial: '',
-    datos_contacto: '',
+    contacto_comercial: '',
+    contacto_logistico: '',
+    contacto_administrativo: '',
     datos_bancarios: '',
     direccion_pickup: '',
     activo: true
@@ -44,7 +46,9 @@ export default function Proveedores() {
   const resetForm = () => {
     setFormData({
       nombre_comercial: '',
-      datos_contacto: '',
+      contacto_comercial: '',
+      contacto_logistico: '',
+      contacto_administrativo: '',
       datos_bancarios: '',
       direccion_pickup: '',
       activo: true
@@ -60,7 +64,9 @@ export default function Proveedores() {
   const openEditModal = (proveedor) => {
     setFormData({
       nombre_comercial: proveedor.nombre_comercial || '',
-      datos_contacto: proveedor.datos_contacto || '',
+      contacto_comercial: proveedor.contacto_comercial || '',
+      contacto_logistico: proveedor.contacto_logistico || '',
+      contacto_administrativo: proveedor.contacto_administrativo || '',
       datos_bancarios: proveedor.datos_bancarios || '',
       direccion_pickup: proveedor.direccion_pickup || '',
       activo: proveedor.activo !== false
@@ -99,7 +105,7 @@ export default function Proveedores() {
       setShowModal(false);
       resetForm();
     } catch (error) {
-      console.error('Error guardando proveedor:', error);
+      console.error('Error guardando:', error);
       alert('Error al guardar: ' + error.message);
     } finally {
       setSaving(false);
@@ -107,7 +113,7 @@ export default function Proveedores() {
   };
 
   const deleteProveedor = async (id, nombre) => {
-    if (!window.confirm(`¿Estás seguro de eliminar el proveedor "${nombre}"?`)) return;
+    if (!window.confirm(`¿Eliminar proveedor "${nombre}"?`)) return;
 
     try {
       const { error } = await supabase
@@ -118,7 +124,7 @@ export default function Proveedores() {
       if (error) throw error;
       await fetchProveedores();
     } catch (error) {
-      console.error('Error eliminando proveedor:', error);
+      console.error('Error eliminando:', error);
       alert('Error al eliminar: ' + error.message);
     }
   };
@@ -137,15 +143,22 @@ export default function Proveedores() {
     }
   };
 
-  const filteredProveedores = proveedores.filter(p => {
-    if (!searchTerm) return true;
-    const search = searchTerm.toLowerCase();
-    return (
-      p.nombre_comercial?.toLowerCase().includes(search) ||
-      p.datos_contacto?.toLowerCase().includes(search) ||
-      p.direccion_pickup?.toLowerCase().includes(search)
-    );
-  });
+  const filteredProveedores = proveedores.filter(p =>
+    p.nombre_comercial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.contacto_comercial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.contacto_logistico?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.contacto_administrativo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.direccion_pickup?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Función para obtener resumen de contactos
+  const getContactoResumen = (proveedor) => {
+    const contactos = [];
+    if (proveedor.contacto_comercial) contactos.push('Comercial');
+    if (proveedor.contacto_logistico) contactos.push('Logístico');
+    if (proveedor.contacto_administrativo) contactos.push('Administrativo');
+    return contactos.length > 0 ? contactos.join(' • ') : 'Sin contactos';
+  };
 
   if (loading) {
     return (
@@ -159,43 +172,35 @@ export default function Proveedores() {
   return (
     <div className="cc-container">
       {/* Header */}
-      <div className="cc-header-section">
-        <div className="cc-header-top">
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#2F4156', marginBottom: '0.25rem' }}>
-              <Building2 size={24} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} />
-              Gestión de Proveedores
-            </h2>
-            <p style={{ color: '#567C8D', fontSize: '0.9rem' }}>
-              Administra la información de tus proveedores
-            </p>
-          </div>
-          <button onClick={openNewModal} className="cc-btn cc-btn-primary">
-            <Plus size={18} />
-            Nuevo Proveedor
-          </button>
-        </div>
-
-        {/* Buscador */}
-        <div className="cc-filters">
-          <div className="cc-search-box">
-            <Search size={18} className="cc-search-icon" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar proveedores..."
-              className="cc-search-input"
-            />
-          </div>
-          <div style={{ color: '#567C8D', fontSize: '0.875rem' }}>
-            {filteredProveedores.length} proveedor{filteredProveedores.length !== 1 ? 'es' : ''}
-          </div>
+      <div className="cc-header">
+        <div>
+          <h1 className="cc-title">
+            <Building2 size={28} />
+            Proveedores
+          </h1>
+          <p className="cc-subtitle">Gestiona tu directorio de proveedores</p>
         </div>
       </div>
 
-      {/* Lista de Proveedores */}
-      <div className="cc-cards-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+      {/* Toolbar */}
+      <div className="cc-toolbar">
+        <div className="cc-search-box">
+          <Search size={18} />
+          <input
+            type="text"
+            placeholder="Buscar proveedor..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <button onClick={openNewModal} className="cc-btn cc-btn-primary">
+          <Plus size={18} />
+          Nuevo Proveedor
+        </button>
+      </div>
+
+      {/* Grid de Proveedores */}
+      <div className="cc-cards-grid">
         {filteredProveedores.map(proveedor => (
           <div key={proveedor.id} className="cc-card" style={{ opacity: proveedor.activo ? 1 : 0.6 }}>
             <div className="cc-card-header">
@@ -223,13 +228,9 @@ export default function Proveedores() {
             </div>
 
             <div className="cc-card-body">
-              {proveedor.datos_contacto && (
-                <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', whiteSpace: 'pre-line' }}>
-                  {proveedor.datos_contacto.length > 100 
-                    ? proveedor.datos_contacto.substring(0, 100) + '...' 
-                    : proveedor.datos_contacto}
-                </div>
-              )}
+              <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                📋 {getContactoResumen(proveedor)}
+              </div>
               {proveedor.direccion_pickup && (
                 <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
                   📍 {proveedor.direccion_pickup.length > 50 
@@ -284,8 +285,10 @@ export default function Proveedores() {
                 <div className="cc-form-section">
                   
                   {/* Empresa */}
-                  <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
-                    <label className="cc-form-label">Empresa *</label>
+                  <div className="cc-form-group" style={{ marginBottom: '1.5rem' }}>
+                    <label className="cc-form-label" style={{ fontSize: '1rem', fontWeight: '600' }}>
+                      Empresa *
+                    </label>
                     <input
                       type="text"
                       value={formData.nombre_comercial}
@@ -293,55 +296,115 @@ export default function Proveedores() {
                       className="cc-form-input"
                       placeholder="Nombre de la empresa"
                       required
+                      style={{ fontSize: '1.1rem', padding: '0.75rem' }}
                     />
                   </div>
 
-                  {/* Datos de Contacto */}
-                  <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
-                    <label className="cc-form-label">Datos de Contacto</label>
-                    <textarea
-                      value={formData.datos_contacto}
-                      onChange={(e) => setFormData({...formData, datos_contacto: e.target.value})}
-                      className="cc-form-textarea"
-                      rows="4"
-                      placeholder="Nombre del contacto, email, WhatsApp, teléfono..."
-                    />
+                  {/* Sección de Contactos */}
+                  <div style={{ 
+                    background: '#f8fafc', 
+                    padding: '1rem', 
+                    borderRadius: '8px', 
+                    marginBottom: '1.5rem',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <h3 style={{ 
+                      fontSize: '0.9rem', 
+                      fontWeight: '600', 
+                      color: '#2F4156', 
+                      marginBottom: '1rem',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Información de Contactos
+                    </h3>
+
+                    {/* Contacto Comercial */}
+                    <div className="cc-form-group" style={{ marginBottom: '1rem' }}>
+                      <label className="cc-form-label" style={{ color: '#567C8D', fontWeight: '600' }}>
+                        🏢 Contacto Comercial
+                      </label>
+                      <textarea
+                        value={formData.contacto_comercial}
+                        onChange={(e) => setFormData({...formData, contacto_comercial: e.target.value})}
+                        className="cc-form-input"
+                        rows="2"
+                        placeholder="Nombre, Teléfono, Email"
+                        style={{ resize: 'vertical', minHeight: '60px' }}
+                      />
+                    </div>
+
+                    {/* Contacto Logístico */}
+                    <div className="cc-form-group" style={{ marginBottom: '1rem' }}>
+                      <label className="cc-form-label" style={{ color: '#567C8D', fontWeight: '600' }}>
+                        🚚 Contacto Logístico
+                      </label>
+                      <textarea
+                        value={formData.contacto_logistico}
+                        onChange={(e) => setFormData({...formData, contacto_logistico: e.target.value})}
+                        className="cc-form-input"
+                        rows="2"
+                        placeholder="Nombre, Teléfono, Email"
+                        style={{ resize: 'vertical', minHeight: '60px' }}
+                      />
+                    </div>
+
+                    {/* Contacto Administrativo */}
+                    <div className="cc-form-group">
+                      <label className="cc-form-label" style={{ color: '#567C8D', fontWeight: '600' }}>
+                        📋 Contacto Administrativo
+                      </label>
+                      <textarea
+                        value={formData.contacto_administrativo}
+                        onChange={(e) => setFormData({...formData, contacto_administrativo: e.target.value})}
+                        className="cc-form-input"
+                        rows="2"
+                        placeholder="Nombre, Teléfono, Email"
+                        style={{ resize: 'vertical', minHeight: '60px' }}
+                      />
+                    </div>
                   </div>
 
                   {/* Datos Bancarios */}
                   <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
-                    <label className="cc-form-label">Datos Bancarios</label>
+                    <label className="cc-form-label">
+                      🏦 Datos Bancarios
+                    </label>
                     <textarea
                       value={formData.datos_bancarios}
                       onChange={(e) => setFormData({...formData, datos_bancarios: e.target.value})}
-                      className="cc-form-textarea"
-                      rows="4"
+                      className="cc-form-input"
+                      rows="3"
                       placeholder="Banco, cuenta, IBAN, SWIFT, moneda, VAT, condiciones de pago..."
                     />
                   </div>
 
                   {/* Dirección de Pickup */}
                   <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
-                    <label className="cc-form-label">Dirección de Pickup</label>
+                    <label className="cc-form-label">
+                      📍 Dirección de Pickup
+                    </label>
                     <textarea
                       value={formData.direccion_pickup}
                       onChange={(e) => setFormData({...formData, direccion_pickup: e.target.value})}
-                      className="cc-form-textarea"
-                      rows="3"
-                      placeholder="Dirección completa para recoger mercadería, horarios, instrucciones..."
+                      className="cc-form-input"
+                      rows="2"
+                      placeholder="Dirección completa, horarios, instrucciones..."
                     />
                   </div>
 
-                  {/* Proveedor Activo */}
+                  {/* Activo */}
                   <div className="cc-form-group">
-                    <label className="cc-form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={formData.activo}
                         onChange={(e) => setFormData({...formData, activo: e.target.checked})}
-                        style={{ width: '18px', height: '18px' }}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
                       />
-                      Proveedor Activo
+                      <span className="cc-form-label" style={{ marginBottom: 0 }}>
+                        Proveedor Activo
+                      </span>
                     </label>
                   </div>
 
@@ -349,21 +412,20 @@ export default function Proveedores() {
               </div>
 
               <div className="cc-modal-footer">
-                <button type="button" onClick={() => setShowModal(false)} className="cc-btn cc-btn-secondary">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="cc-btn cc-btn-secondary"
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="cc-btn cc-btn-primary" disabled={saving}>
-                  {saving ? (
-                    <>
-                      <span className="cc-spinner-small"></span>
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={18} />
-                      {editingProveedor ? 'Actualizar' : 'Guardar'}
-                    </>
-                  )}
+                <button
+                  type="submit"
+                  className="cc-btn cc-btn-primary"
+                  disabled={saving}
+                >
+                  <Save size={18} />
+                  {saving ? 'Guardando...' : (editingProveedor ? 'Actualizar' : 'Guardar')}
                 </button>
               </div>
             </form>
