@@ -60,7 +60,8 @@ export default function ComprasCargas() {
     gastos_extras: '',
     costo_despacho: '',
     numero_guia: '',
-    estado_carga_id: ''
+    estado_carga_id: '',
+    notas_carga: ''
   });
 
   // Cargar datos iniciales
@@ -251,7 +252,8 @@ export default function ComprasCargas() {
       gastos_extras: '',
       costo_despacho: '',
       numero_guia: '',
-      estado_carga_id: estadosCarga[0]?.id || ''
+      estado_carga_id: estadosCarga[0]?.id || '',
+      notas_carga: ''
     });
     setShowModal(true);
   };
@@ -325,7 +327,8 @@ export default function ComprasCargas() {
         gastos_extras: data.gastos_extras || '',
         costo_despacho: data.costo_despacho || '',
         numero_guia: data.numero_guia || '',
-        estado_carga_id: data.estado_carga_id || ''
+        estado_carga_id: data.estado_carga_id || '',
+        notas_carga: data.notas_carga || ''
       });
       setShowModal(true);
     } catch (error) {
@@ -373,7 +376,8 @@ export default function ComprasCargas() {
         gastos_extras: formData.gastos_extras ? parseFloat(formData.gastos_extras) : null,
         costo_despacho: formData.costo_despacho ? parseFloat(formData.costo_despacho) : null,
         numero_guia: formData.numero_guia || null,
-        estado_carga_id: formData.estado_carga_id || null
+        estado_carga_id: formData.estado_carga_id || null,
+        notas_carga: formData.notas_carga || null
       };
 
       let error;
@@ -932,6 +936,16 @@ export default function ComprasCargas() {
                         <option key={e.id} value={e.id}>{e.nombre}</option>
                       ))}
                     </select>
+                  </div>
+                  <div className="cc-form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="cc-form-label">Notas de Carga</label>
+                    <input
+                      type="text"
+                      className="cc-form-input"
+                      value={formData.notas_carga}
+                      onChange={(e) => handleInputChange('notas_carga', e.target.value)}
+                      placeholder="Notas adicionales sobre la carga..."
+                    />
                   </div>
                 </div>
               </div>
