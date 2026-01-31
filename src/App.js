@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, DollarSign, LogOut, User, Package } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './App.css';
 import ComprasCargas from './ComprasCargas';
