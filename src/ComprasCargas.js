@@ -41,6 +41,7 @@ export default function ComprasCargas() {
     volumen: '',
     transportista: '',
     despachante: '',
+    monto_compra: '',
     cotizacion_carga: '',
     costo_carga: '',
     gastos_extras: '',
@@ -228,6 +229,7 @@ export default function ComprasCargas() {
       volumen: '',
       transportista: '',
       despachante: '',
+      monto_compra: '',
       cotizacion_carga: '',
       costo_carga: '',
       gastos_extras: '',
@@ -284,6 +286,7 @@ export default function ComprasCargas() {
         volumen: data.volumen || '',
         transportista: data.transportista || '',
         despachante: data.despachante || '',
+        monto_compra: data.monto_compra || '',
         cotizacion_carga: data.cotizacion_carga || '',
         costo_carga: data.costo_carga || '',
         gastos_extras: data.gastos_extras || '',
@@ -326,6 +329,7 @@ export default function ComprasCargas() {
         volumen: formData.volumen ? parseFloat(formData.volumen) : null,
         transportista: formData.transportista || null,
         despachante: formData.despachante || null,
+        monto_compra: formData.monto_compra ? parseFloat(formData.monto_compra) : null,
         cotizacion_carga: formData.cotizacion_carga ? parseFloat(formData.cotizacion_carga) : null,
         costo_carga: formData.costo_carga ? parseFloat(formData.costo_carga) : null,
         gastos_extras: formData.gastos_extras ? parseFloat(formData.gastos_extras) : null,
@@ -839,24 +843,23 @@ export default function ComprasCargas() {
                     </select>
                   </div>
                 </div>
-                <div className="cc-form-grid" style={{ marginTop: '1rem' }}>
-                  <div className="cc-form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="cc-form-label">Dirección de Pick-up</label>
-                    <textarea
-                      className="cc-form-input"
-                      rows="2"
-                      value={formData.direccion_pickup}
-                      onChange={(e) => handleInputChange('direccion_pickup', e.target.value)}
-                      placeholder="Dirección completa de recogida..."
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Costos */}
               <div className="cc-form-section">
                 <h3 className="cc-section-title">Costos</h3>
                 <div className="cc-form-grid">
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Monto de la Compra</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.monto_compra}
+                      onChange={(e) => handleInputChange('monto_compra', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
                   <div className="cc-form-group">
                     <label className="cc-form-label">Cotización Carga</label>
                     <input
@@ -866,6 +869,7 @@ export default function ComprasCargas() {
                       value={formData.cotizacion_carga}
                       onChange={(e) => handleInputChange('cotizacion_carga', e.target.value)}
                       placeholder="0.00"
+                      style={{ background: '#f8fafc' }}
                     />
                   </div>
                   <div className="cc-form-group">
@@ -912,6 +916,30 @@ export default function ComprasCargas() {
                       placeholder="0.00"
                     />
                   </div>
+                </div>
+                
+                {/* Total */}
+                <div style={{ 
+                  marginTop: '1.5rem', 
+                  padding: '1rem 1.5rem', 
+                  background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)', 
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ color: 'white', fontWeight: '600', fontSize: '1rem' }}>
+                    TOTAL (sin cotización de carga)
+                  </span>
+                  <span style={{ color: 'white', fontWeight: '700', fontSize: '1.5rem' }}>
+                    $ {(
+                      (parseFloat(formData.monto_compra) || 0) +
+                      (parseFloat(formData.costo_carga) || 0) +
+                      (parseFloat(formData.gastos_extras) || 0) +
+                      (parseFloat(formData.costo_despacho) || 0) +
+                      (parseFloat(formData.costo_transferencia) || 0)
+                    ).toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
             </div>
