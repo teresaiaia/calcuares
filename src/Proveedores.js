@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Plus, Edit2, Trash2, X, Save, Building2, User, Phone, Mail, MapPin, CreditCard, Globe, FileText } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, Building2, User, Phone, Mail, MapPin, CreditCard } from 'lucide-react';
 import './ComprasCargas.css';
 
 export default function Proveedores() {
