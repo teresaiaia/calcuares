@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2 } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2, ChevronDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ComprasCargas from './ComprasCargas';
 import Proveedores from './Proveedores';
@@ -21,6 +21,7 @@ export default function Calcuares() {
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin');
   const [activeModule, setActiveModule] = useState('calculos'); // 'calculos', 'compras' o 'proveedores'
+  const [expandedFlete, setExpandedFlete] = useState({}); // Para controlar qué tarjetas tienen flete expandido
   
   // Estados de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -1362,28 +1363,28 @@ export default function Calcuares() {
               const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
               
               return (
-                <div key={product.id} className="card product-card" style={{ padding: '1rem' }}>
-                  <div className="product-header" style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem' }}>
+                <div key={product.id} className="card product-card" style={{ padding: '0.75rem' }}>
+                  <div className="product-header" style={{ marginBottom: '0.5rem', paddingBottom: '0.5rem' }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <div style={{ fontSize: '0.6rem', color: '#94a3b8', marginBottom: '0.1rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {product.cod || '🆕 NUEVO'}
                       </div>
-                      <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', lineHeight: '1.3', marginBottom: '0.5rem' }}>
+                      <h2 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e293b', lineHeight: '1.2', marginBottom: '0.25rem' }}>
                         {product.prod || 'Sin modelo definido'}
                       </h2>
                       
                       {/* OBSERVACIONES DESTACADAS */}
                       {product.observaciones && (
                         <div style={{ 
-                          marginTop: '0.5rem',
-                          paddingTop: '0.5rem',
+                          marginTop: '0.25rem',
+                          paddingTop: '0.25rem',
                           borderTop: '1px solid #e2e8f0'
                         }}>
                           <p style={{ 
-                            fontSize: '0.85rem', 
+                            fontSize: '0.75rem', 
                             color: '#1e293b', 
-                            fontWeight: '700',
-                            lineHeight: '1.4',
+                            fontWeight: '600',
+                            lineHeight: '1.3',
                             margin: 0,
                             fontStyle: 'italic'
                           }}>
@@ -1395,14 +1396,14 @@ export default function Calcuares() {
                     <button
                       onClick={() => deleteProduct(product.id)}
                       className="btn btn-danger"
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', alignSelf: 'flex-start' }}
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.7rem', alignSelf: 'flex-start' }}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                       Eliminar
                     </button>
                   </div>
 
-                  <div className="grid grid-4" style={{ gap: '0.6rem' }}>
+                  <div className="grid grid-4" style={{ gap: '0.4rem' }}>
                     <div>
                       <label className="input-label">📝 Código (COD)</label>
                       <input
@@ -1715,16 +1716,42 @@ export default function Calcuares() {
                     </div>
                   </div>
 
-                  {/* COTIZACIÓN DE FLETES - Solo para categoría UC */}
+                  {/* COTIZACIÓN DE FLETES - Solo para categoría UC - ACORDEÓN */}
                   {product.cat === 'UC' && (
-                    <div style={{ marginTop: '1.5rem', borderTop: '2px solid #e2e8f0', paddingTop: '1rem' }}>
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        📦 Cotización de Flete (Referencia)
-                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '400' }}>
-                          • Solo para cálculo - No afecta precio final
+                    <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
+                      <button
+                        onClick={() => setExpandedFlete(prev => ({ ...prev, [product.id]: !prev[product.id] }))}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.5rem 0.75rem',
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          📦 Cotización de Flete (Referencia)
+                          <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '400' }}>
+                            • No afecta precio final
+                          </span>
                         </span>
-                      </h4>
+                        <ChevronDown 
+                          size={18} 
+                          style={{ 
+                            color: '#64748b',
+                            transition: 'transform 0.2s',
+                            transform: expandedFlete[product.id] ? 'rotate(180deg)' : 'rotate(0deg)'
+                          }} 
+                        />
+                      </button>
                       
+                      {expandedFlete[product.id] && (
+                      <div style={{ marginTop: '0.5rem' }}>
                       {(() => {
                         const fleteCalc = calculateFleteProduct(product);
                         return (
@@ -1900,6 +1927,8 @@ export default function Calcuares() {
                           </div>
                         );
                       })()}
+                      </div>
+                      )}
                     </div>
                   )}
                 </div>
