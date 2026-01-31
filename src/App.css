@@ -1,18 +1,26 @@
-/* Variables de colores */
+/* Variables de colores - Paleta Ares Medical Equipment */
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  /* Colores base Ares */
+  --ares-white: #FFFFFF;
+  --ares-cream: #F5F0EB;
+  --ares-light-blue: #C8D9E6;
+  --ares-blue: #567C8D;
+  --ares-dark-blue: #2F4156;
+  
+  /* Colores funcionales */
+  --primary: #567C8D;
+  --primary-hover: #2F4156;
   --success: #10b981;
   --success-hover: #059669;
   --danger: #ef4444;
   --danger-hover: #dc2626;
-  --secondary: #64748b;
-  --secondary-hover: #475569;
-  --background: #f8fafc;
-  --card-bg: #ffffff;
-  --border: #e2e8f0;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
+  --secondary: #567C8D;
+  --secondary-hover: #2F4156;
+  --background: #F5F0EB;
+  --card-bg: #FFFFFF;
+  --border: #C8D9E6;
+  --text-primary: #2F4156;
+  --text-secondary: #567C8D;
 }
 
 * {
