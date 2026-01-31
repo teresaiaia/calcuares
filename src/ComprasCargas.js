@@ -747,7 +747,7 @@ export default function ComprasCargas() {
                     />
                   </div>
                   <div className="cc-form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="cc-form-label">Datos de Transferencia Bancaria</label>
+                    <label className="cc-form-label">Información de la Transferencia Bancaria</label>
                     <textarea
                       className="cc-form-input"
                       rows="2"
