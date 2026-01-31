@@ -895,7 +895,11 @@ export default function Calcuares() {
     if (!searchTerm) return products;
     
     // Separar términos de búsqueda por espacios
-    const searchTerms = searchTerm.toLowerCase().split(' ').filter(t => t.length > 0);
+    const allTerms = searchTerm.toLowerCase().split(' ').filter(t => t.length > 0);
+    
+    // Separar términos positivos (incluir) y negativos (excluir con -)
+    const includeTerms = allTerms.filter(t => !t.startsWith('-'));
+    const excludeTerms = allTerms.filter(t => t.startsWith('-')).map(t => t.substring(1)).filter(t => t.length > 0);
     
     return products.filter(p => {
       // Concatenar todos los campos buscables en un solo string
@@ -914,8 +918,13 @@ export default function Calcuares() {
         p.cat === 'SRVP' ? 'servicio' : ''
       ].filter(Boolean).join(' ').toLowerCase();
       
-      // Verificar que TODOS los términos de búsqueda estén presentes
-      return searchTerms.every(term => searchableText.includes(term));
+      // Verificar que TODOS los términos positivos estén presentes
+      const includesAll = includeTerms.length === 0 || includeTerms.every(term => searchableText.includes(term));
+      
+      // Verificar que NINGUNO de los términos negativos esté presente
+      const excludesAll = excludeTerms.length === 0 || excludeTerms.every(term => !searchableText.includes(term));
+      
+      return includesAll && excludesAll;
     });
   }, [products, searchTerm]);
 
