@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Download, Plus, Eye, Trash2, X, Package } from 'lucide-react';
+import { Search, Download, Plus, Eye, Trash2, X, Package, ChevronUp, ChevronDown, FileSpreadsheet } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import './ComprasCargas.css';
 
 // Función helper para formatear fecha a DD/MM/YY
@@ -22,6 +23,9 @@ export default function ComprasCargas() {
   const [estadosCarga, setEstadosCarga] = useState([]);
   const [metodosPago, setMetodosPago] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  
+  // Estado para ordenamiento de columnas
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   
   // Estados de UI
   const [loading, setLoading] = useState(true);
@@ -189,8 +193,36 @@ export default function ComprasCargas() {
       filtered = filtered.filter(item => item.proveedor_nombre === filterProveedor);
     }
 
+    // Ordenamiento por columna
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+        
+        // Manejo especial para fechas
+        if (sortConfig.key === 'fecha_orden') {
+          aVal = new Date(aVal || 0);
+          bVal = new Date(bVal || 0);
+        }
+        // Manejo especial para números
+        else if (sortConfig.key === 'costo_total') {
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
+        }
+        // Manejo para strings
+        else {
+          aVal = (aVal || '').toString().toLowerCase();
+          bVal = (bVal || '').toString().toLowerCase();
+        }
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
     return filtered;
-  }, [compras, searchTerm, filterEstado, filterProveedor]);
+  }, [compras, searchTerm, filterEstado, filterProveedor, sortConfig]);
 
   // Estadísticas
   const stats = useMemo(() => {
@@ -431,6 +463,24 @@ export default function ComprasCargas() {
     }
   };
 
+  // Función para ordenar columnas
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Componente de icono de ordenamiento
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) {
+      return <ChevronUp size={14} style={{ opacity: 0.3 }} />;
+    }
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp size={14} style={{ color: '#567C8D' }} />
+      : <ChevronDown size={14} style={{ color: '#567C8D' }} />;
+  };
+
   // Exportar a PDF
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -470,6 +520,50 @@ export default function ComprasCargas() {
     doc.save(`compras-cargas-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
+  // Exportar a Excel
+  const exportToExcel = () => {
+    const excelData = filteredCompras.map(item => ({
+      'Código': item.codigo_orden || '',
+      'Fecha': formatFecha(item.fecha_orden),
+      'Proveedor': item.proveedor_nombre || '',
+      'Categoría': item.categoria_nombre || '',
+      'Descripción': item.descripcion || '',
+      'Método Pago': item.metodo_pago_nombre || '',
+      'Banco Pagador': item.banco_pagador || '',
+      'Origen': item.origen || '',
+      'Transportista': item.transportista || '',
+      'Despachante': item.despachante || '',
+      'Peso (kg)': item.peso || '',
+      'Volumen (m³)': item.volumen || '',
+      'Número de Guía': item.numero_guia || '',
+      'Estado': item.estado || '',
+      'Notas de Carga': item.notas_carga || '',
+      'Monto Compra': item.monto_compra || 0,
+      'Cotización Carga': item.cotizacion_carga || 0,
+      'Costo Real Carga': item.costo_carga || 0,
+      'Gastos Extras': item.gastos_extras || 0,
+      'Costo Despacho': item.costo_despacho || 0,
+      'Costo Transferencia': item.costo_transferencia || 0,
+      'COSTO TOTAL': item.costo_total || 0
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Compras y Cargas');
+    
+    // Ajustar ancho de columnas
+    const colWidths = [
+      { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 30 },
+      { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 20 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 15 }, { wch: 12 }
+    ];
+    ws['!cols'] = colWidths;
+
+    XLSX.writeFile(wb, `compras-cargas-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   const formatCurrency = (value) => {
     if (!value) return '0.00';
     return parseFloat(value).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -507,7 +601,7 @@ export default function ComprasCargas() {
           <div className="cc-stat-value">{stats.pendientes}</div>
         </div>
         <div className="cc-stat-card">
-          <div className="cc-stat-label">Total Gastado (mes)</div>
+          <div className="cc-stat-label">Compras Programadas (mes)</div>
           <div className="cc-stat-value">${formatCurrency(stats.totalMes)}</div>
         </div>
       </div>
@@ -548,7 +642,11 @@ export default function ComprasCargas() {
         </div>
         <button className="cc-btn cc-btn-secondary" onClick={exportToPDF}>
           <Download size={16} />
-          Exportar PDF
+          PDF
+        </button>
+        <button className="cc-btn cc-btn-secondary" onClick={exportToExcel}>
+          <FileSpreadsheet size={16} />
+          Excel
         </button>
         <button className="cc-btn cc-btn-primary" onClick={openNewModal}>
           <Plus size={16} />
@@ -582,14 +680,46 @@ export default function ComprasCargas() {
             <table className="cc-table">
               <thead>
                 <tr>
-                  <th>Código</th>
-                  <th>Fecha</th>
-                  <th>Proveedor</th>
-                  <th>Origen</th>
-                  <th>Transportista</th>
-                  <th>Estado</th>
-                  <th>Tracking</th>
-                  <th>Costo Total</th>
+                  <th onClick={() => handleSort('codigo_orden')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Código <SortIcon columnKey="codigo_orden" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('fecha_orden')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Fecha <SortIcon columnKey="fecha_orden" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('proveedor_nombre')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Proveedor <SortIcon columnKey="proveedor_nombre" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('origen')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Origen <SortIcon columnKey="origen" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('transportista')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Transportista <SortIcon columnKey="transportista" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('estado')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Estado <SortIcon columnKey="estado" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('numero_guia')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Tracking <SortIcon columnKey="numero_guia" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('costo_total')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Costo Total <SortIcon columnKey="costo_total" />
+                    </div>
+                  </th>
                   <th></th>
                 </tr>
               </thead>
