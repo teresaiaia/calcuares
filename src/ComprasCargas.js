@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Download, Plus, Eye, Edit2, Trash2, X, Package } from 'lucide-react';
+import { Search, Download, Plus, Eye, Trash2, X, Package } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import './ComprasCargas.css';
@@ -52,7 +52,7 @@ export default function ComprasCargas() {
   // Cargar datos iniciales
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadInitialData = async () => {
     try {
