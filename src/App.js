@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import ComprasCargas from './ComprasCargas';
 import './App.css';
 
 export default function Calcuares() {
@@ -18,6 +19,7 @@ export default function Calcuares() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin');
+  const [activeModule, setActiveModule] = useState('calculos'); // 'calculos' o 'compras'
   
   // Estados de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -1193,13 +1195,42 @@ export default function Calcuares() {
       ) : (
         // VISTA ADMIN
         <>
-          <div className="card header-card" style={{ background: '#567C8D' }}>
+          <div className="card header-card" style={{ background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-                  Calcuares
-                </h1>
-                <p style={{ color: 'white', fontSize: '1.1rem' }}>Calculadora de Precios - Ares Medical Equipment</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                <div>
+                  <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
+                    ⚡ Adminares
+                  </h1>
+                  <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem' }}>Sistema de Gestión - Ares Medical Equipment</p>
+                </div>
+                {/* Navegación entre módulos */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button 
+                    onClick={() => setActiveModule('calculos')} 
+                    className="btn" 
+                    style={{ 
+                      background: activeModule === 'calculos' ? 'white' : 'transparent', 
+                      color: activeModule === 'calculos' ? '#567C8D' : 'white',
+                      border: '2px solid white'
+                    }}
+                  >
+                    <DollarSign size={18} />
+                    Cálculos
+                  </button>
+                  <button 
+                    onClick={() => setActiveModule('compras')} 
+                    className="btn" 
+                    style={{ 
+                      background: activeModule === 'compras' ? 'white' : 'transparent', 
+                      color: activeModule === 'compras' ? '#567C8D' : 'white',
+                      border: '2px solid white'
+                    }}
+                  >
+                    <Package size={18} />
+                    Compras y Cargas
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                 {saving && (
@@ -1210,14 +1241,15 @@ export default function Calcuares() {
                 )}
                 <button onClick={() => setView('ventas')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
                   <Eye size={20} />
-                  Vista de Ventas
+                  Vista Ventas
                 </button>
                 <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
                   <User size={16} />
-                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Admin'}</span>
+                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Administrador'}</span>
                 </div>
-                <button onClick={handleLogout} className="btn btn-danger" style={{ background: '#ef4444', color: 'white', border: 'none' }} title="Cerrar Sesión">
+                <button onClick={handleLogout} className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none' }} title="Salir">
                   <LogOut size={20} />
+                  Salir
                 </button>
               </div>
             </div>
@@ -1263,6 +1295,11 @@ export default function Calcuares() {
             </div>
           </div>
 
+          {/* Contenido según módulo activo */}
+          {activeModule === 'compras' ? (
+            <ComprasCargas />
+          ) : (
+          <>
           <div className="card">
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <div className="search-container" style={{ flex: 1, margin: 0 }}>
@@ -1853,6 +1890,8 @@ export default function Calcuares() {
                 </div>
               );
             })
+          )}
+        </>
           )}
         </>
       )}
