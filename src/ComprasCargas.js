@@ -33,13 +33,16 @@ export default function ComprasCargas() {
     descripcion: '',
     metodo_pago_id: '',
     banco_pagador: '',
+    banco_pagador_otro: '',
     costo_transferencia: '',
     datos_transferencia: '',
     origen: '',
+    origen_otro: '',
     direccion_pickup: '',
     peso: '',
     volumen: '',
     transportista: '',
+    transportista_otro: '',
     despachante: '',
     monto_compra: '',
     cotizacion_carga: '',
@@ -221,14 +224,17 @@ export default function ComprasCargas() {
       descripcion: '',
       metodo_pago_id: '',
       banco_pagador: '',
+      banco_pagador_otro: '',
       costo_transferencia: '',
       datos_transferencia: '',
       origen: '',
+      origen_otro: '',
       direccion_pickup: '',
       peso: '',
       volumen: '',
       transportista: '',
-      despachante: '',
+      transportista_otro: '',
+      despachante: 'PROCARGO',
       monto_compra: '',
       cotizacion_carga: '',
       costo_carga: '',
@@ -268,6 +274,20 @@ export default function ComprasCargas() {
 
       if (error) throw error;
 
+      // Determinar si los valores son de la lista o "Otros"
+      const origenesLista = ['España', 'Israel', 'Estados Unidos', 'Argentina', 'Bulgaria', 'Corea'];
+      const transportistasLista = ['DHL', 'PGBX', 'FEDEX', 'UNBOX'];
+      const bancosLista = ['Itaú', 'Atlas', 'Citi', 'MXCB'];
+
+      const origenValue = data.origen || '';
+      const esOrigenOtro = origenValue && !origenesLista.includes(origenValue);
+      
+      const transportistaValue = data.transportista || '';
+      const esTransportistaOtro = transportistaValue && !transportistasLista.includes(transportistaValue);
+      
+      const bancoValue = data.banco_pagador || '';
+      const esBancoOtro = bancoValue && !bancosLista.includes(bancoValue);
+
       setEditingItem(data);
       setFormData({
         fecha_orden: data.fecha_orden || '',
@@ -277,14 +297,17 @@ export default function ComprasCargas() {
         categoria_id: data.categoria_id || '',
         descripcion: data.descripcion || '',
         metodo_pago_id: data.metodo_pago_id || '',
-        banco_pagador: data.banco_pagador || '',
+        banco_pagador: esBancoOtro ? 'Otros' : bancoValue,
+        banco_pagador_otro: esBancoOtro ? bancoValue : '',
         costo_transferencia: data.costo_transferencia || '',
         datos_transferencia: data.datos_transferencia || '',
-        origen: data.origen || '',
+        origen: esOrigenOtro ? 'Otros' : origenValue,
+        origen_otro: esOrigenOtro ? origenValue : '',
         direccion_pickup: data.direccion_pickup || '',
         peso: data.peso || '',
         volumen: data.volumen || '',
-        transportista: data.transportista || '',
+        transportista: esTransportistaOtro ? 'Otros' : transportistaValue,
+        transportista_otro: esTransportistaOtro ? transportistaValue : '',
         despachante: data.despachante || '',
         monto_compra: data.monto_compra || '',
         cotizacion_carga: data.cotizacion_carga || '',
@@ -312,6 +335,11 @@ export default function ComprasCargas() {
 
       setSaving(true);
 
+      // Determinar valores finales (si es "Otros", usar el campo _otro)
+      const origenFinal = formData.origen === 'Otros' ? formData.origen_otro : formData.origen;
+      const transportistaFinal = formData.transportista === 'Otros' ? formData.transportista_otro : formData.transportista;
+      const bancoPagadorFinal = formData.banco_pagador === 'Otros' ? formData.banco_pagador_otro : formData.banco_pagador;
+
       const dataToSave = {
         fecha_orden: formData.fecha_orden,
         codigo_orden: formData.codigo_orden,
@@ -320,14 +348,14 @@ export default function ComprasCargas() {
         categoria_id: formData.categoria_id || null,
         descripcion: formData.descripcion || null,
         metodo_pago_id: formData.metodo_pago_id || null,
-        banco_pagador: formData.banco_pagador || null,
+        banco_pagador: bancoPagadorFinal || null,
         costo_transferencia: formData.costo_transferencia ? parseFloat(formData.costo_transferencia) : null,
         datos_transferencia: formData.datos_transferencia || null,
-        origen: formData.origen || null,
+        origen: origenFinal || null,
         direccion_pickup: formData.direccion_pickup || null,
         peso: formData.peso ? parseFloat(formData.peso) : null,
         volumen: formData.volumen ? parseFloat(formData.volumen) : null,
-        transportista: formData.transportista || null,
+        transportista: transportistaFinal || null,
         despachante: formData.despachante || null,
         monto_compra: formData.monto_compra ? parseFloat(formData.monto_compra) : null,
         cotizacion_carga: formData.cotizacion_carga ? parseFloat(formData.cotizacion_carga) : null,
@@ -730,14 +758,31 @@ export default function ComprasCargas() {
                   </div>
                   <div className="cc-form-group">
                     <label className="cc-form-label">Banco Pagador</label>
-                    <input
-                      type="text"
+                    <select
                       className="cc-form-input"
                       value={formData.banco_pagador}
                       onChange={(e) => handleInputChange('banco_pagador', e.target.value)}
-                      placeholder="Nombre del banco"
-                    />
+                    >
+                      <option value="">Seleccionar banco...</option>
+                      <option value="Itaú">Itaú</option>
+                      <option value="Atlas">Atlas</option>
+                      <option value="Citi">Citi</option>
+                      <option value="MXCB">MXCB</option>
+                      <option value="Otros">Otros</option>
+                    </select>
                   </div>
+                  {formData.banco_pagador === 'Otros' && (
+                    <div className="cc-form-group">
+                      <label className="cc-form-label">Especificar Banco</label>
+                      <input
+                        type="text"
+                        className="cc-form-input"
+                        value={formData.banco_pagador_otro}
+                        onChange={(e) => handleInputChange('banco_pagador_otro', e.target.value)}
+                        placeholder="Nombre del banco"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="cc-form-grid" style={{ marginTop: '1rem' }}>
                   <div className="cc-form-group" style={{ gridColumn: '1 / -1' }}>
@@ -769,24 +814,60 @@ export default function ComprasCargas() {
                 <div className="cc-form-grid">
                   <div className="cc-form-group">
                     <label className="cc-form-label">Origen</label>
-                    <input
-                      type="text"
+                    <select
                       className="cc-form-input"
                       value={formData.origen}
                       onChange={(e) => handleInputChange('origen', e.target.value)}
-                      placeholder="País de origen"
-                    />
+                    >
+                      <option value="">Seleccionar origen...</option>
+                      <option value="España">España</option>
+                      <option value="Israel">Israel</option>
+                      <option value="Estados Unidos">Estados Unidos</option>
+                      <option value="Argentina">Argentina</option>
+                      <option value="Bulgaria">Bulgaria</option>
+                      <option value="Corea">Corea</option>
+                      <option value="Otros">Otros</option>
+                    </select>
                   </div>
+                  {formData.origen === 'Otros' && (
+                    <div className="cc-form-group">
+                      <label className="cc-form-label">Especificar Origen</label>
+                      <input
+                        type="text"
+                        className="cc-form-input"
+                        value={formData.origen_otro}
+                        onChange={(e) => handleInputChange('origen_otro', e.target.value)}
+                        placeholder="País de origen"
+                      />
+                    </div>
+                  )}
                   <div className="cc-form-group">
                     <label className="cc-form-label">Transportista</label>
-                    <input
-                      type="text"
+                    <select
                       className="cc-form-input"
                       value={formData.transportista}
                       onChange={(e) => handleInputChange('transportista', e.target.value)}
-                      placeholder="DHL, FedEx, etc."
-                    />
+                    >
+                      <option value="">Seleccionar transportista...</option>
+                      <option value="DHL">DHL</option>
+                      <option value="PGBX">PGBX</option>
+                      <option value="FEDEX">FEDEX</option>
+                      <option value="UNBOX">UNBOX</option>
+                      <option value="Otros">Otros</option>
+                    </select>
                   </div>
+                  {formData.transportista === 'Otros' && (
+                    <div className="cc-form-group">
+                      <label className="cc-form-label">Especificar Transportista</label>
+                      <input
+                        type="text"
+                        className="cc-form-input"
+                        value={formData.transportista_otro}
+                        onChange={(e) => handleInputChange('transportista_otro', e.target.value)}
+                        placeholder="Nombre del transportista"
+                      />
+                    </div>
+                  )}
                   <div className="cc-form-group">
                     <label className="cc-form-label">Despachante</label>
                     <input
