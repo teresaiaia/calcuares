@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './App.css';
+import ComprasCargas from './ComprasCargas';
 
-export default function Calcuares() {
+export default function Adminares() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,7 +18,7 @@ export default function Calcuares() {
     return saved ? parseFloat(saved) : 12;
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [view, setView] = useState('admin');
+  const [view, setView] = useState('calculos'); // CAMBIADO: 'calculos' en lugar de 'admin'
   
   // Estados de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -44,7 +45,7 @@ export default function Calcuares() {
       const user = JSON.parse(savedUser);
       setCurrentUser(user);
       setIsAuthenticated(true);
-      setView(user.rol === 'admin' ? 'admin' : 'ventas');
+      setView(user.rol === 'admin' ? 'calculos' : 'ventas'); // CAMBIADO: 'calculos' en lugar de 'admin'
       fetchProducts();
     } else {
       setLoading(false);
@@ -101,7 +102,7 @@ export default function Calcuares() {
       localStorage.setItem('currentUser', JSON.stringify(userSession));
       setCurrentUser(userSession);
       setIsAuthenticated(true);
-      setView(userSession.rol === 'admin' ? 'admin' : 'ventas');
+      setView(userSession.rol === 'admin' ? 'calculos' : 'ventas'); // CAMBIADO: 'calculos' en lugar de 'admin'
       
       // Cargar productos
       await fetchProducts();
@@ -120,7 +121,7 @@ export default function Calcuares() {
     setIsAuthenticated(false);
     setLoginEmail('');
     setLoginPassword('');
-    setView('admin');
+    setView('calculos'); // CAMBIADO: 'calculos' en lugar de 'admin'
   };
 
   const fetchProducts = async () => {
@@ -176,6 +177,7 @@ export default function Calcuares() {
       };
       
       if (product.id && product.id > 0) {
+        // Actualizar producto existente
         const { error } = await supabase
           .from('productos')
           .update(productData)
@@ -183,6 +185,7 @@ export default function Calcuares() {
         
         if (error) throw error;
       } else {
+        // Crear nuevo producto
         const { data, error } = await supabase
           .from('productos')
           .insert([productData])
@@ -190,6 +193,7 @@ export default function Calcuares() {
         
         if (error) throw error;
         
+        // Reemplazar el producto temporal con el real
         setProducts(prev => prev.map(p => 
           p.id === product.id ? data[0] : p
         ));
@@ -202,10 +206,12 @@ export default function Calcuares() {
     }
   };
 
+  // Eliminar producto
   const deleteProduct = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar este producto?')) return;
     
     try {
+      // Si es un producto temporal (id negativo), solo eliminarlo del estado
       if (id < 0) {
         setProducts(prev => prev.filter(p => p.id !== id));
         return;
@@ -225,30 +231,9 @@ export default function Calcuares() {
     }
   };
 
-  // ============= FUNCIÓN DE CÁLCULO DE FLETE (solo para categoría UC) =============
-  
-  const calculateFleteProduct = useCallback((product) => {
-    const alto = parseFloat(product.flete_alto || 0);
-    const ancho = parseFloat(product.flete_ancho || 0);
-    const prof = parseFloat(product.flete_profundidad || 0);
-    const pesoReal = parseFloat(product.flete_peso_real || 0);
-    const coef = parseFloat(product.flete_coeficiente || 5000);
-    const precioKgReal = parseFloat(product.flete_precio_kg_real || 0);
-    const precioKgVol = parseFloat(product.flete_precio_kg_vol || 0);
-    
-    const pesoVolumetrico = (alto * ancho * prof) / coef;
-    const diferencia = pesoVolumetrico - pesoReal;
-    const costoTotal = (pesoReal * precioKgReal) + (Math.max(0, diferencia) * precioKgVol);
-    
-    return {
-      pesoVolumetrico,
-      diferencia,
-      costoTotal
-    };
-  }, []);
-
+  // Agregar nuevo producto (con ID temporal negativo)
   const addProduct = () => {
-    const tempId = -Date.now();
+    const tempId = -Date.now(); // ID temporal negativo
     const newProduct = {
       id: tempId,
       cod: '',
@@ -283,20 +268,24 @@ export default function Calcuares() {
     setProducts(prev => [newProduct, ...prev]);
   };
 
+  // Actualizar campo y guardar automáticamente
   const handleInputChange = useCallback((id, field, value) => {
-    setProducts(prev => prev.map(p => 
-      p.id === id ? { ...p, [field]: value } : p
-    ));
-    
-    setTimeout(() => {
-      setProducts(current => {
-        const product = current.find(p => p.id === id);
-        if (product) saveProduct(product);
-        return current;
-      });
-    }, 1000);
-  }, []);
+    setProducts(prev => {
+      const updated = prev.map(p => 
+        p.id === id ? { ...p, [field]: value } : p
+      );
+      
+      // Guardar automáticamente después de 1 segundo
+      const product = updated.find(p => p.id === id);
+      if (product) {
+        setTimeout(() => saveProduct(product), 1000);
+      }
+      
+      return updated;
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Cálculos de backend
   const calculateBackend = useCallback((product) => {
     const ppOriginal = parseFloat(product.pp || 0);
     const rate = parseFloat(exchangeRate);
@@ -310,6 +299,7 @@ export default function Calcuares() {
     return { fob, gtia, desp, kst, ppOriginal, ppInUSD, isEUR: product.price_in_eur };
   }, [exchangeRate]);
 
+  // Cálculos de venta
   const calculateSales = useCallback((kst, margin, interest, fixedPrice = null) => {
     const cashNet = fixedPrice && parseFloat(fixedPrice) > 0 
       ? parseFloat(fixedPrice) 
@@ -348,6 +338,7 @@ export default function Calcuares() {
     }).format(value);
   };
 
+  // Importar archivo Excel/CSV
   const handleFileImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -356,12 +347,14 @@ export default function Calcuares() {
       let data = [];
       
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // Importar Excel
         const arrayBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer);
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         data = XLSX.utils.sheet_to_json(worksheet);
       } else {
+        // Importar CSV
         const text = await file.text();
         const lines = text.split('\n').filter(line => line.trim());
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
@@ -376,6 +369,7 @@ export default function Calcuares() {
         });
       }
 
+      // Convertir datos importados a formato de productos
       const newProducts = data.map(row => ({
         cod: row.cod || row.codigo || '',
         brand: row.brand || row.marca || '',
@@ -391,10 +385,10 @@ export default function Calcuares() {
         extr: parseFloat(row.extr || row.imprevistos || 0),
         margin: parseFloat(row.margin || row.margen || 0),
         fixed_price: parseFloat(row.fixedprice || row.precio_fijo || 0),
-        price_in_eur: (row.priceineur || row.eur || '').toLowerCase() === 'true',
-        observaciones: row.observaciones || row.obs || ''
+        price_in_eur: (row.priceineur || row.eur || '').toLowerCase() === 'true'
       }));
 
+      // Guardar cada producto en Supabase
       for (const product of newProducts) {
         const { error } = await supabase
           .from('productos')
@@ -403,6 +397,7 @@ export default function Calcuares() {
         if (error) console.error('Error importing product:', error);
       }
       
+      // Recargar productos
       await fetchProducts();
       alert(`✅ ${newProducts.length} productos importados exitosamente`);
     } catch (error) {
@@ -413,6 +408,7 @@ export default function Calcuares() {
     e.target.value = '';
   };
 
+  // Exportar datos a CSV
   const exportData = () => {
     let csv = 'COD,BRAND,ORI,PROD,CAT,PP,FRT,BNK,ADU,SERV,TRNG,EXTR,MARGIN,FIXEDPRICE,PRICEINEUR\n';
     products.forEach(p => {
@@ -428,476 +424,132 @@ export default function Calcuares() {
     URL.revokeObjectURL(url);
   };
 
-  // Exportar vista de ventas a PDF
-  const exportToPDF = () => {
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Lista de Precios - Ares Medical Equipment</title>
-        <style>
-          @page { size: A4; margin: 15mm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: Arial, sans-serif; 
-            font-size: 9pt;
-            line-height: 1.3;
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: 15px; 
-            border-bottom: 2px solid #567C8D;
-            padding-bottom: 10px;
-          }
-          .header h1 { 
-            color: #567C8D; 
-            font-size: 18pt; 
-            margin-bottom: 5px;
-          }
-          .header p { 
-            color: #666; 
-            font-size: 10pt;
-          }
-          .products { 
-            display: block;
-            width: 100%;
-          }
-          .product { 
-            border: 1px solid #ddd; 
-            padding: 10px; 
-            border-radius: 6px;
-            page-break-inside: avoid;
-            margin-bottom: 8px;
-            display: flex;
-            gap: 12px;
-          }
-          .product-info {
-            flex: 1;
-          }
-          .product-prices {
-            flex: 1;
-          }
-          .product-header { 
-            border-bottom: 1px solid #ddd; 
-            padding-bottom: 5px; 
-            margin-bottom: 5px; 
-          }
-          .product-code { 
-            font-size: 7pt; 
-            color: #666; 
-          }
-          .product-title { 
-            font-size: 10pt; 
-            font-weight: bold; 
-            color: #1e293b; 
-            margin: 3px 0;
-          }
-          .product-obs { 
-            font-size: 7pt; 
-            color: #1e293b; 
-            font-style: italic;
-            font-weight: bold;
-            margin: 3px 0;
-            line-height: 1.2;
-          }
-          .badges { 
-            display: flex; 
-            gap: 3px; 
-            margin-top: 3px;
-            flex-wrap: wrap;
-          }
-          .badge { 
-            font-size: 6pt; 
-            padding: 2px 5px; 
-            border-radius: 10px; 
-            background: #e8ecf1;
-            color: #1e293b;
-          }
-          .prices { 
-            background: #C8D9E6; 
-            padding: 8px; 
-            border-radius: 6px;
-            height: 100%;
-          }
-          .price-row { 
-            display: flex; 
-            justify-content: space-between; 
-            margin: 2px 0;
-            font-size: 8pt;
-          }
-          .price-highlight { 
-            background: #2F4156; 
-            color: white; 
-            padding: 4px; 
-            border-radius: 4px;
-            margin: 3px 0;
-            font-weight: bold;
-            font-size: 9pt;
-          }
-          .price-small {
-            font-size: 6pt;
-            color: #2F4156;
-            border-top: 1px solid #567C8D;
-            padding-top: 3px;
-            margin-top: 3px;
-          }
-          .footer { 
-            text-align: center; 
-            margin-top: 15px; 
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
-            font-size: 7pt; 
-            color: #666; 
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Lista de Precios - Ares</h1>
-          <p>Catálogo de Productos y Cotizaciones</p>
-          <p style="font-size: 8pt; margin-top: 5px;">
-            Interés Anual: ${globalInterest}% | Tipo de Cambio EUR→USD: ${exchangeRate} | 
-            Fecha: ${new Date().toLocaleDateString('es-PY')}
-          </p>
-        </div>
-        <div class="products">
-          ${filteredProducts.map(product => {
-            const calc = calculateBackend(product);
-            const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
-            
-            return `
-              <div class="product">
-                <div class="product-info">
-                  <div class="product-code">${product.cod}</div>
-                  <div class="product-title">${product.prod || 'Sin nombre'}</div>
-                  ${product.observaciones ? `<div class="product-obs">${product.observaciones}</div>` : ''}
-                  <div class="badges">
-                    <span class="badge">${product.brand}</span>
-                    <span class="badge">${product.ori}</span>
-                    <span class="badge">${product.cat}</span>
-                  </div>
-                </div>
-                <div class="product-prices">
-                  <div class="prices">
-                    <div class="price-row">
-                      <span>Contado (Neto):</span>
-                      <span>$${formatCurrency(sales.cashNet)}</span>
-                    </div>
-                    <div class="price-highlight">
-                      <div class="price-row" style="color: white;">
-                        <span>CONT. IVA INC.:</span>
-                        <span>$${formatCurrency(sales.cashIva)}</span>
-                      </div>
-                    </div>
-                    <div class="price-small">
-                      <div class="price-row">
-                        <span>💰 Financiado + IVA:</span>
-                        <span>$${formatCurrency(sales.finIva)}</span>
-                      </div>
-                      <div class="price-row">
-                        <span>📅 Cuota (12 meses):</span>
-                        <span>$${formatCurrency(sales.cuot)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-        <div class="footer">
-          <p>Ares Medical Equipment | Lista de Precios</p>
-          <p>Interés: ${globalInterest}% anual | Pago inicial: 50% | Precios sujetos a cambios sin previo aviso</p>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
-  };
-
-  // Exportar Panel Admin completo a PDF
-  const exportAdminToPDF = () => {
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Panel Administrativo - Calcuares</title>
-        <style>
-          @page { size: A4 portrait; margin: 15mm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: Arial, sans-serif; 
-            font-size: 8pt;
-            line-height: 1.2;
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: 10px; 
-            border-bottom: 2px solid #567C8D;
-            padding-bottom: 8px;
-          }
-          .header h1 { 
-            color: #567C8D; 
-            font-size: 16pt; 
-            margin-bottom: 3px;
-          }
-          .header p { 
-            color: #666; 
-            font-size: 9pt;
-          }
-          .product { 
-            border: 1px solid #ddd; 
-            padding: 8px; 
-            border-radius: 4px;
-            page-break-inside: avoid;
-            margin-bottom: 8px;
-          }
-          .product-header {
-            background: #f8fafc;
-            padding: 6px;
-            border-radius: 4px;
-            margin-bottom: 6px;
-            border-left: 3px solid #567C8D;
-          }
-          .product-code { 
-            font-size: 7pt; 
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          .product-title { 
-            font-size: 10pt; 
-            font-weight: bold; 
-            color: #1e293b; 
-            margin: 2px 0;
-          }
-          .product-obs { 
-            font-size: 7pt; 
-            color: #1e293b; 
-            font-style: italic;
-            font-weight: bold;
-            margin: 3px 0;
-          }
-          .product-body {
-            display: block;
-            margin-top: 6px;
-          }
-          .section {
-            background: #f8fafc;
-            padding: 6px;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 6px;
-          }
-          .section-title {
-            font-weight: bold;
-            font-size: 8pt;
-            color: #1e293b;
-            margin-bottom: 4px;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 2px;
-          }
-          .data-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 7pt;
-            padding: 2px 0;
-          }
-          .data-row.highlight {
-            background: #C8D9E6;
-            padding: 3px 4px;
-            margin: 2px -4px;
-            border-radius: 3px;
-            font-weight: bold;
-          }
-          .data-row.profit {
-            background: #d1fae5;
-            padding: 3px 4px;
-            margin: 2px -4px;
-            border-radius: 3px;
-            font-weight: bold;
-            color: #065f46;
-          }
-          .label { color: #64748b; }
-          .value { font-weight: 600; color: #1e293b; }
-          .footer { 
-            text-align: center; 
-            margin-top: 10px; 
-            padding-top: 8px;
-            border-top: 1px solid #ddd;
-            font-size: 7pt; 
-            color: #666; 
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>📊 Panel Administrativo - Calcuares</h1>
-          <p>Reporte Completo de Productos y Costos</p>
-          <p style="font-size: 7pt; margin-top: 3px;">
-            Interés: ${globalInterest}% | Tipo de Cambio: ${exchangeRate} EUR→USD | 
-            Fecha: ${new Date().toLocaleDateString('es-PY')} ${new Date().toLocaleTimeString('es-PY')}
-          </p>
-        </div>
-        ${filteredProducts.map(product => {
-          const calc = calculateBackend(product);
-          const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
-          const profit = sales.cashNet - calc.kst;
-          
-          return `
-            <div class="product">
-              <div class="product-header">
-                <div class="product-code">${product.cod || 'SIN CÓDIGO'}</div>
-                <div class="product-title">${product.prod || 'Sin nombre'}</div>
-                ${product.observaciones ? `<div class="product-obs">${product.observaciones}</div>` : ''}
-              </div>
-              
-              <div class="product-body">
-                <!-- DATOS BÁSICOS -->
-                <div class="section">
-                  <div class="section-title">📋 Datos Básicos</div>
-                  <div class="data-row">
-                    <span class="label">Marca:</span>
-                    <span class="value">${product.brand}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Origen:</span>
-                    <span class="value">${product.ori}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Categoría:</span>
-                    <span class="value">${product.cat}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Precio PP:</span>
-                    <span class="value">${product.price_in_eur ? '€' : '$'}${formatCurrency(product.pp)}</span>
-                  </div>
-                  ${calc.isEUR ? `
-                    <div class="data-row">
-                      <span class="label">PP en USD:</span>
-                      <span class="value">$${formatCurrency(calc.ppInUSD)}</span>
-                    </div>
-                  ` : ''}
-                  <div class="data-row">
-                    <span class="label">Margen:</span>
-                    <span class="value">${product.margin}%</span>
-                  </div>
-                  ${sales.isFixedPrice ? `
-                    <div class="data-row" style="color: #fb923c;">
-                      <span class="label">⚠️ Precio Fijo:</span>
-                      <span class="value">$${formatCurrency(product.fixed_price)}</span>
-                    </div>
-                  ` : ''}
-                </div>
-                
-                <!-- COSTOS BACKEND -->
-                <div class="section">
-                  <div class="section-title">💼 Costos Backend</div>
-                  <div class="data-row">
-                    <span class="label">Flete:</span>
-                    <span class="value">$${formatCurrency(product.frt)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Banco:</span>
-                    <span class="value">$${formatCurrency(product.bnk)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Aduana (${product.adu}%):</span>
-                    <span class="value">$${formatCurrency(calc.desp)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Servicio:</span>
-                    <span class="value">$${formatCurrency(product.serv)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Garantía (3%):</span>
-                    <span class="value">$${formatCurrency(calc.gtia)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Capacitación:</span>
-                    <span class="value">$${formatCurrency(product.trng)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Imprevistos:</span>
-                    <span class="value">$${formatCurrency(product.extr)}</span>
-                  </div>
-                  <div class="data-row highlight">
-                    <span>FOB:</span>
-                    <span>$${formatCurrency(calc.fob)}</span>
-                  </div>
-                  <div class="data-row highlight">
-                    <span>KST TOTAL:</span>
-                    <span>$${formatCurrency(calc.kst)}</span>
-                  </div>
-                </div>
-                
-                <!-- PRECIOS DE VENTA Y GANANCIA -->
-                <div class="section">
-                  <div class="section-title">💰 Precios de Venta</div>
-                  <div class="data-row">
-                    <span class="label">Contado (Neto):</span>
-                    <span class="value">$${formatCurrency(sales.cashNet)}</span>
-                  </div>
-                  <div class="data-row highlight">
-                    <span>Cont. IVA inc.:</span>
-                    <span>$${formatCurrency(sales.cashIva)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Financiado + IVA:</span>
-                    <span class="value">$${formatCurrency(sales.finIva)}</span>
-                  </div>
-                  <div class="data-row">
-                    <span class="label">Cuota (12 meses):</span>
-                    <span class="value">$${formatCurrency(sales.cuot)}</span>
-                  </div>
-                  <div class="data-row profit">
-                    <span>✅ GANANCIA NETA:</span>
-                    <span>$${formatCurrency(profit)}</span>
-                  </div>
-                  <div class="data-row" style="font-size: 6pt; color: #059669;">
-                    <span>% sobre KST:</span>
-                    <span>${((profit / calc.kst) * 100).toFixed(2)}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('')}
-        <div class="footer">
-          <p>Calcuares - Panel Administrativo | Documento Confidencial</p>
-          <p>Este documento contiene información sensible de costos y márgenes de ganancia</p>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
-  };
-
+  // Filtrar productos por búsqueda
   const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products;
-    const search = searchTerm.toLowerCase();
-    return products.filter(p => (
-      p.cod?.toLowerCase().includes(search) ||
-      p.brand?.toLowerCase().includes(search) ||
-      p.ori?.toLowerCase().includes(search) ||
-      p.prod?.toLowerCase().includes(search) ||
-      p.cat?.toLowerCase().includes(search)
-    ));
+    return products.filter(p => {
+      if (!searchTerm) return true;
+      const search = searchTerm.toLowerCase();
+      return (
+        p.cod?.toLowerCase().includes(search) ||
+        p.brand?.toLowerCase().includes(search) ||
+        p.ori?.toLowerCase().includes(search) ||
+        p.prod?.toLowerCase().includes(search) ||
+        p.cat?.toLowerCase().includes(search)
+      );
+    });
   }, [products, searchTerm]);
+
+  // Pantalla de login
+  if (!isAuthenticated) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div style={{
+          background: 'white',
+          padding: '2.5rem',
+          borderRadius: '12px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          width: '100%',
+          maxWidth: '400px',
+          margin: '1rem'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h1 style={{ fontSize: '2rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
+              Adminares
+            </h1>
+            <p style={{ color: '#64748b' }}>Sistema de Gestión</p>
+          </div>
+
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="input"
+                placeholder="usuario@example.com"
+                required
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', color: '#475569' }}>
+                Contraseña
+              </label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="input"
+                placeholder="••••••••"
+                required
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            {loginError && (
+              <div style={{
+                background: '#fee2e2',
+                border: '1px solid #fca5a5',
+                color: '#991b1b',
+                padding: '0.75rem',
+                borderRadius: '6px',
+                marginBottom: '1rem',
+                fontSize: '0.875rem'
+              }}>
+                {loginError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loggingIn}
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                padding: '0.75rem',
+                fontSize: '1rem'
+              }}
+            >
+              {loggingIn ? (
+                <>
+                  <RefreshCw className="animate-spin" size={20} />
+                  Iniciando sesión...
+                </>
+              ) : (
+                'Iniciar Sesión'
+              )}
+            </button>
+          </form>
+
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '1rem',
+            background: '#f8fafc',
+            borderRadius: '6px',
+            fontSize: '0.75rem',
+            color: '#64748b'
+          }}>
+            <p style={{ margin: 0 }}>
+              <strong>Usuario de prueba:</strong><br />
+              Email: admin@ares.com<br />
+              Contraseña: admin123
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -908,323 +560,102 @@ export default function Calcuares() {
     );
   }
 
-  // Pantalla de Login
-  if (!isAuthenticated) {
-    return (
-      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <div className="card" style={{ maxWidth: '450px', width: '100%', padding: '3rem', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '700', color: '#567C8D', marginBottom: '0.5rem' }}>
-              Calcuares
-            </h1>
-            <p style={{ color: '#64748b', fontSize: '1rem' }}>
-              Sistema de Gestión de Precios
-            </p>
-            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Ares Medical Equipment
-            </p>
-          </div>
-
-          <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label className="input-label" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
-                📧 Correo Electrónico
-              </label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="usuario@ares.com"
-                className="input"
-                required
-                autoFocus
-                style={{ fontSize: '0.95rem', padding: '0.75rem' }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label className="input-label" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
-                🔒 Contraseña
-              </label>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input"
-                required
-                style={{ fontSize: '0.95rem', padding: '0.75rem' }}
-              />
-            </div>
-
-            {loginError && (
-              <div style={{ 
-                background: '#fee2e2', 
-                border: '1px solid #fca5a5', 
-                color: '#991b1b', 
-                padding: '0.75rem', 
-                borderRadius: '6px', 
-                marginBottom: '1.5rem',
-                fontSize: '0.875rem',
-                textAlign: 'center'
-              }}>
-                {loginError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loggingIn}
-              className="btn btn-primary"
-              style={{ 
-                width: '100%', 
-                padding: '0.875rem', 
-                fontSize: '1rem', 
-                fontWeight: '600',
-                background: '#567C8D',
-                opacity: loggingIn ? 0.7 : 1,
-                cursor: loggingIn ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {loggingIn ? (
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                  <RefreshCw className="animate-spin" size={18} />
-                  Iniciando sesión...
-                </span>
-              ) : (
-                'Iniciar Sesión'
-              )}
-            </button>
-          </form>
-
-
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="app-container">
-      {view === 'ventas' ? (
-        // VISTA DE VENTAS
-        <>
-          <div className="card header-card" style={{ background: '#567C8D' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-                  Lista de Precios - Ares
-                </h1>
-                <p style={{ color: 'white', fontSize: '1.1rem' }}>Catálogo de Productos y Cotizaciones</p>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
-                  <User size={16} />
-                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Usuario'}</span>
-                </div>
-                {currentUser?.rol === 'admin' && (
-                  <button onClick={() => setView('admin')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
-                    <DollarSign size={20} />
-                    Panel Admin
-                  </button>
-                )}
-                <button onClick={handleLogout} className="btn btn-danger" style={{ background: '#ef4444', color: 'white', border: 'none' }} title="Cerrar Sesión">
-                  <LogOut size={20} />
+      {/* Header con navegación */}
+      <div className="card header-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            <div>
+              <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '0.5rem' }}>
+                ⚡ Adminares
+              </h1>
+              <p style={{ color: '#64748b', fontSize: '1.1rem' }}>Sistema de Gestión - Ares Medical Equipment</p>
+            </div>
+            
+            {/* Botones de navegación */}
+            {currentUser?.rol === 'admin' && (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => setView('calculos')}
+                  style={{
+                    background: view === 'calculos' ? 'white' : 'rgba(102, 126, 234, 0.1)',
+                    color: view === 'calculos' ? '#667eea' : '#475569',
+                    border: view === 'calculos' ? '2px solid #667eea' : '1px solid #e2e8f0',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.9rem',
+                    fontWeight: view === 'calculos' ? '600' : '400',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <DollarSign size={18} />
+                  Cálculos
+                </button>
+                <button
+                  onClick={() => setView('compras')}
+                  style={{
+                    background: view === 'compras' ? 'white' : 'rgba(102, 126, 234, 0.1)',
+                    color: view === 'compras' ? '#667eea' : '#475569',
+                    border: view === 'compras' ? '2px solid #667eea' : '1px solid #e2e8f0',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.9rem',
+                    fontWeight: view === 'compras' ? '600' : '400',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Package size={18} />
+                  Compras y Cargas
                 </button>
               </div>
-            </div>
-
-            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
-              <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
-                <div><strong>💵 Interés Anual:</strong> {globalInterest}%</div>
-                <div><strong>💱 Tipo de Cambio EUR→USD:</strong> {exchangeRate}</div>
-                <div><strong>📊 Total Productos:</strong> {products.length}</div>
+            )}
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {saving && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981', fontWeight: '600' }}>
+                <RefreshCw className="animate-spin" size={20} />
+                <span>Guardando...</span>
+              </div>
+            )}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: '600', color: '#1e293b' }}>
+                <User size={16} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                {currentUser?.nombre}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                {currentUser?.rol === 'admin' ? 'Administrador' : 'Vendedor'}
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="btn btn-secondary"
+              style={{ padding: '0.5rem 1rem' }}
+            >
+              <LogOut size={18} />
+              Salir
+            </button>
           </div>
+        </div>
+      </div>
 
+      {/* Renderizado condicional según la vista */}
+      {view === 'calculos' && (
+        <>
+          {/* Configuración Global */}
           <div className="card">
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div className="search-container" style={{ flex: 1, margin: 0 }}>
-                <Search className="search-icon" size={20} />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
-                  className="input search-input"
-                />
-              </div>
-              <button onClick={exportToPDF} className="btn btn-primary" title="Exportar a PDF">
-                <Download size={20} />
-                Exportar PDF
-              </button>
-            </div>
-            <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
-              📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'disponibles'}
-            </div>
-          </div>
-
-          {filteredProducts.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-              <p style={{ color: '#64748b', fontSize: '1.1rem' }}>
-                {products.length === 0 ? '📦 No hay productos disponibles' : '🔍 No se encontraron productos'}
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-              {filteredProducts.map(product => {
-                const calc = calculateBackend(product);
-                const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
-                
-                return (
-                  <div key={product.id} className="card" style={{ border: '2px solid #e2e8f0', padding: '1rem' }}>
-                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '0.75rem' }}>
-                      <div style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: '0.25rem' }}>{product.cod}</div>
-                      <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.25rem', lineHeight: '1.2' }}>
-                        {product.prod || 'Sin nombre'}
-                      </h3>
-                      {product.observaciones && (
-                        <p style={{ fontSize: '0.75rem', color: '#1e293b', marginBottom: '0.5rem', fontWeight: '700', lineHeight: '1.3', fontStyle: 'italic' }}>
-                          {product.observaciones}
-                        </p>
-                      )}
-                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                        <span style={{ 
-                          fontSize: '0.7rem', 
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: '#f1f5f9',
-                          color: '#1e293b',
-                          fontWeight: '700',
-                          border: '1px solid #e2e8f0'
-                        }}>{product.brand}</span>
-                        <span style={{ 
-                          fontSize: '0.7rem', 
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: '#f1f5f9',
-                          color: '#64748b',
-                          fontWeight: '500',
-                          border: '1px solid #e2e8f0'
-                        }}>{product.ori}</span>
-                        <span style={{ 
-                          fontSize: '0.7rem', 
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: '#f1f5f9',
-                          color: '#64748b',
-                          fontWeight: '500',
-                          border: '1px solid #e2e8f0'
-                        }}>{product.cat}</span>
-                      </div>
-                    </div>
-
-                    <div style={{ background: '#C8D9E6', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
-                      <h4 style={{ color: '#2F4156', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        PRECIOS DE VENTA
-                        {!!sales.isFixedPrice && (
-                          <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>
-                        )}
-                        {product.precio_verificado && (
-                          <span style={{ 
-                            background: '#10b981', 
-                            color: 'white', 
-                            fontSize: '0.6rem', 
-                            padding: '0.2rem 0.5rem', 
-                            borderRadius: '4px',
-                            fontWeight: '700',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.25rem',
-                            border: '1px solid #059669'
-                          }}>
-                            ✓ VERIFICADO
-                          </span>
-                        )}
-                      </h4>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#2F4156', fontSize: '0.7rem' }}>Contado (Neto):</span>
-                          <span style={{ fontWeight: '600', fontSize: '0.7rem' }}>${formatCurrency(sales.cashNet)}</span>
-                        </div>
-                        
-                        {/* PRECIO DESTACADO - CONTADO IVA INCLUIDO */}
-                        <div style={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between',
-                          background: '#2F4156',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
-                          margin: '0.25rem 0'
-                        }}>
-                          <span style={{ color: 'white', fontWeight: '700', fontSize: '0.55rem' }}>CONT. IVA INC.:</span>
-                          <span style={{ color: 'white', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashIva)}</span>
-                        </div>
-                        
-                        {/* Precios financiados - tipografía muy pequeña */}
-                        <div style={{ 
-                          paddingTop: '0.35rem', 
-                          borderTop: '1px solid #567C8D',
-                          marginTop: '0.25rem'
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
-                            <span style={{ color: '#2F4156', fontSize: '0.6rem' }}>💰 Financiado + IVA:</span>
-                            <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.finIva)}</span>
-                          </div>
-                          
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: '#2F4156', fontSize: '0.6rem' }}>📅 Cuota (12 meses):</span>
-                            <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.cuot)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.6rem', color: '#64748b', textAlign: 'center', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
-                      Interés: {globalInterest}% anual | Pago inicial: 50%
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      ) : (
-        // VISTA ADMIN
-        <>
-          <div className="card header-card" style={{ background: '#567C8D' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-                  Calcuares
-                </h1>
-                <p style={{ color: 'white', fontSize: '1.1rem' }}>Calculadora de Precios - Ares Medical Equipment</p>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                {saving && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#567C8D', fontWeight: '600', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px' }}>
-                    <RefreshCw className="animate-spin" size={20} />
-                    <span>Guardando...</span>
-                  </div>
-                )}
-                <button onClick={() => setView('ventas')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
-                  <Eye size={20} />
-                  Vista de Ventas
-                </button>
-                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
-                  <User size={16} />
-                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Admin'}</span>
-                </div>
-                <button onClick={handleLogout} className="btn btn-danger" style={{ background: '#ef4444', color: 'white', border: 'none' }} title="Cerrar Sesión">
-                  <LogOut size={20} />
-                </button>
-              </div>
-            </div>
-
             <div className="grid grid-3">
               <div>
-                <label className="input-label" style={{ color: 'white' }}>💵 Interés Anual Global (%)</label>
+                <label className="input-label">💵 Interés Anual Global (%)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -1236,7 +667,7 @@ export default function Calcuares() {
               </div>
 
               <div>
-                <label className="input-label" style={{ color: 'white' }}>💱 Tipo de Cambio EUR → USD</label>
+                <label className="input-label">💱 Tipo de Cambio EUR → USD</label>
                 <input
                   type="number"
                   step="0.01"
@@ -1248,12 +679,17 @@ export default function Calcuares() {
               </div>
 
               <div>
-                <label className="input-label" style={{ color: 'white' }}>📁 Importar / Exportar</label>
+                <label className="input-label">📁 Importar / Exportar</label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <label className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer' }}>
                     <Upload size={18} />
                     Importar
-                    <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileImport} style={{ display: 'none' }} />
+                    <input
+                      type="file"
+                      accept=".csv,.xlsx,.xls"
+                      onChange={handleFileImport}
+                      style={{ display: 'none' }}
+                    />
                   </label>
                   <button onClick={exportData} className="btn btn-secondary">
                     <Download size={18} />
@@ -1263,6 +699,7 @@ export default function Calcuares() {
             </div>
           </div>
 
+          {/* Búsqueda y Agregar */}
           <div className="card">
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <div className="search-container" style={{ flex: 1, margin: 0 }}>
@@ -1279,10 +716,6 @@ export default function Calcuares() {
                 <Plus size={20} />
                 Agregar Producto
               </button>
-              <button onClick={exportAdminToPDF} className="btn btn-primary" title="Exportar Panel Admin a PDF">
-                <Download size={20} />
-                Exportar PDF
-              </button>
               <button onClick={fetchProducts} className="btn btn-secondary" title="Recargar productos">
                 <RefreshCw size={20} />
               </button>
@@ -1292,6 +725,7 @@ export default function Calcuares() {
             </div>
           </div>
 
+          {/* Lista de Productos */}
           {filteredProducts.length === 0 ? (
             <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
               <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '1.1rem' }}>
@@ -1309,48 +743,49 @@ export default function Calcuares() {
               const calc = calculateBackend(product);
               const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
               
+              // Cálculos de flete
+              const fleteCalc = (() => {
+                const alto = parseFloat(product.flete_alto || 0);
+                const ancho = parseFloat(product.flete_ancho || 0);
+                const prof = parseFloat(product.flete_profundidad || 0);
+                const pesoReal = parseFloat(product.flete_peso_real || 0);
+                const coef = parseFloat(product.flete_coeficiente || 5000);
+                const precioKgReal = parseFloat(product.flete_precio_kg_real || 0);
+                const precioKgVol = parseFloat(product.flete_precio_kg_vol || 0);
+                const precioFijo = parseFloat(product.flete_precio_fijo || 0);
+
+                const pesoVolumetrico = (alto * ancho * prof) / coef;
+                const costoReal = pesoReal * precioKgReal;
+                const costoVol = pesoVolumetrico * precioKgVol;
+                const costoTotal = precioFijo > 0 ? precioFijo : Math.max(costoReal, costoVol);
+                const diferencia = costoVol - costoReal;
+
+                return { pesoVolumetrico, costoReal, costoVol, costoTotal, diferencia };
+              })();
+              
               return (
-                <div key={product.id} className="card product-card" style={{ padding: '1rem' }}>
-                  <div className="product-header" style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.65rem', color: '#94a3b8', marginBottom: '0.15rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {product.cod || '🆕 NUEVO'}
-                      </div>
-                      <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', lineHeight: '1.3', marginBottom: '0.5rem' }}>
-                        {product.prod || 'Sin modelo definido'}
+                <div key={product.id} className="card product-card">
+                  <div className="product-header">
+                    <div>
+                      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1e293b' }}>
+                        {product.cod || `🆕 Producto Nuevo`}
                       </h2>
-                      
-                      {/* OBSERVACIONES DESTACADAS */}
-                      {product.observaciones && (
-                        <div style={{ 
-                          marginTop: '0.5rem',
-                          paddingTop: '0.5rem',
-                          borderTop: '1px solid #e2e8f0'
-                        }}>
-                          <p style={{ 
-                            fontSize: '0.85rem', 
-                            color: '#1e293b', 
-                            fontWeight: '700',
-                            lineHeight: '1.4',
-                            margin: 0,
-                            fontStyle: 'italic'
-                          }}>
-                            {product.observaciones}
-                          </p>
-                        </div>
-                      )}
+                      <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                        {product.prod || 'Sin modelo definido'}
+                      </p>
                     </div>
                     <button
                       onClick={() => deleteProduct(product.id)}
                       className="btn btn-danger"
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', alignSelf: 'flex-start' }}
+                      style={{ padding: '0.5rem 1rem' }}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                       Eliminar
                     </button>
                   </div>
 
-                  <div className="grid grid-4" style={{ gap: '0.6rem' }}>
+                  {/* Campos del Producto */}
+                  <div className="grid grid-4">
                     <div>
                       <label className="input-label">📝 Código (COD)</label>
                       <input
@@ -1421,7 +856,7 @@ export default function Calcuares() {
                         placeholder="0.00"
                       />
                       {product.price_in_eur && calc.ppInUSD > 0 && (
-                        <div style={{ fontSize: '0.75rem', color: '#567C8D', marginTop: '0.25rem' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.25rem' }}>
                           ≈ ${formatCurrency(calc.ppInUSD)} USD
                         </div>
                       )}
@@ -1541,72 +976,19 @@ export default function Calcuares() {
                         💡 Si ingresas un precio fijo, se usará en lugar del cálculo automático
                       </p>
                     </div>
-
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label className="input-label" style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.75rem',
-                        cursor: 'pointer',
-                        padding: '0.5rem',
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '6px',
-                        marginTop: '0.25rem'
-                      }}>
-                        <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#567C8D' }}>
-                          Precio Verificado:
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={product.precio_verificado || false}
-                          onChange={(e) => handleInputChange(product.id, 'precio_verificado', e.target.checked)}
-                          style={{ 
-                            width: '1.25rem', 
-                            height: '1.25rem', 
-                            cursor: 'pointer',
-                            accentColor: '#10b981'
-                          }}
-                        />
-                        {product.precio_verificado && (
-                          <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '600' }}>
-                            ✓ Verificado
-                          </span>
-                        )}
-                      </label>
-                    </div>
-
-                    <div style={{ gridColumn: 'span 4' }}>
-                      <label className="input-label" style={{ 
-                        fontSize: '0.75rem', 
-                        fontWeight: '700'
-                      }}>
-                        📝 Observaciones (aparecerá en Vista de Ventas)
-                      </label>
-                      <textarea
-                        defaultValue={product.observaciones || ''}
-                        onBlur={(e) => handleInputChange(product.id, 'observaciones', e.target.value)}
-                        placeholder="Ej: Incluye 6 HP (IPL)"
-                        className="input"
-                        rows="2"
-                        style={{ 
-                          resize: 'vertical', 
-                          fontFamily: 'inherit',
-                          fontSize: '0.85rem'
-                        }}
-                      />
-                    </div>
                   </div>
 
+                  {/* Resultados de Cálculos */}
                   <div className="grid grid-2" style={{ marginTop: '2rem' }}>
+                    {/* Costos Backend */}
                     <div className="cost-section" style={{ background: '#f1f5f9', border: '2px solid #cbd5e1' }}>
                       <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                         💼 Costos Backend
                       </h3>
                       {calc.isEUR && (
-                        <div className="cost-row" style={{ background: '#C8D9E6', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #567C8D' }}>
-                          <span style={{ color: '#2F4156', fontWeight: '600' }}>💶 PP Original (EUR):</span>
-                          <span style={{ color: '#2F4156', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
+                        <div className="cost-row" style={{ background: '#d1fae5', padding: '0.5rem', borderRadius: '6px', marginBottom: '0.75rem', border: '1px solid #10b981' }}>
+                          <span style={{ color: '#065f46', fontWeight: '600' }}>💶 PP Original (EUR):</span>
+                          <span style={{ color: '#065f46', fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
                         </div>
                       )}
                       {calc.isEUR && (
@@ -1633,52 +1015,88 @@ export default function Calcuares() {
                       </div>
                     </div>
 
-                    <div className="cost-section" style={{ background: '#C8D9E6', border: '2px solid #567C8D' }}>
-                      <h3 style={{ color: '#2F4156', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                        PRECIOS DE VENTA
-                        {!!sales.isFixedPrice && (
+                    {/* Precios de Venta */}
+                    <div className="cost-section" style={{ background: '#d1fae5', border: '2px solid #10b981' }}>
+                      <h3 style={{ color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                        💵 Precios de Venta
+                        {sales.isFixedPrice && (
                           <span className="badge badge-orange">PRECIO FIJO</span>
                         )}
                       </h3>
                       <div className="cost-row">
-                        <span style={{ color: '#2F4156' }}>Contado (Neto):</span>
+                        <span style={{ color: '#065f46' }}>💳 Contado (Neto):</span>
                         <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cashNet)}</span>
                       </div>
                       <div className="cost-row">
-                        <span style={{ color: '#2F4156' }}>Cont. IVA inc.:</span>
+                        <span style={{ color: '#065f46' }}>💳 Contado + IVA (10%):</span>
                         <span style={{ fontWeight: '700' }}>${formatCurrency(sales.cashIva)}</span>
                       </div>
-                      <div className="cost-row total" style={{ borderColor: '#567C8D', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
-                        <span style={{ color: '#2F4156', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
-                        <span style={{ color: '#2F4156', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
+                      <div className="cost-row total" style={{ borderColor: '#10b981', marginTop: '0.75rem', paddingTop: '0.75rem' }}>
+                        <span style={{ color: '#047857', fontSize: '1.1rem' }}>💰 Financiado + IVA:</span>
+                        <span style={{ color: '#047857', fontSize: '1.1rem' }}>${formatCurrency(sales.finIva)}</span>
                       </div>
                       <div className="cost-row">
-                        <span style={{ color: '#2F4156' }}>📅 Cuota Mensual (12 meses):</span>
+                        <span style={{ color: '#065f46' }}>📅 Cuota Mensual (12 meses):</span>
                         <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cuot)}</span>
                       </div>
-                      <div className="cost-row total" style={{ borderColor: '#567C8D', background: '#C8D9E6', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
-                        <span style={{ color: '#2F4156', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
-                        <span style={{ color: '#2F4156', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
+                      <div className="cost-row total" style={{ borderColor: '#10b981', background: '#a7f3d0', padding: '0.75rem', borderRadius: '6px', marginTop: '0.75rem' }}>
+                        <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>✅ Ganancia Neta:</span>
+                        <span style={{ color: '#047857', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashNet - calc.kst)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* COTIZACIÓN DE FLETES - Solo para categoría UC */}
-                  {product.cat === 'UC' && (
-                    <div style={{ marginTop: '1.5rem', borderTop: '2px solid #e2e8f0', paddingTop: '1rem' }}>
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#64748b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        📦 Cotización de Flete (Referencia)
-                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '400' }}>
-                          • Solo para cálculo - No afecta precio final
-                        </span>
-                      </h4>
-                      
+                  {/* Sección de Cotización de Flete */}
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <button
+                      onClick={() => {
+                        const element = document.getElementById(`flete-${product.id}`);
+                        if (element) {
+                          element.style.display = element.style.display === 'none' ? 'block' : 'none';
+                        }
+                      }}
+                      style={{
+                        background: '#C8D9E6',
+                        border: '2px solid #567C8D',
+                        color: '#2F4156',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.9rem',
+                        marginBottom: '1rem'
+                      }}
+                    >
+                      📊 Cotización de Flete (Click para expandir)
+                    </button>
+
+                    <div id={`flete-${product.id}`} style={{ display: 'none' }}>
                       {(() => {
-                        const fleteCalc = calculateFleteProduct(product);
                         return (
-                          <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                          <div style={{ 
+                            background: '#f0f9ff', 
+                            padding: '1rem', 
+                            borderRadius: '8px', 
+                            border: '2px solid #bae6fd' 
+                          }}>
+                            <h4 style={{ 
+                              color: '#0369a1', 
+                              marginBottom: '1rem', 
+                              fontSize: '0.95rem', 
+                              fontWeight: '700',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Cálculo de Peso Volumétrico y Costo de Flete
+                            </h4>
+
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginBottom: '0.6rem' }}>
-                              {/* Fila 1: Dimensiones y peso */}
+                              {/* Fila 1: Dimensiones y Peso */}
                               <div>
                                 <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>
                                   Alto (cm)
@@ -1849,12 +1267,17 @@ export default function Calcuares() {
                         );
                       })()}
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })
           )}
         </>
+      )}
+
+      {/* Vista de Compras y Cargas */}
+      {view === 'compras' && (
+        <ComprasCargas />
       )}
     </div>
   );
