@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Plus, Edit2, Trash2, X, Save, Building2, User, Phone, Mail, MapPin, CreditCard } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, Building2 } from 'lucide-react';
 import './ComprasCargas.css';
 
 export default function Proveedores() {
@@ -10,27 +10,12 @@ export default function Proveedores() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProveedor, setEditingProveedor] = useState(null);
-  const [activeTab, setActiveTab] = useState('general');
 
   const [formData, setFormData] = useState({
     nombre_comercial: '',
-    nombre_contacto: '',
-    email_contacto: '',
-    telefono: '',
-    telefono_alternativo: '',
-    pais: '',
-    ciudad: '',
+    datos_contacto: '',
+    datos_bancarios: '',
     direccion_pickup: '',
-    horario_pickup: '',
-    notas_pickup: '',
-    cuenta_bancaria: '',
-    banco: '',
-    swift_code: '',
-    iban: '',
-    moneda_preferida: 'USD',
-    condiciones_pago: '',
-    sitio_web: '',
-    notas: '',
     activo: true
   });
 
@@ -59,27 +44,12 @@ export default function Proveedores() {
   const resetForm = () => {
     setFormData({
       nombre_comercial: '',
-      nombre_contacto: '',
-      email_contacto: '',
-      telefono: '',
-      telefono_alternativo: '',
-      pais: '',
-      ciudad: '',
+      datos_contacto: '',
+      datos_bancarios: '',
       direccion_pickup: '',
-      horario_pickup: '',
-      notas_pickup: '',
-      cuenta_bancaria: '',
-      banco: '',
-      swift_code: '',
-      iban: '',
-      moneda_preferida: 'USD',
-      condiciones_pago: '',
-      sitio_web: '',
-      notas: '',
       activo: true
     });
     setEditingProveedor(null);
-    setActiveTab('general');
   };
 
   const openNewModal = () => {
@@ -90,27 +60,12 @@ export default function Proveedores() {
   const openEditModal = (proveedor) => {
     setFormData({
       nombre_comercial: proveedor.nombre_comercial || '',
-      nombre_contacto: proveedor.nombre_contacto || '',
-      email_contacto: proveedor.email_contacto || '',
-      telefono: proveedor.telefono || '',
-      telefono_alternativo: proveedor.telefono_alternativo || '',
-      pais: proveedor.pais || '',
-      ciudad: proveedor.ciudad || '',
+      datos_contacto: proveedor.datos_contacto || '',
+      datos_bancarios: proveedor.datos_bancarios || '',
       direccion_pickup: proveedor.direccion_pickup || '',
-      horario_pickup: proveedor.horario_pickup || '',
-      notas_pickup: proveedor.notas_pickup || '',
-      cuenta_bancaria: proveedor.cuenta_bancaria || '',
-      banco: proveedor.banco || '',
-      swift_code: proveedor.swift_code || '',
-      iban: proveedor.iban || '',
-      moneda_preferida: proveedor.moneda_preferida || 'USD',
-      condiciones_pago: proveedor.condiciones_pago || '',
-      sitio_web: proveedor.sitio_web || '',
-      notas: proveedor.notas || '',
       activo: proveedor.activo !== false
     });
     setEditingProveedor(proveedor);
-    setActiveTab('general');
     setShowModal(true);
   };
 
@@ -118,7 +73,7 @@ export default function Proveedores() {
     e.preventDefault();
     
     if (!formData.nombre_comercial.trim()) {
-      alert('El nombre comercial es obligatorio');
+      alert('El nombre de la empresa es obligatorio');
       return;
     }
 
@@ -187,10 +142,8 @@ export default function Proveedores() {
     const search = searchTerm.toLowerCase();
     return (
       p.nombre_comercial?.toLowerCase().includes(search) ||
-      p.nombre_contacto?.toLowerCase().includes(search) ||
-      p.pais?.toLowerCase().includes(search) ||
-      p.ciudad?.toLowerCase().includes(search) ||
-      p.email_contacto?.toLowerCase().includes(search)
+      p.datos_contacto?.toLowerCase().includes(search) ||
+      p.direccion_pickup?.toLowerCase().includes(search)
     );
   });
 
@@ -214,7 +167,7 @@ export default function Proveedores() {
               Gestión de Proveedores
             </h2>
             <p style={{ color: '#567C8D', fontSize: '0.9rem' }}>
-              Administra la información completa de tus proveedores
+              Administra la información de tus proveedores
             </p>
           </div>
           <button onClick={openNewModal} className="cc-btn cc-btn-primary">
@@ -231,7 +184,7 @@ export default function Proveedores() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nombre, contacto, país..."
+              placeholder="Buscar proveedores..."
               className="cc-search-input"
             />
           </div>
@@ -242,7 +195,7 @@ export default function Proveedores() {
       </div>
 
       {/* Lista de Proveedores */}
-      <div className="cc-cards-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))' }}>
+      <div className="cc-cards-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
         {filteredProveedores.map(proveedor => (
           <div key={proveedor.id} className="cc-card" style={{ opacity: proveedor.activo ? 1 : 0.6 }}>
             <div className="cc-card-header">
@@ -250,11 +203,6 @@ export default function Proveedores() {
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#2F4156' }}>
                   {proveedor.nombre_comercial}
                 </h3>
-                {proveedor.pais && (
-                  <span style={{ fontSize: '0.8rem', color: '#567C8D' }}>
-                    📍 {proveedor.ciudad ? `${proveedor.ciudad}, ` : ''}{proveedor.pais}
-                  </span>
-                )}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button 
@@ -275,28 +223,18 @@ export default function Proveedores() {
             </div>
 
             <div className="cc-card-body">
-              {proveedor.nombre_contacto && (
-                <div className="cc-info-row">
-                  <User size={14} />
-                  <span>{proveedor.nombre_contacto}</span>
-                </div>
-              )}
-              {proveedor.telefono && (
-                <div className="cc-info-row">
-                  <Phone size={14} />
-                  <span>{proveedor.telefono}</span>
-                </div>
-              )}
-              {proveedor.email_contacto && (
-                <div className="cc-info-row">
-                  <Mail size={14} />
-                  <span>{proveedor.email_contacto}</span>
+              {proveedor.datos_contacto && (
+                <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', whiteSpace: 'pre-line' }}>
+                  {proveedor.datos_contacto.length > 100 
+                    ? proveedor.datos_contacto.substring(0, 100) + '...' 
+                    : proveedor.datos_contacto}
                 </div>
               )}
               {proveedor.direccion_pickup && (
-                <div className="cc-info-row">
-                  <MapPin size={14} />
-                  <span style={{ fontSize: '0.8rem' }}>{proveedor.direccion_pickup}</span>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                  📍 {proveedor.direccion_pickup.length > 50 
+                    ? proveedor.direccion_pickup.substring(0, 50) + '...' 
+                    : proveedor.direccion_pickup}
                 </div>
               )}
             </div>
@@ -308,11 +246,6 @@ export default function Proveedores() {
               >
                 {proveedor.activo ? '✓ Activo' : '○ Inactivo'}
               </button>
-              {proveedor.moneda_preferida && (
-                <span style={{ fontSize: '0.75rem', color: '#567C8D' }}>
-                  💰 {proveedor.moneda_preferida}
-                </span>
-              )}
             </div>
           </div>
         ))}
@@ -335,7 +268,7 @@ export default function Proveedores() {
       {/* Modal de Proveedor */}
       {showModal && (
         <div className="cc-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="cc-modal cc-modal-large" onClick={e => e.stopPropagation()}>
+          <div className="cc-modal" onClick={e => e.stopPropagation()}>
             <div className="cc-modal-header">
               <h2>
                 <Building2 size={20} />
@@ -346,299 +279,73 @@ export default function Proveedores() {
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="cc-tabs">
-              <button 
-                className={`cc-tab ${activeTab === 'general' ? 'cc-tab-active' : ''}`}
-                onClick={() => setActiveTab('general')}
-              >
-                <Building2 size={16} />
-                General
-              </button>
-              <button 
-                className={`cc-tab ${activeTab === 'contacto' ? 'cc-tab-active' : ''}`}
-                onClick={() => setActiveTab('contacto')}
-              >
-                <User size={16} />
-                Contacto
-              </button>
-              <button 
-                className={`cc-tab ${activeTab === 'pickup' ? 'cc-tab-active' : ''}`}
-                onClick={() => setActiveTab('pickup')}
-              >
-                <MapPin size={16} />
-                Pickup
-              </button>
-              <button 
-                className={`cc-tab ${activeTab === 'bancario' ? 'cc-tab-active' : ''}`}
-                onClick={() => setActiveTab('bancario')}
-              >
-                <CreditCard size={16} />
-                Datos Bancarios
-              </button>
-            </div>
-
             <form onSubmit={handleSubmit}>
               <div className="cc-modal-body">
-                
-                {/* Tab General */}
-                {activeTab === 'general' && (
-                  <div className="cc-form-section">
-                    <div className="cc-form-grid">
-                      <div className="cc-form-group cc-form-full">
-                        <label className="cc-form-label">
-                          Nombre Comercial *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.nombre_comercial}
-                          onChange={(e) => setFormData({...formData, nombre_comercial: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Ej: Lumenis"
-                          required
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">País</label>
-                        <input
-                          type="text"
-                          value={formData.pais}
-                          onChange={(e) => setFormData({...formData, pais: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Ej: Israel"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">Ciudad</label>
-                        <input
-                          type="text"
-                          value={formData.ciudad}
-                          onChange={(e) => setFormData({...formData, ciudad: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Ej: Tel Aviv"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">Sitio Web</label>
-                        <input
-                          type="url"
-                          value={formData.sitio_web}
-                          onChange={(e) => setFormData({...formData, sitio_web: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="https://www.ejemplo.com"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">Moneda Preferida</label>
-                        <select
-                          value={formData.moneda_preferida}
-                          onChange={(e) => setFormData({...formData, moneda_preferida: e.target.value})}
-                          className="cc-form-select"
-                        >
-                          <option value="USD">USD - Dólar</option>
-                          <option value="EUR">EUR - Euro</option>
-                          <option value="GBP">GBP - Libra</option>
-                        </select>
-                      </div>
-
-                      <div className="cc-form-group cc-form-full">
-                        <label className="cc-form-label">Notas Generales</label>
-                        <textarea
-                          value={formData.notas}
-                          onChange={(e) => setFormData({...formData, notas: e.target.value})}
-                          className="cc-form-textarea"
-                          rows="3"
-                          placeholder="Notas adicionales sobre el proveedor..."
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={formData.activo}
-                            onChange={(e) => setFormData({...formData, activo: e.target.checked})}
-                            style={{ width: '18px', height: '18px' }}
-                          />
-                          Proveedor Activo
-                        </label>
-                      </div>
-                    </div>
+                <div className="cc-form-section">
+                  
+                  {/* Empresa */}
+                  <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="cc-form-label">Empresa *</label>
+                    <input
+                      type="text"
+                      value={formData.nombre_comercial}
+                      onChange={(e) => setFormData({...formData, nombre_comercial: e.target.value})}
+                      className="cc-form-input"
+                      placeholder="Nombre de la empresa"
+                      required
+                    />
                   </div>
-                )}
 
-                {/* Tab Contacto */}
-                {activeTab === 'contacto' && (
-                  <div className="cc-form-section">
-                    <div className="cc-form-grid">
-                      <div className="cc-form-group cc-form-full">
-                        <label className="cc-form-label">
-                          <User size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                          Nombre del Contacto
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.nombre_contacto}
-                          onChange={(e) => setFormData({...formData, nombre_contacto: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Ej: John Smith"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">
-                          <Mail size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.email_contacto}
-                          onChange={(e) => setFormData({...formData, email_contacto: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="contacto@empresa.com"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">
-                          <Phone size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                          Teléfono Principal
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.telefono}
-                          onChange={(e) => setFormData({...formData, telefono: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="+1 234 567 8900"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">
-                          <Phone size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                          Teléfono Alternativo
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.telefono_alternativo}
-                          onChange={(e) => setFormData({...formData, telefono_alternativo: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="+1 234 567 8901"
-                        />
-                      </div>
-                    </div>
+                  {/* Datos de Contacto */}
+                  <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="cc-form-label">Datos de Contacto</label>
+                    <textarea
+                      value={formData.datos_contacto}
+                      onChange={(e) => setFormData({...formData, datos_contacto: e.target.value})}
+                      className="cc-form-textarea"
+                      rows="4"
+                      placeholder="Nombre del contacto, email, WhatsApp, teléfono..."
+                    />
                   </div>
-                )}
 
-                {/* Tab Pickup */}
-                {activeTab === 'pickup' && (
-                  <div className="cc-form-section">
-                    <div className="cc-form-grid">
-                      <div className="cc-form-group cc-form-full">
-                        <label className="cc-form-label">
-                          <MapPin size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />
-                          Dirección de Pickup
-                        </label>
-                        <textarea
-                          value={formData.direccion_pickup}
-                          onChange={(e) => setFormData({...formData, direccion_pickup: e.target.value})}
-                          className="cc-form-textarea"
-                          rows="3"
-                          placeholder="Dirección completa para recoger mercadería..."
-                        />
-                      </div>
-
-                      <div className="cc-form-group cc-form-full">
-                        <label className="cc-form-label">Horario de Pickup</label>
-                        <input
-                          type="text"
-                          value={formData.horario_pickup}
-                          onChange={(e) => setFormData({...formData, horario_pickup: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Ej: Lunes a Viernes 9:00 - 17:00"
-                        />
-                      </div>
-
-                      <div className="cc-form-group cc-form-full">
-                        <label className="cc-form-label">Notas de Pickup</label>
-                        <textarea
-                          value={formData.notas_pickup}
-                          onChange={(e) => setFormData({...formData, notas_pickup: e.target.value})}
-                          className="cc-form-textarea"
-                          rows="3"
-                          placeholder="Instrucciones especiales para el pickup..."
-                        />
-                      </div>
-                    </div>
+                  {/* Datos Bancarios */}
+                  <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="cc-form-label">Datos Bancarios</label>
+                    <textarea
+                      value={formData.datos_bancarios}
+                      onChange={(e) => setFormData({...formData, datos_bancarios: e.target.value})}
+                      className="cc-form-textarea"
+                      rows="4"
+                      placeholder="Banco, cuenta, IBAN, SWIFT, moneda, VAT, condiciones de pago..."
+                    />
                   </div>
-                )}
 
-                {/* Tab Datos Bancarios */}
-                {activeTab === 'bancario' && (
-                  <div className="cc-form-section">
-                    <div className="cc-form-grid">
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">Banco</label>
-                        <input
-                          type="text"
-                          value={formData.banco}
-                          onChange={(e) => setFormData({...formData, banco: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Nombre del banco"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">Número de Cuenta</label>
-                        <input
-                          type="text"
-                          value={formData.cuenta_bancaria}
-                          onChange={(e) => setFormData({...formData, cuenta_bancaria: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Número de cuenta"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">SWIFT/BIC Code</label>
-                        <input
-                          type="text"
-                          value={formData.swift_code}
-                          onChange={(e) => setFormData({...formData, swift_code: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Ej: BSCHESMMXXX"
-                        />
-                      </div>
-
-                      <div className="cc-form-group">
-                        <label className="cc-form-label">IBAN</label>
-                        <input
-                          type="text"
-                          value={formData.iban}
-                          onChange={(e) => setFormData({...formData, iban: e.target.value})}
-                          className="cc-form-input"
-                          placeholder="Ej: ES91 2100 0418 4502 0005 1332"
-                        />
-                      </div>
-
-                      <div className="cc-form-group cc-form-full">
-                        <label className="cc-form-label">Condiciones de Pago</label>
-                        <textarea
-                          value={formData.condiciones_pago}
-                          onChange={(e) => setFormData({...formData, condiciones_pago: e.target.value})}
-                          className="cc-form-textarea"
-                          rows="3"
-                          placeholder="Ej: 50% adelanto, 50% contra entrega. Net 30 días..."
-                        />
-                      </div>
-                    </div>
+                  {/* Dirección de Pickup */}
+                  <div className="cc-form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label className="cc-form-label">Dirección de Pickup</label>
+                    <textarea
+                      value={formData.direccion_pickup}
+                      onChange={(e) => setFormData({...formData, direccion_pickup: e.target.value})}
+                      className="cc-form-textarea"
+                      rows="3"
+                      placeholder="Dirección completa para recoger mercadería, horarios, instrucciones..."
+                    />
                   </div>
-                )}
 
+                  {/* Proveedor Activo */}
+                  <div className="cc-form-group">
+                    <label className="cc-form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.activo}
+                        onChange={(e) => setFormData({...formData, activo: e.target.checked})}
+                        style={{ width: '18px', height: '18px' }}
+                      />
+                      Proveedor Activo
+                    </label>
+                  </div>
+
+                </div>
               </div>
 
               <div className="cc-modal-footer">
