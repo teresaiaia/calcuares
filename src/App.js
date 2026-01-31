@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ComprasCargas from './ComprasCargas';
+import Proveedores from './Proveedores';
 import './App.css';
 
 export default function Calcuares() {
@@ -19,7 +20,7 @@ export default function Calcuares() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin');
-  const [activeModule, setActiveModule] = useState('calculos'); // 'calculos' o 'compras'
+  const [activeModule, setActiveModule] = useState('calculos'); // 'calculos', 'compras' o 'proveedores'
   
   // Estados de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -1230,6 +1231,18 @@ export default function Calcuares() {
                     <Package size={18} />
                     Compras y Cargas
                   </button>
+                  <button 
+                    onClick={() => setActiveModule('proveedores')} 
+                    className="btn" 
+                    style={{ 
+                      background: activeModule === 'proveedores' ? 'white' : 'transparent', 
+                      color: activeModule === 'proveedores' ? '#567C8D' : 'white',
+                      border: '2px solid white'
+                    }}
+                  >
+                    <Building2 size={18} />
+                    Proveedores
+                  </button>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -1298,6 +1311,8 @@ export default function Calcuares() {
           {/* Contenido según módulo activo */}
           {activeModule === 'compras' ? (
             <ComprasCargas />
+          ) : activeModule === 'proveedores' ? (
+            <Proveedores />
           ) : (
           <>
           <div className="card">
