@@ -5,6 +5,16 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import './ComprasCargas.css';
 
+// Función helper para formatear fecha a DD/MM/YY
+const formatFecha = (fechaStr) => {
+  if (!fechaStr) return '-';
+  const fecha = new Date(fechaStr);
+  const dia = fecha.getDate().toString().padStart(2, '0');
+  const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+  const año = fecha.getFullYear().toString().slice(-2);
+  return `${dia}/${mes}/${año}`;
+};
+
 export default function ComprasCargas() {
   // Estados principales
   const [compras, setCompras] = useState([]);
@@ -433,7 +443,7 @@ export default function ComprasCargas() {
     // Preparar datos para la tabla
     const tableData = filteredCompras.map(item => [
       item.codigo_orden || '-',
-      new Date(item.fecha_orden).toLocaleDateString('es-ES'),
+      new Date(item.fecha_orden).toLocaleDateString('es-PY'),
       item.proveedor_nombre || '-',
       item.origen || '-',
       item.transportista || '-',
@@ -590,7 +600,7 @@ export default function ComprasCargas() {
                   filteredCompras.map(item => (
                     <tr key={item.id}>
                       <td><strong>{item.codigo_orden}</strong></td>
-                      <td>{new Date(item.fecha_orden).toLocaleDateString('es-ES')}</td>
+                      <td>{formatFecha(item.fecha_orden)}</td>
                       <td>{item.proveedor_nombre || '-'}</td>
                       <td>{item.origen || '-'}</td>
                       <td>{item.transportista || '-'}</td>
@@ -632,7 +642,7 @@ export default function ComprasCargas() {
                   <div className="cc-card-header">
                     <div>
                       <div className="cc-card-code">{item.codigo_orden}</div>
-                      <div className="cc-card-date">{new Date(item.fecha_orden).toLocaleDateString('es-ES')}</div>
+                      <div className="cc-card-date">{formatFecha(item.fecha_orden)}</div>
                     </div>
                     <span className={`cc-status cc-status-${item.estado?.toLowerCase().replace(/\s+/g, '-')}`}>
                       {item.estado || '-'}
