@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { 
   Search, Plus, Edit2, Trash2, X, Save, TrendingUp, TrendingDown,
-  DollarSign, ChevronUp, ChevronDown, FileSpreadsheet, FileText,
-  Link2, Unlink
+  ChevronUp, ChevronDown, FileSpreadsheet, Link2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './ComprasCargas.css';
