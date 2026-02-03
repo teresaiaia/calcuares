@@ -66,6 +66,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
     estado: 'amarillo',
     canal_preferido: 'WhatsApp',
     ultimo_contacto: '',
+    proximo_contacto: '',
     notas: '',
     vendedor: ''
   };
@@ -160,9 +161,11 @@ export default function SeguimientoComercial({ isAdmin = false }) {
 
   const openNewModal = () => {
     setEditingItem(null);
+    const hoy = new Date().toISOString().split('T')[0];
     setFormData({
       ...emptyForm,
-      ultimo_contacto: new Date().toISOString().split('T')[0]
+      ultimo_contacto: hoy,
+      proximo_contacto: calcularProximoContacto(hoy, 'WhatsApp')
     });
     setShowModal(true);
   };
@@ -179,6 +182,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
       estado: item.estado || 'amarillo',
       canal_preferido: item.canal_preferido || 'WhatsApp',
       ultimo_contacto: item.ultimo_contacto || '',
+      proximo_contacto: item.proximo_contacto || '',
       notas: item.notas || '',
       vendedor: item.vendedor || ''
     });
@@ -266,6 +270,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
         estado: formData.estado,
         canal_preferido: formData.canal_preferido,
         ultimo_contacto: formData.ultimo_contacto || null,
+        proximo_contacto: formData.proximo_contacto || null,
         notas: formData.notas || null,
         vendedor: formData.vendedor || null
       };
@@ -801,7 +806,14 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                   <div className="cc-form-group">
                     <label className="cc-form-label">Canal Preferido</label>
                     <select className="cc-form-input" value={formData.canal_preferido}
-                      onChange={(e) => handleInputChange('canal_preferido', e.target.value)}>
+                      onChange={(e) => {
+                        const canal = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          canal_preferido: canal,
+                          proximo_contacto: prev.ultimo_contacto ? calcularProximoContacto(prev.ultimo_contacto, canal) : prev.proximo_contacto
+                        }));
+                      }}>
                       <option value="WhatsApp">WhatsApp</option>
                       <option value="Email">Email</option>
                       <option value="Teléfono">Teléfono</option>
@@ -812,7 +824,25 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                   <div className="cc-form-group">
                     <label className="cc-form-label">Último Contacto</label>
                     <input type="date" className="cc-form-input" value={formData.ultimo_contacto}
-                      onChange={(e) => handleInputChange('ultimo_contacto', e.target.value)} />
+                      onChange={(e) => {
+                        const fecha = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          ultimo_contacto: fecha,
+                          proximo_contacto: fecha ? calcularProximoContacto(fecha, prev.canal_preferido) : ''
+                        }));
+                      }} />
+                  </div>
+                  <div className="cc-form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="cc-form-label" style={{ color: '#1d4ed8', fontWeight: '600' }}>📅 Próximo Contacto</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input type="date" className="cc-form-input" value={formData.proximo_contacto}
+                        onChange={(e) => setFormData(prev => ({ ...prev, proximo_contacto: e.target.value }))}
+                        style={{ flex: 1, borderColor: '#93c5fd', background: '#eff6ff' }} />
+                      <span style={{ fontSize: '0.7rem', color: '#3b82f6', whiteSpace: 'nowrap' }}>
+                        Sugerido: +{alertaDias[formData.canal_preferido] || 5}d ({formData.canal_preferido})
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
