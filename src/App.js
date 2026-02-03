@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2, ChevronDown, TrendingUp } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2, ChevronDown, TrendingUp, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ComprasCargas from './ComprasCargas';
 import Proveedores from './Proveedores';
 import OperacionesComerciales from './OperacionesComerciales';
+import SeguimientoComercial from './SeguimientoComercial';
 import './App.css';
 
 export default function Calcuares() {
@@ -21,7 +22,8 @@ export default function Calcuares() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin');
-  const [activeModule, setActiveModule] = useState('calculos'); // 'calculos', 'compras' o 'proveedores'
+  const [activeModule, setActiveModule] = useState('calculos');
+  const [ventasModule, setVentasModule] = useState('precios'); // 'calculos', 'compras' o 'proveedores'
   const [expandedFlete, setExpandedFlete] = useState({}); // Para controlar qué tarjetas tienen flete expandido
   
   // Estados de autenticación
@@ -1039,7 +1041,7 @@ export default function Calcuares() {
         // VISTA DE VENTAS
         <>
           <div className="card header-card" style={{ background: '#567C8D' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
                   Lista de Precios - Ares
@@ -1063,15 +1065,47 @@ export default function Calcuares() {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
-              <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
-                <div><strong>💵 Interés Anual:</strong> {globalInterest}%</div>
-                <div><strong>💱 Tipo de Cambio EUR→USD:</strong> {exchangeRate}</div>
-                <div><strong>📊 Total Productos:</strong> {products.length}</div>
-              </div>
+            {/* Tabs de navegación ventas */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+              <button 
+                onClick={() => setVentasModule('precios')} 
+                style={{ 
+                  padding: '0.5rem 1.25rem', borderRadius: '8px', border: '2px solid white',
+                  fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: ventasModule === 'precios' ? 'white' : 'transparent',
+                  color: ventasModule === 'precios' ? '#567C8D' : 'white'
+                }}
+              >
+                <DollarSign size={18} /> Precios
+              </button>
+              <button 
+                onClick={() => setVentasModule('seguimiento')} 
+                style={{ 
+                  padding: '0.5rem 1.25rem', borderRadius: '8px', border: '2px solid white',
+                  fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: ventasModule === 'seguimiento' ? 'white' : 'transparent',
+                  color: ventasModule === 'seguimiento' ? '#567C8D' : 'white'
+                }}
+              >
+                <Users size={18} /> Seguimiento
+              </button>
             </div>
+
+            {ventasModule === 'precios' && (
+              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
+                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
+                  <div><strong>💵 Interés Anual:</strong> {globalInterest}%</div>
+                  <div><strong>💱 Tipo de Cambio EUR→USD:</strong> {exchangeRate}</div>
+                  <div><strong>📊 Total Productos:</strong> {products.length}</div>
+                </div>
+              </div>
+            )}
           </div>
 
+          {ventasModule === 'seguimiento' ? (
+            <SeguimientoComercial />
+          ) : (
+          <>
           <div className="card">
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <div className="search-container" style={{ flex: 1, margin: 0 }}>
@@ -1219,6 +1253,8 @@ export default function Calcuares() {
               })}
             </div>
           )}
+          </>
+          )}
         </>
       ) : (
         // VISTA ADMIN
@@ -1281,6 +1317,18 @@ export default function Calcuares() {
                   >
                     <TrendingUp size={18} />
                     Operaciones
+                  </button>
+                  <button 
+                    onClick={() => setActiveModule('seguimiento')} 
+                    className="btn" 
+                    style={{ 
+                      background: activeModule === 'seguimiento' ? 'white' : 'transparent', 
+                      color: activeModule === 'seguimiento' ? '#567C8D' : 'white',
+                      border: '2px solid white'
+                    }}
+                  >
+                    <Users size={18} />
+                    Seguimiento
                   </button>
                 </div>
               </div>
@@ -1354,6 +1402,8 @@ export default function Calcuares() {
             <Proveedores />
           ) : activeModule === 'operaciones' ? (
             <OperacionesComerciales />
+          ) : activeModule === 'seguimiento' ? (
+            <SeguimientoComercial />
           ) : (
           <>
           <div className="card">
