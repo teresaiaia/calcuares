@@ -63,10 +63,6 @@ export default function ComprasCargas() {
     costo_carga: '',
     gastos_extras: '',
     costo_despacho: '',
-    costo_servtec: '',
-    costo_training: '',
-    costo_comision: '',
-    costo_extras2: '',
     numero_guia: '',
     estado_carga_id: '',
     notas_carga: '',
@@ -288,10 +284,6 @@ export default function ComprasCargas() {
       costo_carga: '',
       gastos_extras: '',
       costo_despacho: '',
-      costo_servtec: '',
-      costo_training: '',
-      costo_comision: '',
-      costo_extras2: '',
       numero_guia: '',
       estado_carga_id: estadosCarga[0]?.id || '',
       notas_carga: '',
@@ -368,10 +360,6 @@ export default function ComprasCargas() {
         costo_carga: data.costo_carga || '',
         gastos_extras: data.gastos_extras || '',
         costo_despacho: data.costo_despacho || '',
-        costo_servtec: data.costo_servtec || '',
-        costo_training: data.costo_training || '',
-        costo_comision: data.costo_comision || '',
-        costo_extras2: data.costo_extras2 || '',
         numero_guia: data.numero_guia || '',
         estado_carga_id: data.estado_carga_id || '',
         notas_carga: data.notas_carga || '',
@@ -422,10 +410,6 @@ export default function ComprasCargas() {
         costo_carga: formData.costo_carga ? parseFloat(formData.costo_carga) : null,
         gastos_extras: formData.gastos_extras ? parseFloat(formData.gastos_extras) : null,
         costo_despacho: formData.costo_despacho ? parseFloat(formData.costo_despacho) : null,
-        costo_servtec: formData.costo_servtec ? parseFloat(formData.costo_servtec) : null,
-        costo_training: formData.costo_training ? parseFloat(formData.costo_training) : null,
-        costo_comision: formData.costo_comision ? parseFloat(formData.costo_comision) : null,
-        costo_extras2: formData.costo_extras2 ? parseFloat(formData.costo_extras2) : null,
         numero_guia: formData.numero_guia || null,
         estado_carga_id: formData.estado_carga_id || null,
         notas_carga: formData.notas_carga || null,
@@ -564,10 +548,6 @@ export default function ComprasCargas() {
       'Gastos Extras': item.gastos_extras || 0,
       'Costo Despacho': item.costo_despacho || 0,
       'Costo Transferencia': item.costo_transferencia || 0,
-      'ServTec': item.costo_servtec || 0,
-      'Training': item.costo_training || 0,
-      'Comisión': item.costo_comision || 0,
-      'Extras': item.costo_extras2 || 0,
       'Fecha Ingreso': item.fecha_ingreso ? formatFecha(item.fecha_ingreso) : '',
       'COSTO TOTAL': item.costo_total || 0
     }));
@@ -1185,50 +1165,6 @@ export default function ComprasCargas() {
                       placeholder="0.00"
                     />
                   </div>
-                  <div className="cc-form-group">
-                    <label className="cc-form-label">ServTec</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="cc-form-input"
-                      value={formData.costo_servtec}
-                      onChange={(e) => handleInputChange('costo_servtec', e.target.value)}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="cc-form-group">
-                    <label className="cc-form-label">Training</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="cc-form-input"
-                      value={formData.costo_training}
-                      onChange={(e) => handleInputChange('costo_training', e.target.value)}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="cc-form-group">
-                    <label className="cc-form-label">Comisión</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="cc-form-input"
-                      value={formData.costo_comision}
-                      onChange={(e) => handleInputChange('costo_comision', e.target.value)}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="cc-form-group">
-                    <label className="cc-form-label">Extras</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="cc-form-input"
-                      value={formData.costo_extras2}
-                      onChange={(e) => handleInputChange('costo_extras2', e.target.value)}
-                      placeholder="0.00"
-                    />
-                  </div>
                 </div>
                 
                 {/* Total */}
@@ -1250,11 +1186,7 @@ export default function ComprasCargas() {
                       (parseFloat(formData.costo_carga) || 0) +
                       (parseFloat(formData.gastos_extras) || 0) +
                       (parseFloat(formData.costo_despacho) || 0) +
-                      (parseFloat(formData.costo_transferencia) || 0) +
-                      (parseFloat(formData.costo_servtec) || 0) +
-                      (parseFloat(formData.costo_training) || 0) +
-                      (parseFloat(formData.costo_comision) || 0) +
-                      (parseFloat(formData.costo_extras2) || 0)
+                      (parseFloat(formData.costo_transferencia) || 0)
                     ).toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
