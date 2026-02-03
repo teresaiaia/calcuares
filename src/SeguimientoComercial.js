@@ -403,8 +403,10 @@ export default function SeguimientoComercial({ isAdmin = false }) {
           aVal = a.dias_sin_contacto;
           bVal = b.dias_sin_contacto;
         } else if (sortConfig.key === 'proximo_contacto') {
-          aVal = a.proximo_contacto ? new Date(a.proximo_contacto).getTime() : 99999999999999;
-          bVal = b.proximo_contacto ? new Date(b.proximo_contacto).getTime() : 99999999999999;
+          const aProx = a.proximo_contacto || (a.ultimo_contacto ? calcularProximoContacto(a.ultimo_contacto, a.canal_preferido) : null);
+          const bProx = b.proximo_contacto || (b.ultimo_contacto ? calcularProximoContacto(b.ultimo_contacto, b.canal_preferido) : null);
+          aVal = aProx ? new Date(aProx).getTime() : 99999999999999;
+          bVal = bProx ? new Date(bProx).getTime() : 99999999999999;
         } else if (sortConfig.key.includes('fecha') || sortConfig.key === 'ultimo_contacto') {
           aVal = aVal ? new Date(aVal).getTime() : 0;
           bVal = bVal ? new Date(bVal).getTime() : 0;
@@ -446,7 +448,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
       'Estado': ESTADOS[c.estado]?.label || c.estado,
       'Canal': c.canal_preferido || '',
       'Último Contacto': c.ultimo_contacto ? formatFecha(c.ultimo_contacto) : '',
-      'Próximo Contacto': c.proximo_contacto ? formatFecha(c.proximo_contacto) : '',
+      'Próximo Contacto': formatFecha(c.proximo_contacto || (c.ultimo_contacto ? calcularProximoContacto(c.ultimo_contacto, c.canal_preferido) : '')),
       'Días sin contacto': c.dias_sin_contacto,
       'Alerta': c.tiene_alerta ? 'SÍ' : '',
       'Vendedor': c.vendedor || '',
@@ -658,25 +660,26 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{formatFecha(c.ultimo_contacto)}</td>
                   <td style={{ textAlign: 'center' }}>
-                    {c.proximo_contacto ? (
-                      <span style={{
-                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700',
-                        background: c.tiene_alerta ? '#fef2f2' : '#f0fdf4',
-                        color: c.tiene_alerta ? '#dc2626' : '#16a34a'
-                      }}>
-                        {formatFecha(c.proximo_contacto)}
-                        {c.tiene_alerta && ' ⚠️'}
-                      </span>
-                    ) : (
-                      <span style={{
-                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
-                        background: c.tiene_alerta ? '#fef2f2' : '#f1f5f9',
-                        color: c.tiene_alerta ? '#dc2626' : '#94a3b8'
-                      }}>
-                        {c.dias_sin_contacto === 999 ? '-' : `${c.dias_sin_contacto}d`}
-                        {c.tiene_alerta && ' ⚠️'}
-                      </span>
-                    )}
+                    {(() => {
+                      const proximoFecha = c.proximo_contacto || 
+                        (c.ultimo_contacto ? calcularProximoContacto(c.ultimo_contacto, c.canal_preferido) : null);
+                      if (proximoFecha) {
+                        const hoy = new Date(); hoy.setHours(0,0,0,0);
+                        const fp = new Date(proximoFecha + 'T00:00:00');
+                        const vencido = fp <= hoy && c.estado !== 'verde';
+                        return (
+                          <span style={{
+                            padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700',
+                            background: vencido ? '#fef2f2' : '#f0fdf4',
+                            color: vencido ? '#dc2626' : '#16a34a'
+                          }}>
+                            {formatFecha(proximoFecha)}
+                            {vencido && ' ⚠️'}
+                          </span>
+                        );
+                      }
+                      return <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>;
+                    })()}
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{c.vendedor || '-'}</td>
                   <td>
