@@ -750,7 +750,7 @@ export default function OperacionesComerciales() {
                       onChange={(e) => handleInputChange('costo_comision_vendedor', e.target.value)} placeholder="0.00" />
                   </div>
                   <div className="cc-form-group">
-                    <label className="cc-form-label">Comisión Otros</label>
+                    <label className="cc-form-label">Otros Gastos</label>
                     <input type="number" step="0.01" className="cc-form-input" value={formData.costo_comision_otros}
                       onChange={(e) => handleInputChange('costo_comision_otros', e.target.value)} placeholder="0.00" />
                   </div>
