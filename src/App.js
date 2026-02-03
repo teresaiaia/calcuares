@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2, ChevronDown, TrendingUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ComprasCargas from './ComprasCargas';
 import Proveedores from './Proveedores';
+import OperacionesComerciales from './OperacionesComerciales';
 import './App.css';
 
 export default function Calcuares() {
@@ -1269,6 +1270,18 @@ export default function Calcuares() {
                     <Building2 size={18} />
                     Proveedores
                   </button>
+                  <button 
+                    onClick={() => setActiveModule('operaciones')} 
+                    className="btn" 
+                    style={{ 
+                      background: activeModule === 'operaciones' ? 'white' : 'transparent', 
+                      color: activeModule === 'operaciones' ? '#567C8D' : 'white',
+                      border: '2px solid white'
+                    }}
+                  >
+                    <TrendingUp size={18} />
+                    Operaciones
+                  </button>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -1339,6 +1352,8 @@ export default function Calcuares() {
             <ComprasCargas />
           ) : activeModule === 'proveedores' ? (
             <Proveedores />
+          ) : activeModule === 'operaciones' ? (
+            <OperacionesComerciales />
           ) : (
           <>
           <div className="card">
