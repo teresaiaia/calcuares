@@ -466,25 +466,21 @@ export default function OperacionesComerciales() {
 
       {/* Stats */}
       <div className="cc-stats-grid">
-        <div className="cc-stat-card">
-          <span className="cc-stat-number" style={{ marginBottom: '0.25rem' }}>{stats.total}</span>
-          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Operaciones</span>
+        <div className="cc-stat-card" style={{ textAlign: 'center', padding: '1rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>Operaciones</div>
+          <div style={{ fontSize: '2rem', fontWeight: '800', color: '#2F4156', lineHeight: '1' }}>{stats.total}</div>
         </div>
-        <div className="cc-stat-card">
-          <span className="cc-stat-number" style={{ marginBottom: '0.25rem' }}>$ {formatMoney(stats.ventasTotal)}</span>
-          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Ventas Netas</span>
+        <div className="cc-stat-card" style={{ textAlign: 'center', padding: '1rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>Ventas Netas</div>
+          <div style={{ fontSize: '1.3rem', fontWeight: '800', color: '#2F4156', lineHeight: '1' }}>$ {formatMoney(stats.ventasTotal)}</div>
         </div>
-        <div className="cc-stat-card">
-          <span className="cc-stat-number" style={{ marginBottom: '0.25rem', color: stats.totalMargen >= 0 ? '#16a34a' : '#dc2626' }}>
-            $ {formatMoney(stats.totalMargen)}
-          </span>
-          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Margen Total</span>
+        <div className="cc-stat-card" style={{ textAlign: 'center', padding: '1rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>Margen Total</div>
+          <div style={{ fontSize: '1.3rem', fontWeight: '800', color: stats.totalMargen >= 0 ? '#16a34a' : '#dc2626', lineHeight: '1' }}>$ {formatMoney(stats.totalMargen)}</div>
         </div>
-        <div className="cc-stat-card">
-          <span className="cc-stat-number" style={{ marginBottom: '0.25rem', color: stats.margenPromedio >= 0 ? '#16a34a' : '#dc2626' }}>
-            {stats.margenPromedio.toFixed(1)}%
-          </span>
-          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Margen Promedio</span>
+        <div className="cc-stat-card" style={{ textAlign: 'center', padding: '1rem' }}>
+          <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>Margen Promedio</div>
+          <div style={{ fontSize: '2rem', fontWeight: '800', color: stats.margenPromedio >= 0 ? '#16a34a' : '#dc2626', lineHeight: '1' }}>{stats.margenPromedio.toFixed(1)}%</div>
         </div>
       </div>
 
