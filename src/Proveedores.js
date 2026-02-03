@@ -183,67 +183,106 @@ export default function Proveedores() {
       </div>
 
       {/* Toolbar */}
-      <div className="cc-toolbar">
-        <div className="cc-search-box">
-          <Search size={18} />
+      <div style={{ 
+        background: 'white', 
+        borderRadius: '12px', 
+        padding: '0.75rem 1rem', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        display: 'flex',
+        gap: '0.75rem',
+        alignItems: 'center',
+        marginBottom: '1rem'
+      }}>
+        <div style={{ 
+          flex: 1, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem',
+          background: '#f1f5f9',
+          borderRadius: '8px',
+          padding: '0.6rem 1rem',
+          border: '2px solid #e2e8f0'
+        }}>
+          <Search size={18} style={{ color: '#567C8D', flexShrink: 0 }} />
           <input
             type="text"
             placeholder="Buscar proveedor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ 
+              border: 'none', 
+              background: 'transparent', 
+              width: '100%', 
+              outline: 'none',
+              fontSize: '0.95rem',
+              color: '#2F4156'
+            }}
           />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm('')} 
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#94a3b8' }}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
+        <span style={{ fontSize: '0.8rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+          {filteredProveedores.length} {filteredProveedores.length === 1 ? 'proveedor' : 'proveedores'}
+        </span>
         <button onClick={openNewModal} className="cc-btn cc-btn-primary">
           <Plus size={18} />
           Nuevo Proveedor
         </button>
       </div>
 
-      {/* Grid de Proveedores */}
-      <div className="cc-cards-grid">
+      {/* Grid de Proveedores - Compacto */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', 
+        gap: '0.75rem' 
+      }}>
         {filteredProveedores.map(proveedor => (
-          <div key={proveedor.id} className="cc-card" style={{ opacity: proveedor.activo ? 1 : 0.6 }}>
-            <div className="cc-card-header">
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#2F4156' }}>
-                  {proveedor.nombre_comercial}
-                </h3>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  onClick={() => openEditModal(proveedor)} 
-                  className="cc-btn-icon"
-                  title="Editar"
-                >
-                  <Edit2 size={16} />
+          <div key={proveedor.id} style={{ 
+            background: 'white', 
+            borderRadius: '10px', 
+            padding: '0.75rem 1rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #e2e8f0',
+            opacity: proveedor.activo ? 1 : 0.5,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.4rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#2F4156', margin: 0 }}>
+                {proveedor.nombre_comercial}
+              </h3>
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                <button onClick={() => openEditModal(proveedor)} className="cc-btn-icon" title="Editar" style={{ padding: '3px' }}>
+                  <Edit2 size={13} />
                 </button>
-                <button 
-                  onClick={() => deleteProveedor(proveedor.id, proveedor.nombre_comercial)} 
-                  className="cc-btn-icon cc-btn-danger"
-                  title="Eliminar"
-                >
-                  <Trash2 size={16} />
+                <button onClick={() => deleteProveedor(proveedor.id, proveedor.nombre_comercial)} className="cc-btn-icon cc-btn-danger" title="Eliminar" style={{ padding: '3px' }}>
+                  <Trash2 size={13} />
                 </button>
               </div>
             </div>
-
-            <div className="cc-card-body">
-              <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                📋 {getContactoResumen(proveedor)}
-              </div>
-              {proveedor.direccion_pickup && (
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                  📍 {proveedor.direccion_pickup.length > 50 
-                    ? proveedor.direccion_pickup.substring(0, 50) + '...' 
-                    : proveedor.direccion_pickup}
-                </div>
-              )}
+            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+              {getContactoResumen(proveedor)}
             </div>
-
-            <div className="cc-card-footer">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.15rem' }}>
               <button
                 onClick={() => toggleActivo(proveedor)}
-                className={`cc-status-badge ${proveedor.activo ? 'cc-status-active' : 'cc-status-inactive'}`}
+                style={{ 
+                  fontSize: '0.7rem', 
+                  padding: '2px 8px', 
+                  borderRadius: '10px', 
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  background: proveedor.activo ? '#dcfce7' : '#f1f5f9',
+                  color: proveedor.activo ? '#16a34a' : '#94a3b8'
+                }}
               >
                 {proveedor.activo ? '✓ Activo' : '○ Inactivo'}
               </button>
