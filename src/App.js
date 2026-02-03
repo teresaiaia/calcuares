@@ -1040,63 +1040,79 @@ export default function Calcuares() {
       {view === 'ventas' ? (
         // VISTA DE VENTAS
         <>
-          <div className="card header-card" style={{ background: '#567C8D' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div className="card header-card" style={{ background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-                  Lista de Precios - Ares
+                <h1 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '0.25rem' }}>
+                  ⚡ Ares Medical
                 </h1>
-                <p style={{ color: 'white', fontSize: '1.1rem' }}>Catálogo de Productos y Cotizaciones</p>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Portal de Ventas</p>
               </div>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
                   <User size={16} />
                   <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Usuario'}</span>
                 </div>
                 {currentUser?.rol === 'admin' && (
-                  <button onClick={() => setView('admin')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
-                    <DollarSign size={20} />
-                    Panel Admin
+                  <button onClick={() => setView('admin')} style={{ 
+                    padding: '0.5rem 1rem', borderRadius: '8px', border: 'none',
+                    background: 'rgba(255,255,255,0.2)', color: 'white', cursor: 'pointer',
+                    fontWeight: '600', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem'
+                  }}>
+                    <DollarSign size={16} /> Admin
                   </button>
                 )}
-                <button onClick={handleLogout} className="btn btn-danger" style={{ background: '#ef4444', color: 'white', border: 'none' }} title="Cerrar Sesión">
-                  <LogOut size={20} />
+                <button onClick={handleLogout} style={{ 
+                  padding: '0.5rem', borderRadius: '8px', border: 'none',
+                  background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)', cursor: 'pointer'
+                }} title="Cerrar Sesión">
+                  <LogOut size={18} />
                 </button>
               </div>
             </div>
 
-            {/* Tabs de navegación ventas */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            {/* Tabs de navegación ventas - mejorados */}
+            <div style={{ 
+              display: 'flex', gap: '0.5rem', 
+              background: 'rgba(0,0,0,0.15)', padding: '0.35rem', borderRadius: '12px',
+              marginBottom: '1rem'
+            }}>
               <button 
                 onClick={() => setVentasModule('precios')} 
                 style={{ 
-                  padding: '0.5rem 1.25rem', borderRadius: '8px', border: '2px solid white',
-                  fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  flex: 1, padding: '0.65rem 1rem', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                   background: ventasModule === 'precios' ? 'white' : 'transparent',
-                  color: ventasModule === 'precios' ? '#567C8D' : 'white'
+                  color: ventasModule === 'precios' ? '#2F4156' : 'rgba(255,255,255,0.7)',
+                  boxShadow: ventasModule === 'precios' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <DollarSign size={18} /> Precios
+                <DollarSign size={18} /> Lista de Precios
               </button>
               <button 
                 onClick={() => setVentasModule('seguimiento')} 
                 style={{ 
-                  padding: '0.5rem 1.25rem', borderRadius: '8px', border: '2px solid white',
-                  fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  flex: 1, padding: '0.65rem 1rem', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                   background: ventasModule === 'seguimiento' ? 'white' : 'transparent',
-                  color: ventasModule === 'seguimiento' ? '#567C8D' : 'white'
+                  color: ventasModule === 'seguimiento' ? '#2F4156' : 'rgba(255,255,255,0.7)',
+                  boxShadow: ventasModule === 'seguimiento' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <Users size={18} /> Seguimiento
+                <Users size={18} /> Seguimiento Comercial
               </button>
             </div>
 
             {ventasModule === 'precios' && (
-              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '10px', color: 'white' }}>
-                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.9rem' }}>
-                  <div><strong>💵 Interés Anual:</strong> {globalInterest}%</div>
-                  <div><strong>💱 Tipo de Cambio EUR→USD:</strong> {exchangeRate}</div>
-                  <div><strong>📊 Total Productos:</strong> {products.length}</div>
+              <div style={{ background: 'rgba(255,255,255,0.12)', padding: '0.75rem 1rem', borderRadius: '10px', color: 'white' }}>
+                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.85rem' }}>
+                  <div><strong>💵 Interés:</strong> {globalInterest}%</div>
+                  <div><strong>💱 EUR→USD:</strong> {exchangeRate}</div>
+                  <div><strong>📊 Productos:</strong> {products.length}</div>
                 </div>
               </div>
             )}
@@ -1403,7 +1419,7 @@ export default function Calcuares() {
           ) : activeModule === 'operaciones' ? (
             <OperacionesComerciales />
           ) : activeModule === 'seguimiento' ? (
-            <SeguimientoComercial />
+            <SeguimientoComercial isAdmin={true} />
           ) : (
           <>
           <div className="card">
