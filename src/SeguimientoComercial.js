@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { 
   Search, Plus, Edit2, Trash2, X, Save, Users, Phone, Mail, MessageCircle,
-  ChevronUp, ChevronDown, FileSpreadsheet, Clock, MapPin
+  ChevronUp, ChevronDown, FileSpreadsheet, Clock, MapPin, Settings
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './ComprasCargas.css';
 
-// Configuración de alertas por canal (días)
-const ALERTA_DIAS = {
+// Valores por defecto de alertas
+const ALERTA_DEFAULTS = {
   'WhatsApp': 3,
   'Email': 5,
   'Teléfono': 4,
@@ -23,7 +23,7 @@ const ESTADOS = {
   verde: { label: 'No Interesado', color: '#16a34a', bg: '#f0fdf4', icon: '🟢' }
 };
 
-export default function SeguimientoComercial() {
+export default function SeguimientoComercial({ isAdmin = false }) {
   const [contactos, setContactos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,6 +33,30 @@ export default function SeguimientoComercial() {
   const [sortConfig, setSortConfig] = useState({ key: 'dias_sin_contacto', direction: 'desc' });
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [soloAlertas, setSoloAlertas] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+
+  // Config de alertas (persiste en localStorage)
+  const storageKey = isAdmin ? 'alertas_admin' : 'alertas_vendedor';
+  const [alertaDias, setAlertaDias] = useState(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* ignore */ }
+    }
+    // Vendedor hereda config admin si existe
+    if (!isAdmin) {
+      const adminConfig = localStorage.getItem('alertas_admin');
+      if (adminConfig) {
+        try { return JSON.parse(adminConfig); } catch (e) { /* ignore */ }
+      }
+    }
+    return { ...ALERTA_DEFAULTS };
+  });
+
+  const guardarConfig = (canal, dias) => {
+    const nuevo = { ...alertaDias, [canal]: parseInt(dias) || 1 };
+    setAlertaDias(nuevo);
+    localStorage.setItem(storageKey, JSON.stringify(nuevo));
+  };
 
   // Historial
   const [showHistorial, setShowHistorial] = useState(false);
@@ -110,7 +134,7 @@ export default function SeguimientoComercial() {
   const necesitaAlerta = (contacto) => {
     if (contacto.estado === 'verde') return false;
     const dias = diasSinContacto(contacto.ultimo_contacto);
-    const limite = ALERTA_DIAS[contacto.canal_preferido] || 5;
+    const limite = alertaDias[contacto.canal_preferido] || 5;
     return dias >= limite;
   };
 
@@ -477,10 +501,50 @@ export default function SeguimientoComercial() {
           <button onClick={exportToExcel} className="cc-btn cc-btn-secondary" title="Excel">
             <FileSpreadsheet size={18} /> Excel
           </button>
+          <button onClick={() => setShowConfig(!showConfig)} className="cc-btn cc-btn-secondary" title="Configurar alertas"
+            style={{ background: showConfig ? '#567C8D' : undefined, color: showConfig ? 'white' : undefined }}>
+            <Settings size={18} />
+          </button>
           <button onClick={openNewModal} className="cc-btn cc-btn-primary">
             <Plus size={18} /> Nuevo Contacto
           </button>
         </div>
+
+        {/* Panel de configuración de alertas */}
+        {showConfig && (
+          <div style={{ 
+            background: '#f8fafc', padding: '1rem', borderRadius: '8px', 
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#2F4156', margin: 0 }}>
+                ⚙️ Alertas de seguimiento {isAdmin ? '(Config. por defecto)' : '(Mi configuración)'}
+              </h4>
+              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                Días sin contacto antes de generar alerta
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              {Object.keys(alertaDias).map(canal => (
+                <div key={canal} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500', minWidth: '75px' }}>{canal}:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={alertaDias[canal]}
+                    onChange={(e) => guardarConfig(canal, e.target.value)}
+                    style={{ 
+                      width: '50px', padding: '0.3rem 0.4rem', borderRadius: '6px', 
+                      border: '1px solid #e2e8f0', fontSize: '0.85rem', textAlign: 'center'
+                    }}
+                  />
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>días</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Fila 2: Filtros */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
