@@ -524,17 +524,19 @@ export default function SeguimientoComercial({ isAdmin = false }) {
           <button onClick={exportToExcel} className="cc-btn cc-btn-secondary" title="Excel">
             <FileSpreadsheet size={18} /> Excel
           </button>
-          <button onClick={() => setShowConfig(!showConfig)} className="cc-btn cc-btn-secondary" title="Configurar alertas"
-            style={{ background: showConfig ? '#567C8D' : undefined, color: showConfig ? 'white' : undefined }}>
-            <Settings size={18} />
-          </button>
+          {isAdmin && (
+            <button onClick={() => setShowConfig(!showConfig)} className="cc-btn cc-btn-secondary" title="Configurar alertas"
+              style={{ background: showConfig ? '#567C8D' : undefined, color: showConfig ? 'white' : undefined }}>
+              <Settings size={18} />
+            </button>
+          )}
           <button onClick={openNewModal} className="cc-btn cc-btn-primary">
             <Plus size={18} /> Nuevo Contacto
           </button>
         </div>
 
-        {/* Panel de configuración de alertas */}
-        {showConfig && (
+        {/* Panel de configuración de alertas - solo admin */}
+        {isAdmin && showConfig && (
           <div style={{ 
             background: '#f8fafc', padding: '1rem', borderRadius: '8px', 
             border: '1px solid #e2e8f0'
@@ -543,36 +545,22 @@ export default function SeguimientoComercial({ isAdmin = false }) {
               <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#2F4156', margin: 0 }}>
                 ⚙️ Días sugeridos para próximo contacto
               </h4>
-              {!isAdmin && (
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                  Configurado por administración
-                </span>
-              )}
             </div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               {Object.keys(alertaDias).map(canal => (
                 <div key={canal} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500', minWidth: '75px' }}>{canal}:</span>
-                  {isAdmin ? (
-                    <input
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={alertaDias[canal]}
-                      onChange={(e) => guardarConfig(canal, e.target.value)}
-                      style={{ 
-                        width: '50px', padding: '0.3rem 0.4rem', borderRadius: '6px', 
-                        border: '1px solid #e2e8f0', fontSize: '0.85rem', textAlign: 'center'
-                      }}
-                    />
-                  ) : (
-                    <span style={{ 
-                      fontSize: '0.85rem', fontWeight: '700', color: '#2F4156',
-                      background: '#e2e8f0', padding: '0.2rem 0.6rem', borderRadius: '6px'
-                    }}>
-                      {alertaDias[canal]}
-                    </span>
-                  )}
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={alertaDias[canal]}
+                    onChange={(e) => guardarConfig(canal, e.target.value)}
+                    style={{ 
+                      width: '50px', padding: '0.3rem 0.4rem', borderRadius: '6px', 
+                      border: '1px solid #e2e8f0', fontSize: '0.85rem', textAlign: 'center'
+                    }}
+                  />
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>días</span>
                 </div>
               ))}
