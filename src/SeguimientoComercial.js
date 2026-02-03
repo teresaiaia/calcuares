@@ -369,6 +369,7 @@ export default function SeguimientoComercial() {
     }
 
     return result;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactos, searchTerm, sortConfig, filtroEstado, soloAlertas]);
 
   // Stats
@@ -379,6 +380,7 @@ export default function SeguimientoComercial() {
     const amarillos = contactos.filter(c => c.estado === 'amarillo').length;
     const verdes = contactos.filter(c => c.estado === 'verde').length;
     return { total, conAlerta, rojos, amarillos, verdes };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactos]);
 
   // Export
@@ -532,7 +534,6 @@ export default function SeguimientoComercial() {
           </thead>
           <tbody>
             {filteredContactos.map(c => {
-              const est = ESTADOS[c.estado] || ESTADOS.amarillo;
               return (
                 <tr key={c.id} style={{ background: c.tiene_alerta ? '#fff7ed' : undefined }}>
                   <td>
