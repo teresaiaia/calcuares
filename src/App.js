@@ -1276,139 +1276,103 @@ export default function Calcuares() {
         // VISTA ADMIN
         <>
           <div className="card header-card" style={{ background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <div>
-                  <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
-                    ⚡ Adminares
-                  </h1>
-                  <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem' }}>Sistema de Gestión - Ares Medical Equipment</p>
-                </div>
-                {/* Navegación entre módulos */}
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button 
-                    onClick={() => setActiveModule('calculos')} 
-                    className="btn" 
-                    style={{ 
-                      background: activeModule === 'calculos' ? 'white' : 'transparent', 
-                      color: activeModule === 'calculos' ? '#567C8D' : 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    <DollarSign size={18} />
-                    Cálculos
-                  </button>
-                  <button 
-                    onClick={() => setActiveModule('compras')} 
-                    className="btn" 
-                    style={{ 
-                      background: activeModule === 'compras' ? 'white' : 'transparent', 
-                      color: activeModule === 'compras' ? '#567C8D' : 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    <Package size={18} />
-                    Compras y Cargas
-                  </button>
-                  <button 
-                    onClick={() => setActiveModule('proveedores')} 
-                    className="btn" 
-                    style={{ 
-                      background: activeModule === 'proveedores' ? 'white' : 'transparent', 
-                      color: activeModule === 'proveedores' ? '#567C8D' : 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    <Building2 size={18} />
-                    Proveedores
-                  </button>
-                  <button 
-                    onClick={() => setActiveModule('operaciones')} 
-                    className="btn" 
-                    style={{ 
-                      background: activeModule === 'operaciones' ? 'white' : 'transparent', 
-                      color: activeModule === 'operaciones' ? '#567C8D' : 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    <TrendingUp size={18} />
-                    Operaciones
-                  </button>
-                  <button 
-                    onClick={() => setActiveModule('seguimiento')} 
-                    className="btn" 
-                    style={{ 
-                      background: activeModule === 'seguimiento' ? 'white' : 'transparent', 
-                      color: activeModule === 'seguimiento' ? '#567C8D' : 'white',
-                      border: '2px solid white'
-                    }}
-                  >
-                    <Users size={18} />
-                    Seguimiento
-                  </button>
-                </div>
+            {/* Fila 1: Título + Usuario */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '0.15rem' }}>
+                  ⚡ Adminares
+                </h1>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>Sistema de Gestión - Ares Medical Equipment</p>
               </div>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 {saving && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#567C8D', fontWeight: '600', background: 'white', padding: '0.5rem 1rem', borderRadius: '8px' }}>
-                    <RefreshCw className="animate-spin" size={20} />
-                    <span>Guardando...</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#567C8D', fontWeight: '600', background: 'white', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                    <RefreshCw className="animate-spin" size={16} />
+                    Guardando...
                   </div>
                 )}
-                <button onClick={() => setView('ventas')} className="btn btn-success" style={{ background: 'white', color: '#567C8D' }}>
-                  <Eye size={20} />
-                  Vista Ventas
-                </button>
-                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
-                  <User size={16} />
-                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Administrador'}</span>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.15)', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                  <User size={14} />
+                  {currentUser?.nombre || 'Admin'}
                 </div>
-                <button onClick={handleLogout} className="btn" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none' }} title="Salir">
-                  <LogOut size={20} />
-                  Salir
+                <button onClick={() => setView('ventas')} style={{ 
+                  padding: '0.4rem 0.75rem', borderRadius: '8px', border: 'none',
+                  background: 'rgba(255,255,255,0.2)', color: 'white', cursor: 'pointer',
+                  fontWeight: '600', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem'
+                }}>
+                  <Eye size={14} /> Ventas
+                </button>
+                <button onClick={handleLogout} style={{ 
+                  padding: '0.4rem', borderRadius: '8px', border: 'none',
+                  background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)', cursor: 'pointer'
+                }} title="Salir">
+                  <LogOut size={16} />
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-3">
-              <div>
-                <label className="input-label" style={{ color: 'white' }}>💵 Interés Anual Global (%)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={globalInterest}
-                  onChange={(e) => setGlobalInterest(e.target.value)}
-                  className="input"
-                  placeholder="Ej: 12"
-                />
-              </div>
+            {/* Fila 2: Navegación módulos - segmented control */}
+            <div style={{ 
+              display: 'flex', gap: '4px', 
+              background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '12px',
+              marginBottom: '1rem'
+            }}>
+              {[
+                { key: 'calculos', label: 'Cálculos', icon: <DollarSign size={16} /> },
+                { key: 'compras', label: 'Compras', icon: <Package size={16} /> },
+                { key: 'proveedores', label: 'Proveedores', icon: <Building2 size={16} /> },
+                { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
+                { key: 'seguimiento', label: 'Seguimiento', icon: <Users size={16} /> }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveModule(tab.key)}
+                  style={{
+                    flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                    fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
+                    background: activeModule === tab.key ? 'white' : 'transparent',
+                    color: activeModule === tab.key ? '#2F4156' : 'rgba(255,255,255,0.65)',
+                    boxShadow: activeModule === tab.key ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
 
-              <div>
-                <label className="input-label" style={{ color: 'white' }}>💱 Tipo de Cambio EUR → USD</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={exchangeRate}
-                  onChange={(e) => setExchangeRate(e.target.value)}
-                  className="input"
-                  placeholder="Ej: 1.10"
-                />
-              </div>
-
-              <div>
-                <label className="input-label" style={{ color: 'white' }}>📁 Importar / Exportar</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <label className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer' }}>
-                    <Upload size={18} />
-                    Importar
-                    <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileImport} style={{ display: 'none' }} />
-                  </label>
-                  <button onClick={exportData} className="btn btn-secondary">
-                    <Download size={18} />
-                  </button>
+            {/* Fila 3: Configuración global (solo en Cálculos) */}
+            {activeModule === 'calculos' && (
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.3rem' }}>💵 Interés Anual (%)</label>
+                  <input type="number" step="0.01" value={globalInterest}
+                    onChange={(e) => setGlobalInterest(e.target.value)}
+                    className="input" placeholder="12"
+                    style={{ height: '38px' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.3rem' }}>💱 EUR → USD</label>
+                  <input type="number" step="0.01" value={exchangeRate}
+                    onChange={(e) => setExchangeRate(e.target.value)}
+                    className="input" placeholder="1.10"
+                    style={{ height: '38px' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.3rem' }}>📁 Importar / Exportar</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <label className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer', height: '38px', fontSize: '0.85rem' }}>
+                      <Upload size={16} /> Importar
+                      <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileImport} style={{ display: 'none' }} />
+                    </label>
+                    <button onClick={exportData} className="btn btn-secondary" style={{ height: '38px' }}>
+                      <Download size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Contenido según módulo activo */}
