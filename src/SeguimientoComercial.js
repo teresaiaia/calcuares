@@ -30,24 +30,16 @@ export default function SeguimientoComercial({ isAdmin = false }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'dias_sin_contacto', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'proximo_contacto', direction: 'asc' });
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [soloAlertas, setSoloAlertas] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
 
-  // Config de alertas (persiste en localStorage)
-  const storageKey = isAdmin ? 'alertas_admin' : 'alertas_vendedor';
+  // Config de alertas - admin define, vendedor solo ve
   const [alertaDias, setAlertaDias] = useState(() => {
-    const saved = localStorage.getItem(storageKey);
+    const saved = localStorage.getItem('alertas_admin');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* ignore */ }
-    }
-    // Vendedor hereda config admin si existe
-    if (!isAdmin) {
-      const adminConfig = localStorage.getItem('alertas_admin');
-      if (adminConfig) {
-        try { return JSON.parse(adminConfig); } catch (e) { /* ignore */ }
-      }
     }
     return { ...ALERTA_DEFAULTS };
   });
@@ -55,14 +47,14 @@ export default function SeguimientoComercial({ isAdmin = false }) {
   const guardarConfig = (canal, dias) => {
     const nuevo = { ...alertaDias, [canal]: parseInt(dias) || 1 };
     setAlertaDias(nuevo);
-    localStorage.setItem(storageKey, JSON.stringify(nuevo));
+    localStorage.setItem('alertas_admin', JSON.stringify(nuevo));
   };
 
   // Historial
   const [showHistorial, setShowHistorial] = useState(false);
   const [historialContacto, setHistorialContacto] = useState(null);
   const [historial, setHistorial] = useState([]);
-  const [nuevoRegistro, setNuevoRegistro] = useState({ canal: 'WhatsApp', nota: '', fecha: '' });
+  const [nuevoRegistro, setNuevoRegistro] = useState({ canal: 'WhatsApp', nota: '', fecha: '', proximo_contacto: '' });
 
   const emptyForm = {
     nombre_cliente: '',
@@ -130,12 +122,27 @@ export default function SeguimientoComercial({ isAdmin = false }) {
     return diff;
   };
 
-  // Verificar si necesita alerta
+  // Verificar si necesita alerta (basado en proximo_contacto)
   const necesitaAlerta = (contacto) => {
     if (contacto.estado === 'verde') return false;
-    const dias = diasSinContacto(contacto.ultimo_contacto);
-    const limite = alertaDias[contacto.canal_preferido] || 5;
-    return dias >= limite;
+    if (!contacto.proximo_contacto) {
+      // Si no tiene próximo contacto, usar lógica de días sin contacto
+      const dias = diasSinContacto(contacto.ultimo_contacto);
+      const limite = alertaDias[contacto.canal_preferido] || 5;
+      return dias >= limite;
+    }
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const proximo = new Date(contacto.proximo_contacto + 'T00:00:00');
+    return proximo <= hoy;
+  };
+
+  // Calcular fecha sugerida de próximo contacto
+  const calcularProximoContacto = (fecha, canal) => {
+    const dias = alertaDias[canal] || 5;
+    const d = new Date(fecha + 'T00:00:00');
+    d.setDate(d.getDate() + dias);
+    return d.toISOString().split('T')[0];
   };
 
   const generateCodigo = () => {
@@ -180,10 +187,13 @@ export default function SeguimientoComercial({ isAdmin = false }) {
 
   const openHistorialModal = async (contacto) => {
     setHistorialContacto(contacto);
+    const hoy = new Date().toISOString().split('T')[0];
+    const canal = contacto.canal_preferido || 'WhatsApp';
     setNuevoRegistro({ 
-      canal: contacto.canal_preferido || 'WhatsApp', 
+      canal, 
       nota: '', 
-      fecha: new Date().toISOString().split('T')[0] 
+      fecha: hoy,
+      proximo_contacto: calcularProximoContacto(hoy, canal)
     });
     await fetchHistorial(contacto.id);
     setShowHistorial(true);
@@ -196,31 +206,40 @@ export default function SeguimientoComercial({ isAdmin = false }) {
     }
 
     try {
+      const fechaContacto = nuevoRegistro.fecha || new Date().toISOString().split('T')[0];
+
       // Guardar en historial
       const { error: histError } = await supabase
         .from('historial_contactos')
         .insert([{
           seguimiento_id: historialContacto.id,
-          fecha: nuevoRegistro.fecha || new Date().toISOString().split('T')[0],
+          fecha: fechaContacto,
           canal: nuevoRegistro.canal,
           nota: nuevoRegistro.nota
         }]);
 
       if (histError) throw histError;
 
-      // Actualizar último contacto en seguimiento
+      // Actualizar seguimiento con último contacto y próximo contacto
       const { error: updateError } = await supabase
         .from('seguimiento_comercial')
         .update({ 
-          ultimo_contacto: nuevoRegistro.fecha || new Date().toISOString().split('T')[0],
-          canal_preferido: nuevoRegistro.canal
+          ultimo_contacto: fechaContacto,
+          canal_preferido: nuevoRegistro.canal,
+          proximo_contacto: nuevoRegistro.proximo_contacto || null
         })
         .eq('id', historialContacto.id);
 
       if (updateError) throw updateError;
 
-      // Refrescar datos
-      setNuevoRegistro({ canal: nuevoRegistro.canal, nota: '', fecha: new Date().toISOString().split('T')[0] });
+      // Refrescar datos con nueva sugerencia
+      const nuevaFecha = new Date().toISOString().split('T')[0];
+      setNuevoRegistro({ 
+        canal: nuevoRegistro.canal, 
+        nota: '', 
+        fecha: nuevaFecha,
+        proximo_contacto: calcularProximoContacto(nuevaFecha, nuevoRegistro.canal)
+      });
       await fetchHistorial(historialContacto.id);
       await fetchContactos();
     } catch (error) {
@@ -378,6 +397,9 @@ export default function SeguimientoComercial({ isAdmin = false }) {
         if (sortConfig.key === 'dias_sin_contacto') {
           aVal = a.dias_sin_contacto;
           bVal = b.dias_sin_contacto;
+        } else if (sortConfig.key === 'proximo_contacto') {
+          aVal = a.proximo_contacto ? new Date(a.proximo_contacto).getTime() : 99999999999999;
+          bVal = b.proximo_contacto ? new Date(b.proximo_contacto).getTime() : 99999999999999;
         } else if (sortConfig.key.includes('fecha') || sortConfig.key === 'ultimo_contacto') {
           aVal = aVal ? new Date(aVal).getTime() : 0;
           bVal = bVal ? new Date(bVal).getTime() : 0;
@@ -419,6 +441,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
       'Estado': ESTADOS[c.estado]?.label || c.estado,
       'Canal': c.canal_preferido || '',
       'Último Contacto': c.ultimo_contacto ? formatFecha(c.ultimo_contacto) : '',
+      'Próximo Contacto': c.proximo_contacto ? formatFecha(c.proximo_contacto) : '',
       'Días sin contacto': c.dias_sin_contacto,
       'Alerta': c.tiene_alerta ? 'SÍ' : '',
       'Vendedor': c.vendedor || '',
@@ -518,27 +541,38 @@ export default function SeguimientoComercial({ isAdmin = false }) {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
               <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: '#2F4156', margin: 0 }}>
-                ⚙️ Alertas de seguimiento {isAdmin ? '(Config. por defecto)' : '(Mi configuración)'}
+                ⚙️ Días sugeridos para próximo contacto
               </h4>
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                Días sin contacto antes de generar alerta
-              </span>
+              {!isAdmin && (
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                  Configurado por administración
+                </span>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               {Object.keys(alertaDias).map(canal => (
                 <div key={canal} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500', minWidth: '75px' }}>{canal}:</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={alertaDias[canal]}
-                    onChange={(e) => guardarConfig(canal, e.target.value)}
-                    style={{ 
-                      width: '50px', padding: '0.3rem 0.4rem', borderRadius: '6px', 
-                      border: '1px solid #e2e8f0', fontSize: '0.85rem', textAlign: 'center'
-                    }}
-                  />
+                  {isAdmin ? (
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={alertaDias[canal]}
+                      onChange={(e) => guardarConfig(canal, e.target.value)}
+                      style={{ 
+                        width: '50px', padding: '0.3rem 0.4rem', borderRadius: '6px', 
+                        border: '1px solid #e2e8f0', fontSize: '0.85rem', textAlign: 'center'
+                      }}
+                    />
+                  ) : (
+                    <span style={{ 
+                      fontSize: '0.85rem', fontWeight: '700', color: '#2F4156',
+                      background: '#e2e8f0', padding: '0.2rem 0.6rem', borderRadius: '6px'
+                    }}>
+                      {alertaDias[canal]}
+                    </span>
+                  )}
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>días</span>
                 </div>
               ))}
@@ -587,8 +621,8 @@ export default function SeguimientoComercial({ isAdmin = false }) {
               <th onClick={() => handleSort('ultimo_contacto')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                 Último Contacto <SortIcon columnKey="ultimo_contacto" />
               </th>
-              <th onClick={() => handleSort('dias_sin_contacto')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}>
-                Días <SortIcon columnKey="dias_sin_contacto" />
+              <th onClick={() => handleSort('proximo_contacto')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}>
+                Próximo <SortIcon columnKey="proximo_contacto" />
               </th>
               <th onClick={() => handleSort('vendedor')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                 Vendedor <SortIcon columnKey="vendedor" />
@@ -631,14 +665,25 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{formatFecha(c.ultimo_contacto)}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '700',
-                      background: c.tiene_alerta ? '#fef2f2' : '#f1f5f9',
-                      color: c.tiene_alerta ? '#dc2626' : '#64748b'
-                    }}>
-                      {c.dias_sin_contacto === 999 ? '-' : c.dias_sin_contacto}d
-                      {c.tiene_alerta && ' ⚠️'}
-                    </span>
+                    {c.proximo_contacto ? (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700',
+                        background: c.tiene_alerta ? '#fef2f2' : '#f0fdf4',
+                        color: c.tiene_alerta ? '#dc2626' : '#16a34a'
+                      }}>
+                        {formatFecha(c.proximo_contacto)}
+                        {c.tiene_alerta && ' ⚠️'}
+                      </span>
+                    ) : (
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
+                        background: c.tiene_alerta ? '#fef2f2' : '#f1f5f9',
+                        color: c.tiene_alerta ? '#dc2626' : '#94a3b8'
+                      }}>
+                        {c.dias_sin_contacto === 999 ? '-' : `${c.dias_sin_contacto}d`}
+                        {c.tiene_alerta && ' ⚠️'}
+                      </span>
+                    )}
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{c.vendedor || '-'}</td>
                   <td>
@@ -822,10 +867,22 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                 </h4>
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <input type="date" value={nuevoRegistro.fecha}
-                    onChange={(e) => setNuevoRegistro(prev => ({ ...prev, fecha: e.target.value }))}
+                    onChange={(e) => {
+                      const fecha = e.target.value;
+                      setNuevoRegistro(prev => ({ 
+                        ...prev, fecha,
+                        proximo_contacto: calcularProximoContacto(fecha, prev.canal)
+                      }));
+                    }}
                     style={{ padding: '0.4rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }} />
                   <select value={nuevoRegistro.canal}
-                    onChange={(e) => setNuevoRegistro(prev => ({ ...prev, canal: e.target.value }))}
+                    onChange={(e) => {
+                      const canal = e.target.value;
+                      setNuevoRegistro(prev => ({ 
+                        ...prev, canal,
+                        proximo_contacto: calcularProximoContacto(prev.fecha || new Date().toISOString().split('T')[0], canal)
+                      }));
+                    }}
                     style={{ padding: '0.4rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
                     <option>WhatsApp</option>
                     <option>Email</option>
@@ -834,7 +891,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                     <option>Otro</option>
                   </select>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <input type="text" placeholder="¿Qué se habló?" value={nuevoRegistro.nota}
                     onChange={(e) => setNuevoRegistro(prev => ({ ...prev, nota: e.target.value }))}
                     onKeyDown={(e) => e.key === 'Enter' && agregarRegistroHistorial()}
@@ -842,6 +899,16 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                   <button onClick={agregarRegistroHistorial} className="cc-btn cc-btn-primary" style={{ padding: '0.5rem 1rem' }}>
                     <Plus size={16} /> Agregar
                   </button>
+                </div>
+                {/* Próximo contacto sugerido */}
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#eff6ff', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#1d4ed8', fontWeight: '600', whiteSpace: 'nowrap' }}>📅 Próximo contacto:</span>
+                  <input type="date" value={nuevoRegistro.proximo_contacto}
+                    onChange={(e) => setNuevoRegistro(prev => ({ ...prev, proximo_contacto: e.target.value }))}
+                    style={{ padding: '0.3rem', borderRadius: '6px', border: '1px solid #bfdbfe', fontSize: '0.85rem', background: 'white' }} />
+                  <span style={{ fontSize: '0.7rem', color: '#3b82f6' }}>
+                    (sugerido: +{alertaDias[nuevoRegistro.canal] || 5} días por {nuevoRegistro.canal})
+                  </span>
                 </div>
               </div>
 
