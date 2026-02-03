@@ -16,6 +16,8 @@ export default function OperacionesComerciales() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   const emptyForm = {
     // Datos de la operación
@@ -341,6 +343,14 @@ export default function OperacionesComerciales() {
   const filteredOperaciones = useMemo(() => {
     let result = operaciones;
 
+    // Filtro por rango de fechas
+    if (fechaDesde) {
+      result = result.filter(op => op.fecha_operacion >= fechaDesde);
+    }
+    if (fechaHasta) {
+      result = result.filter(op => op.fecha_operacion <= fechaHasta);
+    }
+
     if (searchTerm) {
       const terms = searchTerm.toLowerCase().split(' ').filter(t => t.length > 0);
       const includeTerms = terms.filter(t => !t.startsWith('-'));
@@ -381,28 +391,22 @@ export default function OperacionesComerciales() {
     }
 
     return result;
-  }, [operaciones, searchTerm, sortConfig]);
+  }, [operaciones, searchTerm, sortConfig, fechaDesde, fechaHasta]);
 
-  // Estadísticas
+  // Estadísticas basadas en datos filtrados
   const stats = useMemo(() => {
-    const total = operaciones.length;
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    
-    const opsMes = operaciones.filter(op => {
-      const fecha = new Date(op.fecha_operacion);
-      return fecha.getMonth() === currentMonth && fecha.getFullYear() === currentYear;
-    });
+    const data = filteredOperaciones;
+    const total = data.length;
 
-    const ventasMes = opsMes.reduce((sum, op) => sum + (parseFloat(op.precio_neto_venta) || 0), 0);
-    const margenPromedio = operaciones.length > 0
-      ? operaciones.reduce((sum, op) => sum + (parseFloat(op.margen_porcentaje) || 0), 0) / operaciones.length
+    const ventasTotal = data.reduce((sum, op) => sum + (parseFloat(op.precio_neto_venta) || 0), 0);
+    const costosTotal = data.reduce((sum, op) => sum + (parseFloat(op.total_costos) || 0), 0);
+    const totalMargen = data.reduce((sum, op) => sum + (parseFloat(op.margen) || 0), 0);
+    const margenPromedio = total > 0
+      ? data.reduce((sum, op) => sum + (parseFloat(op.margen_porcentaje) || 0), 0) / total
       : 0;
 
-    const totalMargen = operaciones.reduce((sum, op) => sum + (parseFloat(op.margen) || 0), 0);
-
-    return { total, ventasMes, margenPromedio, totalMargen };
-  }, [operaciones]);
+    return { total, ventasTotal, costosTotal, totalMargen, margenPromedio };
+  }, [filteredOperaciones]);
 
   // Exportar Excel
   const exportToExcel = () => {
@@ -463,45 +467,137 @@ export default function OperacionesComerciales() {
       {/* Stats */}
       <div className="cc-stats-grid">
         <div className="cc-stat-card">
-          <span className="cc-stat-number">{stats.total}</span>
-          <span className="cc-stat-label">Total Operaciones</span>
+          <span className="cc-stat-number" style={{ marginBottom: '0.25rem' }}>{stats.total}</span>
+          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Operaciones</span>
         </div>
         <div className="cc-stat-card">
-          <span className="cc-stat-number">$ {formatMoney(stats.ventasMes)}</span>
-          <span className="cc-stat-label">Ventas del Mes</span>
+          <span className="cc-stat-number" style={{ marginBottom: '0.25rem' }}>$ {formatMoney(stats.ventasTotal)}</span>
+          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Ventas Netas</span>
         </div>
         <div className="cc-stat-card">
-          <span className="cc-stat-number" style={{ color: stats.totalMargen >= 0 ? '#16a34a' : '#dc2626' }}>
+          <span className="cc-stat-number" style={{ marginBottom: '0.25rem', color: stats.totalMargen >= 0 ? '#16a34a' : '#dc2626' }}>
             $ {formatMoney(stats.totalMargen)}
           </span>
-          <span className="cc-stat-label">Margen Total</span>
+          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Margen Total</span>
         </div>
         <div className="cc-stat-card">
-          <span className="cc-stat-number" style={{ color: stats.margenPromedio >= 0 ? '#16a34a' : '#dc2626' }}>
+          <span className="cc-stat-number" style={{ marginBottom: '0.25rem', color: stats.margenPromedio >= 0 ? '#16a34a' : '#dc2626' }}>
             {stats.margenPromedio.toFixed(1)}%
           </span>
-          <span className="cc-stat-label">Margen Promedio</span>
+          <span className="cc-stat-label" style={{ fontSize: '0.8rem' }}>Margen Promedio</span>
         </div>
       </div>
 
-      {/* Toolbar */}
-      <div className="cc-toolbar">
-        <div className="cc-search-box">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Buscar operación... (usa - para excluir)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+      {/* Toolbar con búsqueda y filtros */}
+      <div style={{ 
+        background: 'white', 
+        borderRadius: '12px', 
+        padding: '1rem 1.25rem', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
+        marginBottom: '1rem'
+      }}>
+        {/* Fila 1: Búsqueda + Botones */}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ 
+            flex: 1, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem',
+            background: '#f1f5f9',
+            borderRadius: '8px',
+            padding: '0.6rem 1rem',
+            border: '2px solid #e2e8f0',
+            transition: 'border-color 0.2s'
+          }}>
+            <Search size={18} style={{ color: '#567C8D', flexShrink: 0 }} />
+            <input
+              type="text"
+              placeholder="Buscar por cliente, equipo, código, factura... (usa - para excluir)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ 
+                border: 'none', 
+                background: 'transparent', 
+                width: '100%', 
+                outline: 'none',
+                fontSize: '0.95rem',
+                color: '#2F4156'
+              }}
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#94a3b8' }}
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
           <button onClick={exportToExcel} className="cc-btn cc-btn-secondary" title="Exportar Excel">
             <FileSpreadsheet size={18} /> Excel
           </button>
           <button onClick={openNewModal} className="cc-btn cc-btn-primary">
             <Plus size={18} /> Nueva Operación
           </button>
+        </div>
+
+        {/* Fila 2: Filtros de fecha */}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500', whiteSpace: 'nowrap' }}>
+            📅 Filtrar por fecha:
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => setFechaDesde(e.target.value)}
+              style={{ 
+                padding: '0.4rem 0.6rem', 
+                borderRadius: '6px', 
+                border: '1px solid #e2e8f0', 
+                fontSize: '0.85rem',
+                color: '#2F4156'
+              }}
+            />
+            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>a</span>
+            <input
+              type="date"
+              value={fechaHasta}
+              onChange={(e) => setFechaHasta(e.target.value)}
+              style={{ 
+                padding: '0.4rem 0.6rem', 
+                borderRadius: '6px', 
+                border: '1px solid #e2e8f0', 
+                fontSize: '0.85rem',
+                color: '#2F4156'
+              }}
+            />
+          </div>
+          {(fechaDesde || fechaHasta) && (
+            <button 
+              onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
+              style={{ 
+                background: 'none', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px',
+                padding: '0.4rem 0.75rem', 
+                cursor: 'pointer', 
+                fontSize: '0.8rem', 
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+            >
+              <X size={14} /> Limpiar
+            </button>
+          )}
+          <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: 'auto' }}>
+            {filteredOperaciones.length} {filteredOperaciones.length === 1 ? 'resultado' : 'resultados'}
+          </span>
         </div>
       </div>
 
