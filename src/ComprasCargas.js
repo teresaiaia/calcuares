@@ -164,24 +164,35 @@ export default function ComprasCargas() {
   const filteredCompras = useMemo(() => {
     let filtered = [...compras];
 
-    // Filtro por búsqueda (busca en TODOS los campos)
+    // Filtro por búsqueda (busca en TODOS los campos de texto)
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(item => {
-        return (
-          item.codigo_orden?.toLowerCase().includes(search) ||
-          item.proveedor_nombre?.toLowerCase().includes(search) ||
-          item.origen?.toLowerCase().includes(search) ||
-          item.transportista?.toLowerCase().includes(search) ||
-          item.despachante?.toLowerCase().includes(search) ||
-          item.numero_guia?.toLowerCase().includes(search) ||
-          item.estado?.toLowerCase().includes(search) ||
-          item.descripcion?.toLowerCase().includes(search) ||
-          item.banco_pagador?.toLowerCase().includes(search) ||
-          item.direccion_pickup?.toLowerCase().includes(search) ||
-          item.categoria?.toLowerCase().includes(search) ||
-          item.metodo_pago?.toLowerCase().includes(search)
-        );
+        // Concatenar todos los campos de texto para búsqueda general
+        const searchableText = [
+          item.codigo_orden,
+          item.proveedor_nombre,
+          item.proveedor_otro,
+          item.categoria_nombre,
+          item.descripcion,
+          item.metodo_pago_nombre,
+          item.banco_pagador,
+          item.datos_transferencia,
+          item.responsable,
+          item.origen,
+          item.direccion_pickup,
+          item.transportista,
+          item.despachante,
+          item.numero_guia,
+          item.estado,
+          item.notas_carga,
+          item.gastos_extras_detalle,
+          // También buscar en montos (convertidos a string)
+          item.monto_compra?.toString(),
+          item.costo_total?.toString()
+        ].filter(Boolean).join(' ').toLowerCase();
+        
+        return searchableText.includes(search);
       });
     }
 
