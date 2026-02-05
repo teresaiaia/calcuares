@@ -739,13 +739,17 @@ export default function ComprasCargas() {
                       <td>{formatFecha(item.fecha_orden)}</td>
                       <td>{item.proveedor_nombre || '-'}</td>
                       <td>
-                        <span style={{
-                          padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
-                          background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
-                          color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
-                        }}>
-                          {item.responsable || 'Ares'}
-                        </span>
+                        {(item.estado === 'Finalizada' || item.estado === 'Cancelada') ? (
+                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>
+                        ) : (
+                          <span style={{
+                            padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
+                            background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                            color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
+                          }}>
+                            {item.responsable || 'Ares'}
+                          </span>
+                        )}
                       </td>
                       <td>{item.transportista || '-'}</td>
                       <td>
@@ -799,14 +803,20 @@ export default function ComprasCargas() {
                   <div className="cc-card-detail">
                     <div className="cc-card-label">Responsable</div>
                     <div className="cc-card-value">
-                      <span style={{
-                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
-                        background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
-                        color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
-                      }}>
-                        {item.responsable || 'Ares'}
-                      </span>
-                      {item.transportista && <span style={{ marginLeft: '0.5rem' }}>→ {item.transportista}</span>}
+                      {(item.estado === 'Finalizada' || item.estado === 'Cancelada') ? (
+                        <span style={{ color: '#94a3b8' }}>—</span>
+                      ) : (
+                        <>
+                          <span style={{
+                            padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
+                            background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                            color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
+                          }}>
+                            {item.responsable || 'Ares'}
+                          </span>
+                          {item.transportista && <span style={{ marginLeft: '0.5rem' }}>→ {item.transportista}</span>}
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="cc-card-detail">
