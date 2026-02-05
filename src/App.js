@@ -1103,7 +1103,7 @@ export default function Calcuares() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                <Users size={18} /> Seguimiento Comercial
+                <Users size={18} /> Comercial
               </button>
             </div>
 
@@ -1322,7 +1322,7 @@ export default function Calcuares() {
                 { key: 'compras', label: 'Compras', icon: <Package size={16} /> },
                 { key: 'proveedores', label: 'Proveedores', icon: <Building2 size={16} /> },
                 { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
-                { key: 'seguimiento', label: 'Seguimiento', icon: <Users size={16} /> }
+                { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> }
               ].map(tab => (
                 <button
                   key={tab.key}
