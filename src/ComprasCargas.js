@@ -61,6 +61,7 @@ export default function ComprasCargas() {
     cotizacion_carga: '',
     costo_carga: '',
     gastos_extras: '',
+    gastos_extras_detalle: '',
     costo_despacho: '',
     numero_guia: '',
     estado_carga_id: '',
@@ -282,6 +283,7 @@ export default function ComprasCargas() {
       cotizacion_carga: '',
       costo_carga: '',
       gastos_extras: '',
+      gastos_extras_detalle: '',
       costo_despacho: '',
       numero_guia: '',
       estado_carga_id: estadosCarga[0]?.id || '',
@@ -354,6 +356,7 @@ export default function ComprasCargas() {
         cotizacion_carga: data.cotizacion_carga || '',
         costo_carga: data.costo_carga || '',
         gastos_extras: data.gastos_extras || '',
+        gastos_extras_detalle: data.gastos_extras_detalle || '',
         costo_despacho: data.costo_despacho || '',
         numero_guia: data.numero_guia || '',
         estado_carga_id: data.estado_carga_id || '',
@@ -404,6 +407,7 @@ export default function ComprasCargas() {
         cotizacion_carga: formData.cotizacion_carga ? parseFloat(formData.cotizacion_carga) : null,
         costo_carga: formData.costo_carga ? parseFloat(formData.costo_carga) : null,
         gastos_extras: formData.gastos_extras ? parseFloat(formData.gastos_extras) : null,
+        gastos_extras_detalle: formData.gastos_extras_detalle || null,
         costo_despacho: formData.costo_despacho ? parseFloat(formData.costo_despacho) : null,
         numero_guia: formData.numero_guia || null,
         estado_carga_id: formData.estado_carga_id || null,
@@ -542,6 +546,7 @@ export default function ComprasCargas() {
       'Cotización Carga': item.cotizacion_carga || 0,
       'Costo Real Carga': item.costo_carga || 0,
       'Gastos Extras': item.gastos_extras || 0,
+      'Detalle Gastos Extras': item.gastos_extras_detalle || '',
       'Costo Despacho': item.costo_despacho || 0,
       'Costo Transferencia': item.costo_transferencia || 0,
       'Fecha Ingreso': item.fecha_ingreso ? formatFecha(item.fecha_ingreso) : '',
@@ -1091,14 +1096,15 @@ export default function ComprasCargas() {
                       onChange={(e) => handleInputChange('fecha_ingreso', e.target.value)}
                     />
                   </div>
-                  <div className="cc-form-group">
+                  <div className="cc-form-group" style={{ gridColumn: 'span 2' }}>
                     <label className="cc-form-label">Notas de Carga</label>
-                    <input
-                      type="text"
+                    <textarea
                       className="cc-form-input"
                       value={formData.notas_carga}
                       onChange={(e) => handleInputChange('notas_carga', e.target.value)}
                       placeholder="Notas adicionales sobre la carga..."
+                      rows="3"
+                      style={{ resize: 'vertical' }}
                     />
                   </div>
                 </div>
@@ -1151,6 +1157,14 @@ export default function ComprasCargas() {
                       value={formData.gastos_extras}
                       onChange={(e) => handleInputChange('gastos_extras', e.target.value)}
                       placeholder="0.00"
+                    />
+                    <input
+                      type="text"
+                      className="cc-form-input"
+                      value={formData.gastos_extras_detalle}
+                      onChange={(e) => handleInputChange('gastos_extras_detalle', e.target.value)}
+                      placeholder="Detalle de gastos extras..."
+                      style={{ marginTop: '0.35rem', fontSize: '0.8rem' }}
                     />
                   </div>
                   <div className="cc-form-group">
