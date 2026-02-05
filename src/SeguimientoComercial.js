@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
 import { 
   Search, Plus, Edit2, Trash2, X, Save, Users, Phone, Mail, MessageCircle,
-  ChevronUp, ChevronDown, FileSpreadsheet, Clock, MapPin, Settings
+  ChevronUp, ChevronDown, FileSpreadsheet, Clock, MapPin, Settings, Eye
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './ComprasCargas.css';
@@ -55,6 +55,9 @@ export default function SeguimientoComercial({ isAdmin = false }) {
   const [historialContacto, setHistorialContacto] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [nuevoRegistro, setNuevoRegistro] = useState({ canal: 'WhatsApp', nota: '', fecha: '', proximo_contacto: '' });
+
+  // Vista rápida (popup info)
+  const [vistaRapida, setVistaRapida] = useState(null);
 
   const emptyForm = {
     nombre_cliente: '',
@@ -647,10 +650,22 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                     </div>
                   </td>
                   <td>
-                    <div style={{ fontWeight: '600', color: '#2F4156' }}>{c.nombre_cliente}</div>
-                    {c.empresa_clinica && (
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{c.empresa_clinica}</div>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <button 
+                        onClick={() => setVistaRapida(c)} 
+                        className="cc-btn-icon" 
+                        title="Ver información"
+                        style={{ padding: '2px', background: '#f0f9ff', border: '1px solid #bae6fd' }}
+                      >
+                        <Eye size={13} style={{ color: '#0284c7' }} />
+                      </button>
+                      <div>
+                        <div style={{ fontWeight: '600', color: '#2F4156' }}>{c.nombre_cliente}</div>
+                        {c.empresa_clinica && (
+                          <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{c.empresa_clinica}</div>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td style={{ fontSize: '0.85rem' }}>{c.equipo_interes || '-'}</td>
                   <td>
@@ -960,6 +975,120 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                   ))
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Vista Rápida */}
+      {vistaRapida && (
+        <div className="cc-modal-overlay" onClick={() => setVistaRapida(null)}>
+          <div className="cc-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="cc-modal-header">
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Eye size={20} />
+                {vistaRapida.nombre_cliente}
+              </h2>
+              <button onClick={() => setVistaRapida(null)} className="cc-btn-icon">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="cc-modal-body" style={{ padding: '1rem' }}>
+              {/* Estado */}
+              <div style={{ 
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.4rem 0.8rem', borderRadius: '20px', marginBottom: '1rem',
+                background: ESTADOS[vistaRapida.estado]?.bg, 
+                border: `2px solid ${ESTADOS[vistaRapida.estado]?.color}`
+              }}>
+                <span>{ESTADOS[vistaRapida.estado]?.icon}</span>
+                <span style={{ fontWeight: '600', color: ESTADOS[vistaRapida.estado]?.color }}>
+                  {ESTADOS[vistaRapida.estado]?.label}
+                </span>
+              </div>
+
+              {/* Info Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                {vistaRapida.empresa_clinica && (
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Empresa/Clínica</label>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#2F4156' }}>{vistaRapida.empresa_clinica}</div>
+                  </div>
+                )}
+                
+                {vistaRapida.telefono && (
+                  <div>
+                    <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📱 Teléfono</label>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                      <a href={`tel:${vistaRapida.telefono}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{vistaRapida.telefono}</a>
+                    </div>
+                  </div>
+                )}
+                
+                {vistaRapida.email && (
+                  <div>
+                    <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📧 Email</label>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                      <a href={`mailto:${vistaRapida.email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{vistaRapida.email}</a>
+                    </div>
+                  </div>
+                )}
+
+                {vistaRapida.equipo_interes && (
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🎯 Equipo de Interés</label>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#2F4156' }}>{vistaRapida.equipo_interes}</div>
+                  </div>
+                )}
+
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📞 Canal Preferido</label>
+                  <div style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    {canalIcon(vistaRapida.canal_preferido)} {vistaRapida.canal_preferido}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>👤 Vendedor</label>
+                  <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{vistaRapida.vendedor || '—'}</div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 Último Contacto</label>
+                  <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{formatFecha(vistaRapida.ultimo_contacto) || '—'}</div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📅 Próximo Contacto</label>
+                  <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#1d4ed8' }}>
+                    {formatFecha(vistaRapida.proximo_contacto || 
+                      (vistaRapida.ultimo_contacto ? calcularProximoContacto(vistaRapida.ultimo_contacto, vistaRapida.canal_preferido) : null)
+                    ) || '—'}
+                  </div>
+                </div>
+
+                {vistaRapida.propuesta_enviada && (
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📄 Propuesta Enviada</label>
+                    <div style={{ fontSize: '0.9rem' }}>{vistaRapida.propuesta_enviada}</div>
+                  </div>
+                )}
+
+                {vistaRapida.notas && (
+                  <div style={{ gridColumn: 'span 2', marginTop: '0.5rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <label style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📝 Notas</label>
+                    <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.25rem', whiteSpace: 'pre-wrap' }}>{vistaRapida.notas}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="cc-modal-footer" style={{ justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button className="cc-btn cc-btn-secondary" onClick={() => { setVistaRapida(null); openHistorialModal(vistaRapida); }}>
+                <Clock size={16} /> Historial
+              </button>
+              <button className="cc-btn cc-btn-primary" onClick={() => { setVistaRapida(null); openEditModal(vistaRapida); }}>
+                <Edit2 size={16} /> Editar
+              </button>
             </div>
           </div>
         </div>
