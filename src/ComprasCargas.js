@@ -321,7 +321,7 @@ export default function ComprasCargas() {
       if (error) throw error;
 
       // Determinar si los valores son de la lista o "Otros"
-      const transportistasLista = ['DHL', 'PGBX', 'FEDEX', 'UNBOX'];
+      const transportistasLista = ['DHL', 'PGBX', 'FEDEX', 'UNBOX', 'HV'];
       const bancosLista = ['Itaú', 'Atlas', 'Citi', 'MXCB'];
       
       const transportistaValue = data.transportista || '';
@@ -1011,6 +1011,7 @@ export default function ComprasCargas() {
                       <option value="PGBX">PGBX</option>
                       <option value="FEDEX">FEDEX</option>
                       <option value="UNBOX">UNBOX</option>
+                      <option value="HV">HV</option>
                       <option value="Otros">Otros</option>
                     </select>
                   </div>
