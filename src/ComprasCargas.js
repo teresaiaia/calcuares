@@ -545,7 +545,6 @@ export default function ComprasCargas() {
       'Costo Despacho': item.costo_despacho || 0,
       'Costo Transferencia': item.costo_transferencia || 0,
       'Fecha Ingreso': item.fecha_ingreso ? formatFecha(item.fecha_ingreso) : '',
-      'Fecha Llegada': item.fecha_llegada ? formatFecha(item.fecha_llegada) : '',
       'COSTO TOTAL': item.costo_total || 0
     }));
 
@@ -712,9 +711,9 @@ export default function ComprasCargas() {
                       Estado <SortIcon columnKey="estado" />
                     </div>
                   </th>
-                  <th onClick={() => handleSort('fecha_llegada')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('fecha_ingreso')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      Fecha Llegada <SortIcon columnKey="fecha_llegada" />
+                      Fecha Ingreso <SortIcon columnKey="fecha_ingreso" />
                     </div>
                   </th>
                   <th onClick={() => handleSort('costo_total')} style={{ cursor: 'pointer', userSelect: 'none' }}>
@@ -757,7 +756,7 @@ export default function ComprasCargas() {
                           {item.estado || '-'}
                         </span>
                       </td>
-                      <td>{formatFecha(item.fecha_llegada)}</td>
+                      <td>{formatFecha(item.fecha_ingreso)}</td>
                       <td><strong>${formatCurrency(item.costo_total)}</strong></td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -820,8 +819,8 @@ export default function ComprasCargas() {
                     </div>
                   </div>
                   <div className="cc-card-detail">
-                    <div className="cc-card-label">Fecha Llegada</div>
-                    <div className="cc-card-value">{formatFecha(item.fecha_llegada)}</div>
+                    <div className="cc-card-label">Fecha Ingreso</div>
+                    <div className="cc-card-value">{formatFecha(item.fecha_ingreso)}</div>
                   </div>
                   <div className="cc-card-footer">
                     <div className="cc-card-cost">${formatCurrency(item.costo_total)}</div>
@@ -1089,15 +1088,6 @@ export default function ComprasCargas() {
                       className="cc-form-input"
                       value={formData.fecha_ingreso}
                       onChange={(e) => handleInputChange('fecha_ingreso', e.target.value)}
-                    />
-                  </div>
-                  <div className="cc-form-group">
-                    <label className="cc-form-label">Fecha de Llegada</label>
-                    <input
-                      type="date"
-                      className="cc-form-input"
-                      value={formData.fecha_llegada}
-                      onChange={(e) => handleInputChange('fecha_llegada', e.target.value)}
                     />
                   </div>
                   <div className="cc-form-group">
