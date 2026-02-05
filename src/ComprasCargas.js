@@ -50,8 +50,7 @@ export default function ComprasCargas() {
     banco_pagador_otro: '',
     costo_transferencia: '',
     datos_transferencia: '',
-    origen: '',
-    origen_otro: '',
+    responsable: 'Ares',
     direccion_pickup: '',
     peso: '',
     volumen: '',
@@ -66,7 +65,8 @@ export default function ComprasCargas() {
     numero_guia: '',
     estado_carga_id: '',
     notas_carga: '',
-    fecha_ingreso: ''
+    fecha_ingreso: '',
+    fecha_llegada: ''
   });
 
   // Cargar datos iniciales
@@ -271,8 +271,7 @@ export default function ComprasCargas() {
       banco_pagador_otro: '',
       costo_transferencia: '',
       datos_transferencia: '',
-      origen: '',
-      origen_otro: '',
+      responsable: 'Ares',
       direccion_pickup: '',
       peso: '',
       volumen: '',
@@ -287,7 +286,8 @@ export default function ComprasCargas() {
       numero_guia: '',
       estado_carga_id: estadosCarga[0]?.id || '',
       notas_carga: '',
-      fecha_ingreso: ''
+      fecha_ingreso: '',
+      fecha_llegada: ''
     });
     setShowModal(true);
   };
@@ -321,12 +321,8 @@ export default function ComprasCargas() {
       if (error) throw error;
 
       // Determinar si los valores son de la lista o "Otros"
-      const origenesLista = ['España', 'Israel', 'Estados Unidos', 'Argentina', 'Bulgaria', 'Corea'];
       const transportistasLista = ['DHL', 'PGBX', 'FEDEX', 'UNBOX'];
       const bancosLista = ['Itaú', 'Atlas', 'Citi', 'MXCB'];
-
-      const origenValue = data.origen || '';
-      const esOrigenOtro = origenValue && !origenesLista.includes(origenValue);
       
       const transportistaValue = data.transportista || '';
       const esTransportistaOtro = transportistaValue && !transportistasLista.includes(transportistaValue);
@@ -347,8 +343,7 @@ export default function ComprasCargas() {
         banco_pagador_otro: esBancoOtro ? bancoValue : '',
         costo_transferencia: data.costo_transferencia || '',
         datos_transferencia: data.datos_transferencia || '',
-        origen: esOrigenOtro ? 'Otros' : origenValue,
-        origen_otro: esOrigenOtro ? origenValue : '',
+        responsable: data.responsable || 'Ares',
         direccion_pickup: data.direccion_pickup || '',
         peso: data.peso || '',
         volumen: data.volumen || '',
@@ -363,7 +358,8 @@ export default function ComprasCargas() {
         numero_guia: data.numero_guia || '',
         estado_carga_id: data.estado_carga_id || '',
         notas_carga: data.notas_carga || '',
-        fecha_ingreso: data.fecha_ingreso || ''
+        fecha_ingreso: data.fecha_ingreso || '',
+        fecha_llegada: data.fecha_llegada || ''
       });
       setShowModal(true);
     } catch (error) {
@@ -384,7 +380,6 @@ export default function ComprasCargas() {
       setSaving(true);
 
       // Determinar valores finales (si es "Otros", usar el campo _otro)
-      const origenFinal = formData.origen === 'Otros' ? formData.origen_otro : formData.origen;
       const transportistaFinal = formData.transportista === 'Otros' ? formData.transportista_otro : formData.transportista;
       const bancoPagadorFinal = formData.banco_pagador === 'Otros' ? formData.banco_pagador_otro : formData.banco_pagador;
 
@@ -399,7 +394,7 @@ export default function ComprasCargas() {
         banco_pagador: bancoPagadorFinal || null,
         costo_transferencia: formData.costo_transferencia ? parseFloat(formData.costo_transferencia) : null,
         datos_transferencia: formData.datos_transferencia || null,
-        origen: origenFinal || null,
+        responsable: formData.responsable || 'Ares',
         direccion_pickup: formData.direccion_pickup || null,
         peso: formData.peso ? parseFloat(formData.peso) : null,
         volumen: formData.volumen ? parseFloat(formData.volumen) : null,
@@ -413,7 +408,8 @@ export default function ComprasCargas() {
         numero_guia: formData.numero_guia || null,
         estado_carga_id: formData.estado_carga_id || null,
         notas_carga: formData.notas_carga || null,
-        fecha_ingreso: formData.fecha_ingreso || null
+        fecha_ingreso: formData.fecha_ingreso || null,
+        fecha_llegada: formData.fecha_llegada || null
       };
 
       let error;
@@ -534,7 +530,7 @@ export default function ComprasCargas() {
       'Descripción': item.descripcion || '',
       'Método Pago': item.metodo_pago_nombre || '',
       'Banco Pagador': item.banco_pagador || '',
-      'Origen': item.origen || '',
+      'Responsable': item.responsable || 'Ares',
       'Transportista': item.transportista || '',
       'Despachante': item.despachante || '',
       'Peso (kg)': item.peso || '',
@@ -549,6 +545,7 @@ export default function ComprasCargas() {
       'Costo Despacho': item.costo_despacho || 0,
       'Costo Transferencia': item.costo_transferencia || 0,
       'Fecha Ingreso': item.fecha_ingreso ? formatFecha(item.fecha_ingreso) : '',
+      'Fecha Llegada': item.fecha_llegada ? formatFecha(item.fecha_llegada) : '',
       'COSTO TOTAL': item.costo_total || 0
     }));
 
@@ -700,9 +697,9 @@ export default function ComprasCargas() {
                       Proveedor <SortIcon columnKey="proveedor_nombre" />
                     </div>
                   </th>
-                  <th onClick={() => handleSort('origen')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('responsable')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      Origen <SortIcon columnKey="origen" />
+                      Responsable <SortIcon columnKey="responsable" />
                     </div>
                   </th>
                   <th onClick={() => handleSort('transportista')} style={{ cursor: 'pointer', userSelect: 'none' }}>
@@ -715,9 +712,9 @@ export default function ComprasCargas() {
                       Estado <SortIcon columnKey="estado" />
                     </div>
                   </th>
-                  <th onClick={() => handleSort('numero_guia')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  <th onClick={() => handleSort('fecha_llegada')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      Tracking <SortIcon columnKey="numero_guia" />
+                      Fecha Llegada <SortIcon columnKey="fecha_llegada" />
                     </div>
                   </th>
                   <th onClick={() => handleSort('costo_total')} style={{ cursor: 'pointer', userSelect: 'none' }}>
@@ -741,14 +738,22 @@ export default function ComprasCargas() {
                       <td><strong>{item.codigo_orden}</strong></td>
                       <td>{formatFecha(item.fecha_orden)}</td>
                       <td>{item.proveedor_nombre || '-'}</td>
-                      <td>{item.origen || '-'}</td>
+                      <td>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
+                          background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                          color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
+                        }}>
+                          {item.responsable || 'Ares'}
+                        </span>
+                      </td>
                       <td>{item.transportista || '-'}</td>
                       <td>
                         <span className={`cc-status cc-status-${item.estado?.toLowerCase().replace(/\s+/g, '-')}`}>
                           {item.estado || '-'}
                         </span>
                       </td>
-                      <td>{item.numero_guia || '-'}</td>
+                      <td>{formatFecha(item.fecha_llegada)}</td>
                       <td><strong>${formatCurrency(item.costo_total)}</strong></td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -792,12 +797,21 @@ export default function ComprasCargas() {
                     <div className="cc-card-value">{item.proveedor_nombre || '-'}</div>
                   </div>
                   <div className="cc-card-detail">
-                    <div className="cc-card-label">Origen → Transportista</div>
-                    <div className="cc-card-value">{item.origen || '-'} → {item.transportista || '-'}</div>
+                    <div className="cc-card-label">Responsable</div>
+                    <div className="cc-card-value">
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
+                        background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                        color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
+                      }}>
+                        {item.responsable || 'Ares'}
+                      </span>
+                      {item.transportista && <span style={{ marginLeft: '0.5rem' }}>→ {item.transportista}</span>}
+                    </div>
                   </div>
                   <div className="cc-card-detail">
-                    <div className="cc-card-label">Tracking</div>
-                    <div className="cc-card-value">{item.numero_guia || '-'}</div>
+                    <div className="cc-card-label">Fecha Llegada</div>
+                    <div className="cc-card-value">{formatFecha(item.fecha_llegada)}</div>
                   </div>
                   <div className="cc-card-footer">
                     <div className="cc-card-cost">${formatCurrency(item.costo_total)}</div>
@@ -962,34 +976,20 @@ export default function ComprasCargas() {
                 <h3 className="cc-section-title">Información de Carga</h3>
                 <div className="cc-form-grid">
                   <div className="cc-form-group">
-                    <label className="cc-form-label">Origen</label>
+                    <label className="cc-form-label">Responsable</label>
                     <select
                       className="cc-form-input"
-                      value={formData.origen}
-                      onChange={(e) => handleInputChange('origen', e.target.value)}
+                      value={formData.responsable}
+                      onChange={(e) => handleInputChange('responsable', e.target.value)}
+                      style={{
+                        background: formData.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                        fontWeight: '600'
+                      }}
                     >
-                      <option value="">Seleccionar origen...</option>
-                      <option value="España">España</option>
-                      <option value="Israel">Israel</option>
-                      <option value="Estados Unidos">Estados Unidos</option>
-                      <option value="Argentina">Argentina</option>
-                      <option value="Bulgaria">Bulgaria</option>
-                      <option value="Corea">Corea</option>
-                      <option value="Otros">Otros</option>
+                      <option value="Ares">Ares</option>
+                      <option value="Proveedor">Proveedor</option>
                     </select>
                   </div>
-                  {formData.origen === 'Otros' && (
-                    <div className="cc-form-group">
-                      <label className="cc-form-label">Especificar Origen</label>
-                      <input
-                        type="text"
-                        className="cc-form-input"
-                        value={formData.origen_otro}
-                        onChange={(e) => handleInputChange('origen_otro', e.target.value)}
-                        placeholder="País de origen"
-                      />
-                    </div>
-                  )}
                   <div className="cc-form-group">
                     <label className="cc-form-label">Transportista</label>
                     <select
@@ -1079,6 +1079,15 @@ export default function ComprasCargas() {
                       className="cc-form-input"
                       value={formData.fecha_ingreso}
                       onChange={(e) => handleInputChange('fecha_ingreso', e.target.value)}
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Fecha de Llegada</label>
+                    <input
+                      type="date"
+                      className="cc-form-input"
+                      value={formData.fecha_llegada}
+                      onChange={(e) => handleInputChange('fecha_llegada', e.target.value)}
                     />
                   </div>
                   <div className="cc-form-group">
