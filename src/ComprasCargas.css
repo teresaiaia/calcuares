@@ -1,985 +1,1227 @@
-/* ============================================
-   COMPRAS Y CARGAS - ESTILOS MINIMALISTAS
-   ============================================ */
-
-/* Container Principal */
-.cc-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-/* Loading State */
-.cc-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  color: #64748b;
-  gap: 1rem;
-}
-
-/* Page Header */
-.cc-page-header {
-  margin-bottom: 2rem;
-}
-
-.cc-page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 0.5rem;
-}
-
-.cc-page-subtitle {
-  font-size: 0.95rem;
-  color: #64748b;
-  font-weight: 400;
-}
-
-/* Stats Cards */
-.cc-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.cc-stat-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.25rem;
-}
-
-.cc-stat-label {
-  font-size: 0.8rem;
-  color: #64748b;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.cc-stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.cc-stat-trend {
-  font-size: 0.75rem;
-  color: #10b981;
-  margin-top: 0.25rem;
-}
-
-/* Actions Bar */
-.cc-actions-bar {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-/* Search */
-.cc-search-container {
-  flex: 1;
-  min-width: 300px;
-  position: relative;
-}
-
-.cc-search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-}
-
-.cc-search-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  background: #f8fafc;
-}
-
-.cc-search-input:focus {
-  outline: none;
-  border-color: #1e293b;
-  background: white;
-}
-
-.cc-search-input::placeholder {
-  color: #94a3b8;
-}
-
-/* Filters */
-.cc-filter-group {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.cc-filter-select {
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  background: white;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cc-filter-select:focus {
-  outline: none;
-  border-color: #1e293b;
-}
-
-/* Buttons */
-.cc-btn {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-}
-
-.cc-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.cc-btn-primary {
-  background: #1e293b;
-  color: white;
-}
-
-.cc-btn-primary:hover:not(:disabled) {
-  background: #0f172a;
-}
-
-.cc-btn-secondary {
-  background: white;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
-
-.cc-btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-
-/* Table Container */
-.cc-table-container {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.cc-table-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.cc-table-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-/* View Toggle */
-.cc-view-toggle {
-  display: flex;
-  gap: 0.25rem;
-  background: #f1f5f9;
-  padding: 0.25rem;
-  border-radius: 6px;
-}
-
-.cc-view-btn {
-  padding: 0.4rem 0.75rem;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  transition: all 0.2s;
-}
-
-.cc-view-btn.active {
-  background: white;
-  color: #1e293b;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-/* Table */
-.cc-table-wrapper {
-  overflow-x: auto;
-}
-
-.cc-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.cc-table thead {
-  background: #f8fafc;
-}
-
-.cc-table th {
-  text-align: left;
-  padding: 1rem 1.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.cc-table td {
-  padding: 1rem 1.5rem;
-  font-size: 0.9rem;
-  color: #475569;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.cc-table tbody tr {
-  transition: background 0.2s;
-}
-
-.cc-table tbody tr:hover {
-  background: #f8fafc;
-}
-
-/* Status Badge */
-.cc-status {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-/* Estados de Compras y Cargas */
-.cc-status-a-solicitar {
-  background: #f3e8ff;
-  color: #7c3aed;
-}
-
-.cc-status-a-pagar {
-  background: #fce7f3;
-  color: #be185d;
-}
-
-.cc-status-en-tránsito {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.cc-status-finalizada {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.cc-status-pendiente {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.cc-status-cancelada {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* Estados legacy (mantener por compatibilidad) */
-.cc-status-entregada {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.cc-status-en-proceso {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-.cc-status-en-aduana {
-  background: #fed7aa;
-  color: #9a3412;
-}
-
-/* Cards Grid */
-.cc-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1rem;
-  padding: 1.5rem;
-}
-
-.cc-item-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
-  transition: all 0.2s;
-}
-
-.cc-item-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-
-.cc-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  margin-bottom: 1rem;
-}
-
-.cc-card-code {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.cc-card-date {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-.cc-card-detail {
-  margin-bottom: 0.75rem;
-}
-
-.cc-card-label {
-  font-size: 0.7rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.25rem;
-  font-weight: 600;
-}
-
-.cc-card-value {
-  font-size: 0.9rem;
-  color: #1e293b;
-}
-
-.cc-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.cc-card-cost {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-/* Action Buttons */
-.cc-action-btn {
-  background: none;
-  border: none;
-  color: #64748b;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cc-action-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-/* Modal */
-.cc-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.cc-modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.cc-modal-header {
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
-}
-
-.cc-modal-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.cc-close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 0;
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.cc-close-btn:hover {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.cc-modal-body {
-  padding: 2rem;
-}
-
-/* Form Sections */
-.cc-form-section {
-  margin-bottom: 2rem;
-}
-
-.cc-section-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #0f172a;
-  margin-bottom: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.cc-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.cc-form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.cc-form-label {
-  font-size: 0.8rem;
-  color: #475569;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.cc-form-input,
-.cc-form-input:is(input, select, textarea) {
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.cc-form-input:focus {
-  outline: none;
-  border-color: #1e293b;
-}
-
-.cc-form-input::placeholder {
-  color: #cbd5e1;
-}
-
-textarea.cc-form-input {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.cc-modal-footer {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  position: sticky;
-  bottom: 0;
-  background: white;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .cc-container {
-    padding: 1rem;
-  }
+import React, { useState, useEffect, useMemo } from 'react';
+import { supabase } from './supabaseClient';
+import { Search, Download, Plus, Eye, Trash2, X, Package, ChevronUp, ChevronDown, FileSpreadsheet } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import './ComprasCargas.css';
+
+// Función helper para formatear fecha a DD/MM/YY
+const formatFecha = (fechaStr) => {
+  if (!fechaStr) return '-';
+  const fecha = new Date(fechaStr);
+  const dia = fecha.getDate().toString().padStart(2, '0');
+  const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+  const año = fecha.getFullYear().toString().slice(-2);
+  return `${dia}/${mes}/${año}`;
+};
+
+export default function ComprasCargas() {
+  // Estados principales
+  const [compras, setCompras] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
+  const [estadosCarga, setEstadosCarga] = useState([]);
+  const [metodosPago, setMetodosPago] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   
-  .cc-actions-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  // Estado para ordenamiento de columnas
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   
-  .cc-filter-group {
-    flex-direction: column;
-  }
+  // Estados de UI
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEstado, setFilterEstado] = useState('all');
+  const [filterProveedor, setFilterProveedor] = useState('all');
+  const [viewMode, setViewMode] = useState('table'); // 'table' o 'cards'
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   
-  .cc-stats-grid {
-    grid-template-columns: 1fr;
+  // Estados del formulario
+  const [formData, setFormData] = useState({
+    fecha_orden: '',
+    codigo_orden: '',
+    proveedor_id: '',
+    proveedor_otro: '',
+    categoria_id: '',
+    descripcion: '',
+    metodo_pago_id: '',
+    banco_pagador: '',
+    banco_pagador_otro: '',
+    costo_transferencia: '',
+    datos_transferencia: '',
+    responsable: 'Ares',
+    direccion_pickup: '',
+    peso: '',
+    volumen: '',
+    transportista: '',
+    transportista_otro: '',
+    despachante: '',
+    monto_compra: '',
+    cotizacion_carga: '',
+    costo_carga: '',
+    gastos_extras: '',
+    costo_despacho: '',
+    numero_guia: '',
+    estado_carga_id: '',
+    notas_carga: '',
+    fecha_ingreso: '',
+    fecha_llegada: ''
+  });
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadInitialData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        fetchCompras(),
+        fetchProveedores(),
+        fetchEstadosCarga(),
+        fetchMetodosPago(),
+        fetchCategorias()
+      ]);
+    } catch (error) {
+      console.error('Error cargando datos:', error);
+      alert('Error al cargar los datos iniciales');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCompras = async () => {
+    const { data, error } = await supabase
+      .from('vista_compras_cargas')
+      .select('*')
+      .order('fecha_orden', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching compras:', error);
+      return;
+    }
+    setCompras(data || []);
+  };
+
+  const fetchProveedores = async () => {
+    const { data, error } = await supabase
+      .from('proveedores')
+      .select('*')
+      .eq('activo', true)
+      .order('nombre_comercial');
+
+    if (error) {
+      console.error('Error fetching proveedores:', error);
+      return;
+    }
+    setProveedores(data || []);
+  };
+
+  const fetchEstadosCarga = async () => {
+    const { data, error } = await supabase
+      .from('estados_carga')
+      .select('*')
+      .eq('activo', true)
+      .order('orden');
+
+    if (error) {
+      console.error('Error fetching estados:', error);
+      return;
+    }
+    setEstadosCarga(data || []);
+  };
+
+  const fetchMetodosPago = async () => {
+    const { data, error } = await supabase
+      .from('metodos_pago')
+      .select('*')
+      .eq('activo', true);
+
+    if (error) {
+      console.error('Error fetching métodos de pago:', error);
+      return;
+    }
+    setMetodosPago(data || []);
+  };
+
+  const fetchCategorias = async () => {
+    const { data, error } = await supabase
+      .from('categorias_compra')
+      .select('*')
+      .eq('activo', true);
+
+    if (error) {
+      console.error('Error fetching categorías:', error);
+      return;
+    }
+    setCategorias(data || []);
+  };
+
+  // Búsqueda integral en todos los campos
+  const filteredCompras = useMemo(() => {
+    let filtered = [...compras];
+
+    // Filtro por búsqueda (busca en TODOS los campos)
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(item => {
+        return (
+          item.codigo_orden?.toLowerCase().includes(search) ||
+          item.proveedor_nombre?.toLowerCase().includes(search) ||
+          item.origen?.toLowerCase().includes(search) ||
+          item.transportista?.toLowerCase().includes(search) ||
+          item.despachante?.toLowerCase().includes(search) ||
+          item.numero_guia?.toLowerCase().includes(search) ||
+          item.estado?.toLowerCase().includes(search) ||
+          item.descripcion?.toLowerCase().includes(search) ||
+          item.banco_pagador?.toLowerCase().includes(search) ||
+          item.direccion_pickup?.toLowerCase().includes(search) ||
+          item.categoria?.toLowerCase().includes(search) ||
+          item.metodo_pago?.toLowerCase().includes(search)
+        );
+      });
+    }
+
+    // Filtro por estado
+    if (filterEstado !== 'all') {
+      filtered = filtered.filter(item => item.estado === filterEstado);
+    }
+
+    // Filtro por proveedor
+    if (filterProveedor !== 'all') {
+      filtered = filtered.filter(item => item.proveedor_nombre === filterProveedor);
+    }
+
+    // Ordenamiento por columna
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+        
+        // Manejo especial para fechas
+        if (sortConfig.key === 'fecha_orden') {
+          aVal = new Date(aVal || 0);
+          bVal = new Date(bVal || 0);
+        }
+        // Manejo especial para números
+        else if (sortConfig.key === 'costo_total') {
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
+        }
+        // Manejo para strings
+        else {
+          aVal = (aVal || '').toString().toLowerCase();
+          bVal = (bVal || '').toString().toLowerCase();
+        }
+
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [compras, searchTerm, filterEstado, filterProveedor, sortConfig]);
+
+  // Estadísticas
+  const stats = useMemo(() => {
+    const total = compras.length;
+    const enTransito = compras.filter(c => c.estado === 'En Tránsito').length;
+    const pendientes = compras.filter(c => c.estado === 'Pendiente').length;
+    
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const totalMes = compras
+      .filter(c => {
+        const fecha = new Date(c.fecha_orden);
+        return fecha.getMonth() === currentMonth && fecha.getFullYear() === currentYear;
+      })
+      .reduce((sum, c) => sum + (parseFloat(c.costo_total) || 0), 0);
+
+    return {
+      total,
+      enTransito,
+      pendientes,
+      totalMes: totalMes.toFixed(2)
+    };
+  }, [compras]);
+
+  // Manejar cambios en el formulario
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Abrir modal para nueva compra
+  const openNewModal = () => {
+    setEditingItem(null);
+    setFormData({
+      fecha_orden: new Date().toISOString().split('T')[0],
+      codigo_orden: generateCodigoOrden(),
+      proveedor_id: '',
+      proveedor_otro: '',
+      categoria_id: '',
+      descripcion: '',
+      metodo_pago_id: '',
+      banco_pagador: '',
+      banco_pagador_otro: '',
+      costo_transferencia: '',
+      datos_transferencia: '',
+      responsable: 'Ares',
+      direccion_pickup: '',
+      peso: '',
+      volumen: '',
+      transportista: '',
+      transportista_otro: '',
+      despachante: 'PROCARGO',
+      monto_compra: '',
+      cotizacion_carga: '',
+      costo_carga: '',
+      gastos_extras: '',
+      costo_despacho: '',
+      numero_guia: '',
+      estado_carga_id: estadosCarga[0]?.id || '',
+      notas_carga: '',
+      fecha_ingreso: '',
+      fecha_llegada: ''
+    });
+    setShowModal(true);
+  };
+
+  // Generar código de orden automático
+  const generateCodigoOrden = () => {
+    const year = new Date().getFullYear();
+    const lastCompra = compras[0];
+    let nextNumber = 1;
+
+    if (lastCompra && lastCompra.codigo_orden) {
+      const match = lastCompra.codigo_orden.match(/CC-(\d{4})-(\d+)/);
+      if (match && parseInt(match[1]) === year) {
+        nextNumber = parseInt(match[2]) + 1;
+      }
+    }
+
+    return `CC-${year}-${nextNumber.toString().padStart(3, '0')}`;
+  };
+
+  // Abrir modal para editar
+  const openEditModal = async (item) => {
+    try {
+      // Cargar datos completos desde la tabla principal
+      const { data, error } = await supabase
+        .from('compras_cargas')
+        .select('*')
+        .eq('id', item.id)
+        .single();
+
+      if (error) throw error;
+
+      // Determinar si los valores son de la lista o "Otros"
+      const transportistasLista = ['DHL', 'PGBX', 'FEDEX', 'UNBOX'];
+      const bancosLista = ['Itaú', 'Atlas', 'Citi', 'MXCB'];
+      
+      const transportistaValue = data.transportista || '';
+      const esTransportistaOtro = transportistaValue && !transportistasLista.includes(transportistaValue);
+      
+      const bancoValue = data.banco_pagador || '';
+      const esBancoOtro = bancoValue && !bancosLista.includes(bancoValue);
+
+      setEditingItem(data);
+      setFormData({
+        fecha_orden: data.fecha_orden || '',
+        codigo_orden: data.codigo_orden || '',
+        proveedor_id: data.proveedor_id || '',
+        proveedor_otro: data.proveedor_otro || '',
+        categoria_id: data.categoria_id || '',
+        descripcion: data.descripcion || '',
+        metodo_pago_id: data.metodo_pago_id || '',
+        banco_pagador: esBancoOtro ? 'Otros' : bancoValue,
+        banco_pagador_otro: esBancoOtro ? bancoValue : '',
+        costo_transferencia: data.costo_transferencia || '',
+        datos_transferencia: data.datos_transferencia || '',
+        responsable: data.responsable || 'Ares',
+        direccion_pickup: data.direccion_pickup || '',
+        peso: data.peso || '',
+        volumen: data.volumen || '',
+        transportista: esTransportistaOtro ? 'Otros' : transportistaValue,
+        transportista_otro: esTransportistaOtro ? transportistaValue : '',
+        despachante: data.despachante || '',
+        monto_compra: data.monto_compra || '',
+        cotizacion_carga: data.cotizacion_carga || '',
+        costo_carga: data.costo_carga || '',
+        gastos_extras: data.gastos_extras || '',
+        costo_despacho: data.costo_despacho || '',
+        numero_guia: data.numero_guia || '',
+        estado_carga_id: data.estado_carga_id || '',
+        notas_carga: data.notas_carga || '',
+        fecha_ingreso: data.fecha_ingreso || '',
+        fecha_llegada: data.fecha_llegada || ''
+      });
+      setShowModal(true);
+    } catch (error) {
+      console.error('Error loading item:', error);
+      alert('Error al cargar los datos del item');
+    }
+  };
+
+  // Guardar compra (crear o actualizar)
+  const handleSave = async () => {
+    try {
+      // Validaciones básicas
+      if (!formData.fecha_orden || !formData.codigo_orden) {
+        alert('Por favor completa los campos obligatorios: Fecha y Código de Orden');
+        return;
+      }
+
+      setSaving(true);
+
+      // Determinar valores finales (si es "Otros", usar el campo _otro)
+      const transportistaFinal = formData.transportista === 'Otros' ? formData.transportista_otro : formData.transportista;
+      const bancoPagadorFinal = formData.banco_pagador === 'Otros' ? formData.banco_pagador_otro : formData.banco_pagador;
+
+      const dataToSave = {
+        fecha_orden: formData.fecha_orden,
+        codigo_orden: formData.codigo_orden,
+        proveedor_id: formData.proveedor_id || null,
+        proveedor_otro: formData.proveedor_otro || null,
+        categoria_id: formData.categoria_id || null,
+        descripcion: formData.descripcion || null,
+        metodo_pago_id: formData.metodo_pago_id || null,
+        banco_pagador: bancoPagadorFinal || null,
+        costo_transferencia: formData.costo_transferencia ? parseFloat(formData.costo_transferencia) : null,
+        datos_transferencia: formData.datos_transferencia || null,
+        responsable: formData.responsable || 'Ares',
+        direccion_pickup: formData.direccion_pickup || null,
+        peso: formData.peso ? parseFloat(formData.peso) : null,
+        volumen: formData.volumen ? parseFloat(formData.volumen) : null,
+        transportista: transportistaFinal || null,
+        despachante: formData.despachante || null,
+        monto_compra: formData.monto_compra ? parseFloat(formData.monto_compra) : null,
+        cotizacion_carga: formData.cotizacion_carga ? parseFloat(formData.cotizacion_carga) : null,
+        costo_carga: formData.costo_carga ? parseFloat(formData.costo_carga) : null,
+        gastos_extras: formData.gastos_extras ? parseFloat(formData.gastos_extras) : null,
+        costo_despacho: formData.costo_despacho ? parseFloat(formData.costo_despacho) : null,
+        numero_guia: formData.numero_guia || null,
+        estado_carga_id: formData.estado_carga_id || null,
+        notas_carga: formData.notas_carga || null,
+        fecha_ingreso: formData.fecha_ingreso || null,
+        fecha_llegada: formData.fecha_llegada || null
+      };
+
+      let error;
+      if (editingItem) {
+        // Actualizar
+        const result = await supabase
+          .from('compras_cargas')
+          .update(dataToSave)
+          .eq('id', editingItem.id);
+        error = result.error;
+      } else {
+        // Crear nuevo
+        const result = await supabase
+          .from('compras_cargas')
+          .insert([dataToSave]);
+        error = result.error;
+      }
+
+      if (error) throw error;
+
+      await fetchCompras();
+      setShowModal(false);
+      alert(editingItem ? 'Compra actualizada exitosamente' : 'Compra creada exitosamente');
+    } catch (error) {
+      console.error('Error saving:', error);
+      alert('Error al guardar: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Eliminar compra
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta compra?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('compras_cargas')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchCompras();
+      alert('Compra eliminada exitosamente');
+    } catch (error) {
+      console.error('Error deleting:', error);
+      alert('Error al eliminar: ' + error.message);
+    }
+  };
+
+  // Función para ordenar columnas
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Componente de icono de ordenamiento
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) {
+      return <ChevronUp size={14} style={{ opacity: 0.3 }} />;
+    }
+    return sortConfig.direction === 'asc' 
+      ? <ChevronUp size={14} style={{ color: '#567C8D' }} />
+      : <ChevronDown size={14} style={{ color: '#567C8D' }} />;
+  };
+
+  // Exportar a PDF
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(18);
+    doc.text('Adminares - Compras y Cargas', 14, 20);
+    
+    // Fecha de reporte
+    doc.setFontSize(10);
+    doc.text(`Fecha de reporte: ${new Date().toLocaleDateString('es-ES')}`, 14, 28);
+    doc.text(`Total de registros: ${filteredCompras.length}`, 14, 34);
+
+    // Preparar datos para la tabla
+    const tableData = filteredCompras.map(item => [
+      item.codigo_orden || '-',
+      new Date(item.fecha_orden).toLocaleDateString('es-PY'),
+      item.proveedor_nombre || '-',
+      item.origen || '-',
+      item.transportista || '-',
+      item.estado || '-',
+      item.numero_guia || '-',
+      `$${parseFloat(item.costo_total || 0).toFixed(2)}`
+    ]);
+
+    // Crear tabla
+    doc.autoTable({
+      startY: 40,
+      head: [['Código', 'Fecha', 'Proveedor', 'Origen', 'Transportista', 'Estado', 'Tracking', 'Costo Total']],
+      body: tableData,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [30, 41, 59] },
+      alternateRowStyles: { fillColor: [248, 250, 252] }
+    });
+
+    // Guardar PDF
+    doc.save(`compras-cargas-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  // Exportar a Excel
+  const exportToExcel = () => {
+    const excelData = filteredCompras.map(item => ({
+      'Código': item.codigo_orden || '',
+      'Fecha': formatFecha(item.fecha_orden),
+      'Proveedor': item.proveedor_nombre || '',
+      'Categoría': item.categoria_nombre || '',
+      'Descripción': item.descripcion || '',
+      'Método Pago': item.metodo_pago_nombre || '',
+      'Banco Pagador': item.banco_pagador || '',
+      'Responsable': item.responsable || 'Ares',
+      'Transportista': item.transportista || '',
+      'Despachante': item.despachante || '',
+      'Peso (kg)': item.peso || '',
+      'Volumen (m³)': item.volumen || '',
+      'Número de Guía': item.numero_guia || '',
+      'Estado': item.estado || '',
+      'Notas de Carga': item.notas_carga || '',
+      'Monto Compra': item.monto_compra || 0,
+      'Cotización Carga': item.cotizacion_carga || 0,
+      'Costo Real Carga': item.costo_carga || 0,
+      'Gastos Extras': item.gastos_extras || 0,
+      'Costo Despacho': item.costo_despacho || 0,
+      'Costo Transferencia': item.costo_transferencia || 0,
+      'Fecha Ingreso': item.fecha_ingreso ? formatFecha(item.fecha_ingreso) : '',
+      'Fecha Llegada': item.fecha_llegada ? formatFecha(item.fecha_llegada) : '',
+      'COSTO TOTAL': item.costo_total || 0
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Compras y Cargas');
+    
+    // Ajustar ancho de columnas
+    const colWidths = [
+      { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 30 },
+      { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 20 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 15 }, { wch: 12 }
+    ];
+    ws['!cols'] = colWidths;
+
+    XLSX.writeFile(wb, `compras-cargas-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const formatCurrency = (value) => {
+    if (!value) return '0.00';
+    return parseFloat(value).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  if (loading) {
+    return (
+      <div className="cc-loading">
+        <Package size={48} />
+        <p>Cargando datos...</p>
+      </div>
+    );
   }
-  
-  .cc-form-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .cc-cards-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .cc-table-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .cc-table {
-    font-size: 0.8rem;
-  }
-  
-  .cc-table th,
-  .cc-table td {
-    padding: 0.75rem 0.5rem;
-  }
-  
-  .cc-modal-content {
-    margin: 1rem;
-  }
-  
-  .cc-modal-body {
-    padding: 1rem;
-  }
-}
 
-/* Scrollbar personalizado */
-.cc-modal-content::-webkit-scrollbar {
-  width: 8px;
-}
+  return (
+    <div className="cc-container">
+      {/* Page Header */}
+      <div className="cc-page-header">
+        <h1 className="cc-page-title">Compras y Cargas</h1>
+        <p className="cc-page-subtitle">Gestiona el historial de compras, cargas realizadas y seguimiento de envíos</p>
+      </div>
 
-.cc-modal-content::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
+      {/* Stats Cards */}
+      <div className="cc-stats-grid">
+        <div className="cc-stat-card">
+          <div className="cc-stat-label">Total Compras</div>
+          <div className="cc-stat-value">{stats.total}</div>
+        </div>
+        <div className="cc-stat-card">
+          <div className="cc-stat-label">En Tránsito</div>
+          <div className="cc-stat-value">{stats.enTransito}</div>
+        </div>
+        <div className="cc-stat-card">
+          <div className="cc-stat-label">Pendientes</div>
+          <div className="cc-stat-value">{stats.pendientes}</div>
+        </div>
+        <div className="cc-stat-card">
+          <div className="cc-stat-label">Compras Programadas (mes)</div>
+          <div className="cc-stat-value">${formatCurrency(stats.totalMes)}</div>
+        </div>
+      </div>
 
-.cc-modal-content::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
+      {/* Search and Actions Bar */}
+      <div className="cc-actions-bar">
+        <div className="cc-search-container">
+          <Search className="cc-search-icon" size={16} />
+          <input
+            type="text"
+            className="cc-search-input"
+            placeholder="Buscar en todos los campos: código, proveedor, transportista, guía..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="cc-filter-group">
+          <select
+            className="cc-filter-select"
+            value={filterEstado}
+            onChange={(e) => setFilterEstado(e.target.value)}
+          >
+            <option value="all">Todos los estados</option>
+            {estadosCarga.map(estado => (
+              <option key={estado.id} value={estado.nombre}>{estado.nombre}</option>
+            ))}
+          </select>
+          <select
+            className="cc-filter-select"
+            value={filterProveedor}
+            onChange={(e) => setFilterProveedor(e.target.value)}
+          >
+            <option value="all">Todos los proveedores</option>
+            {[...new Set(compras.map(c => c.proveedor_nombre).filter(Boolean))].map(proveedor => (
+              <option key={proveedor} value={proveedor}>{proveedor}</option>
+            ))}
+          </select>
+        </div>
+        <button className="cc-btn cc-btn-secondary" onClick={exportToPDF}>
+          <Download size={16} />
+          PDF
+        </button>
+        <button className="cc-btn cc-btn-secondary" onClick={exportToExcel}>
+          <FileSpreadsheet size={16} />
+          Excel
+        </button>
+        <button className="cc-btn cc-btn-primary" onClick={openNewModal}>
+          <Plus size={16} />
+          Nueva Compra
+        </button>
+      </div>
 
-.cc-modal-content::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+      {/* Table Container */}
+      <div className="cc-table-container">
+        <div className="cc-table-header">
+          <div className="cc-table-title">Historial de Compras ({filteredCompras.length})</div>
+          <div className="cc-view-toggle">
+            <button
+              className={`cc-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+              onClick={() => setViewMode('table')}
+            >
+              Tabla
+            </button>
+            <button
+              className={`cc-view-btn ${viewMode === 'cards' ? 'active' : ''}`}
+              onClick={() => setViewMode('cards')}
+            >
+              Cards
+            </button>
+          </div>
+        </div>
 
-/* ============================================
-   ESTILOS ADICIONALES PARA PROVEEDORES
-   ============================================ */
+        {/* Table View */}
+        {viewMode === 'table' && (
+          <div className="cc-table-wrapper">
+            <table className="cc-table">
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort('codigo_orden')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Código <SortIcon columnKey="codigo_orden" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('fecha_orden')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Fecha <SortIcon columnKey="fecha_orden" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('proveedor_nombre')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Proveedor <SortIcon columnKey="proveedor_nombre" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('responsable')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Responsable <SortIcon columnKey="responsable" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('transportista')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Transportista <SortIcon columnKey="transportista" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('estado')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Estado <SortIcon columnKey="estado" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('fecha_llegada')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Fecha Llegada <SortIcon columnKey="fecha_llegada" />
+                    </div>
+                  </th>
+                  <th onClick={() => handleSort('costo_total')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      Costo Total <SortIcon columnKey="costo_total" />
+                    </div>
+                  </th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCompras.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                      No se encontraron registros
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCompras.map(item => (
+                    <tr key={item.id}>
+                      <td><strong>{item.codigo_orden}</strong></td>
+                      <td>{formatFecha(item.fecha_orden)}</td>
+                      <td>{item.proveedor_nombre || '-'}</td>
+                      <td>
+                        {(item.estado === 'Finalizada' || item.estado === 'Cancelada') ? (
+                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>
+                        ) : (
+                          <span style={{
+                            padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
+                            background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                            color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
+                          }}>
+                            {item.responsable || 'Ares'}
+                          </span>
+                        )}
+                      </td>
+                      <td>{item.transportista || '-'}</td>
+                      <td>
+                        <span className={`cc-status cc-status-${item.estado?.toLowerCase().replace(/\s+/g, '-')}`}>
+                          {item.estado || '-'}
+                        </span>
+                      </td>
+                      <td>{formatFecha(item.fecha_llegada)}</td>
+                      <td><strong>${formatCurrency(item.costo_total)}</strong></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="cc-action-btn" onClick={() => openEditModal(item)} title="Ver/Editar">
+                            <Eye size={16} />
+                          </button>
+                          <button className="cc-action-btn" onClick={() => handleDelete(item.id)} title="Eliminar">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-/* Modal Overlay */
-.cc-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 2rem;
-}
+        {/* Cards View */}
+        {viewMode === 'cards' && (
+          <div className="cc-cards-grid">
+            {filteredCompras.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
+                No se encontraron registros
+              </div>
+            ) : (
+              filteredCompras.map(item => (
+                <div key={item.id} className="cc-item-card">
+                  <div className="cc-card-header">
+                    <div>
+                      <div className="cc-card-code">{item.codigo_orden}</div>
+                      <div className="cc-card-date">{formatFecha(item.fecha_orden)}</div>
+                    </div>
+                    <span className={`cc-status cc-status-${item.estado?.toLowerCase().replace(/\s+/g, '-')}`}>
+                      {item.estado || '-'}
+                    </span>
+                  </div>
+                  <div className="cc-card-detail">
+                    <div className="cc-card-label">Proveedor</div>
+                    <div className="cc-card-value">{item.proveedor_nombre || '-'}</div>
+                  </div>
+                  <div className="cc-card-detail">
+                    <div className="cc-card-label">Responsable</div>
+                    <div className="cc-card-value">
+                      {(item.estado === 'Finalizada' || item.estado === 'Cancelada') ? (
+                        <span style={{ color: '#94a3b8' }}>—</span>
+                      ) : (
+                        <>
+                          <span style={{
+                            padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600',
+                            background: item.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                            color: item.responsable === 'Proveedor' ? '#92400e' : '#1e40af'
+                          }}>
+                            {item.responsable || 'Ares'}
+                          </span>
+                          {item.transportista && <span style={{ marginLeft: '0.5rem' }}>→ {item.transportista}</span>}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="cc-card-detail">
+                    <div className="cc-card-label">Fecha Llegada</div>
+                    <div className="cc-card-value">{formatFecha(item.fecha_llegada)}</div>
+                  </div>
+                  <div className="cc-card-footer">
+                    <div className="cc-card-cost">${formatCurrency(item.costo_total)}</div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="cc-action-btn" onClick={() => openEditModal(item)}>
+                        <Eye size={20} />
+                      </button>
+                      <button className="cc-action-btn" onClick={() => handleDelete(item.id)}>
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
 
-/* Modal Container (usado en Proveedores) */
-.cc-modal-overlay .cc-modal {
-  position: relative;
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 700px;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
+      {/* Modal */}
+      {showModal && (
+        <div className="cc-modal" onClick={() => setShowModal(false)}>
+          <div className="cc-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="cc-modal-header">
+              <h2 className="cc-modal-title">
+                {editingItem ? 'Editar Compra y Carga' : 'Nueva Compra y Carga'}
+              </h2>
+              <button className="cc-close-btn" onClick={() => setShowModal(false)}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="cc-modal-body">
+              {/* Información de Compra */}
+              <div className="cc-form-section">
+                <h3 className="cc-section-title">Información de Compra</h3>
+                <div className="cc-form-grid">
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Fecha de Orden *</label>
+                    <input
+                      type="date"
+                      className="cc-form-input"
+                      value={formData.fecha_orden}
+                      onChange={(e) => handleInputChange('fecha_orden', e.target.value)}
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Código de Orden *</label>
+                    <input
+                      type="text"
+                      className="cc-form-input"
+                      value={formData.codigo_orden}
+                      onChange={(e) => handleInputChange('codigo_orden', e.target.value)}
+                      placeholder="CC-2025-001"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Proveedor</label>
+                    <select
+                      className="cc-form-input"
+                      value={formData.proveedor_id}
+                      onChange={(e) => handleInputChange('proveedor_id', e.target.value)}
+                    >
+                      <option value="">Seleccionar proveedor...</option>
+                      {proveedores.map(p => (
+                        <option key={p.id} value={p.id}>{p.nombre_comercial}</option>
+                      ))}
+                      <option value="otro">Otro...</option>
+                    </select>
+                  </div>
+                  {formData.proveedor_id === 'otro' && (
+                    <div className="cc-form-group">
+                      <label className="cc-form-label">Nombre del Proveedor</label>
+                      <input
+                        type="text"
+                        className="cc-form-input"
+                        value={formData.proveedor_otro}
+                        onChange={(e) => handleInputChange('proveedor_otro', e.target.value)}
+                        placeholder="Nombre del proveedor"
+                      />
+                    </div>
+                  )}
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Categoría</label>
+                    <select
+                      className="cc-form-input"
+                      value={formData.categoria_id}
+                      onChange={(e) => handleInputChange('categoria_id', e.target.value)}
+                    >
+                      <option value="">Seleccionar categoría...</option>
+                      {categorias.map(c => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Método de Pago</label>
+                    <select
+                      className="cc-form-input"
+                      value={formData.metodo_pago_id}
+                      onChange={(e) => handleInputChange('metodo_pago_id', e.target.value)}
+                    >
+                      <option value="">Seleccionar método...</option>
+                      {metodosPago.map(m => (
+                        <option key={m.id} value={m.id}>{m.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Banco Pagador</label>
+                    <select
+                      className="cc-form-input"
+                      value={formData.banco_pagador}
+                      onChange={(e) => handleInputChange('banco_pagador', e.target.value)}
+                    >
+                      <option value="">Seleccionar banco...</option>
+                      <option value="Itaú">Itaú</option>
+                      <option value="Atlas">Atlas</option>
+                      <option value="Citi">Citi</option>
+                      <option value="MXCB">MXCB</option>
+                      <option value="Otros">Otros</option>
+                    </select>
+                  </div>
+                  {formData.banco_pagador === 'Otros' && (
+                    <div className="cc-form-group">
+                      <label className="cc-form-label">Especificar Banco</label>
+                      <input
+                        type="text"
+                        className="cc-form-input"
+                        value={formData.banco_pagador_otro}
+                        onChange={(e) => handleInputChange('banco_pagador_otro', e.target.value)}
+                        placeholder="Nombre del banco"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="cc-form-grid" style={{ marginTop: '1rem' }}>
+                  <div className="cc-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="cc-form-label">Descripción</label>
+                    <textarea
+                      className="cc-form-input"
+                      rows="3"
+                      value={formData.descripcion}
+                      onChange={(e) => handleInputChange('descripcion', e.target.value)}
+                      placeholder="Descripción de los productos comprados..."
+                    />
+                  </div>
+                  <div className="cc-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="cc-form-label">Información de la Transferencia Bancaria</label>
+                    <textarea
+                      className="cc-form-input"
+                      rows="2"
+                      value={formData.datos_transferencia}
+                      onChange={(e) => handleInputChange('datos_transferencia', e.target.value)}
+                      placeholder="Datos de la transferencia bancaria..."
+                    />
+                  </div>
+                </div>
+              </div>
 
-.cc-modal-overlay .cc-modal.cc-modal-large {
-  max-width: 900px;
-}
+              {/* Información de Carga */}
+              <div className="cc-form-section">
+                <h3 className="cc-section-title">Información de Carga</h3>
+                <div className="cc-form-grid">
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Responsable</label>
+                    <select
+                      className="cc-form-input"
+                      value={formData.responsable}
+                      onChange={(e) => handleInputChange('responsable', e.target.value)}
+                      style={{
+                        background: formData.responsable === 'Proveedor' ? '#fef3c7' : '#dbeafe',
+                        fontWeight: '600'
+                      }}
+                    >
+                      <option value="Ares">Ares</option>
+                      <option value="Proveedor">Proveedor</option>
+                    </select>
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Transportista</label>
+                    <select
+                      className="cc-form-input"
+                      value={formData.transportista}
+                      onChange={(e) => handleInputChange('transportista', e.target.value)}
+                    >
+                      <option value="">Seleccionar transportista...</option>
+                      <option value="DHL">DHL</option>
+                      <option value="PGBX">PGBX</option>
+                      <option value="FEDEX">FEDEX</option>
+                      <option value="UNBOX">UNBOX</option>
+                      <option value="Otros">Otros</option>
+                    </select>
+                  </div>
+                  {formData.transportista === 'Otros' && (
+                    <div className="cc-form-group">
+                      <label className="cc-form-label">Especificar Transportista</label>
+                      <input
+                        type="text"
+                        className="cc-form-input"
+                        value={formData.transportista_otro}
+                        onChange={(e) => handleInputChange('transportista_otro', e.target.value)}
+                        placeholder="Nombre del transportista"
+                      />
+                    </div>
+                  )}
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Despachante</label>
+                    <input
+                      type="text"
+                      className="cc-form-input"
+                      value={formData.despachante}
+                      onChange={(e) => handleInputChange('despachante', e.target.value)}
+                      placeholder="Nombre del despachante"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Peso (kg)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.peso}
+                      onChange={(e) => handleInputChange('peso', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Volumen (m³)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.volumen}
+                      onChange={(e) => handleInputChange('volumen', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Número de Guía</label>
+                    <input
+                      type="text"
+                      className="cc-form-input"
+                      value={formData.numero_guia}
+                      onChange={(e) => handleInputChange('numero_guia', e.target.value)}
+                      placeholder="Tracking number"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Estado</label>
+                    <select
+                      className="cc-form-input"
+                      value={formData.estado_carga_id}
+                      onChange={(e) => handleInputChange('estado_carga_id', e.target.value)}
+                    >
+                      <option value="">Seleccionar estado...</option>
+                      {estadosCarga.map(e => (
+                        <option key={e.id} value={e.id}>{e.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Fecha de Ingreso</label>
+                    <input
+                      type="date"
+                      className="cc-form-input"
+                      value={formData.fecha_ingreso}
+                      onChange={(e) => handleInputChange('fecha_ingreso', e.target.value)}
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Fecha de Llegada</label>
+                    <input
+                      type="date"
+                      className="cc-form-input"
+                      value={formData.fecha_llegada}
+                      onChange={(e) => handleInputChange('fecha_llegada', e.target.value)}
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Notas de Carga</label>
+                    <input
+                      type="text"
+                      className="cc-form-input"
+                      value={formData.notas_carga}
+                      onChange={(e) => handleInputChange('notas_carga', e.target.value)}
+                      placeholder="Notas adicionales sobre la carga..."
+                    />
+                  </div>
+                </div>
+              </div>
 
-.cc-modal-overlay .cc-modal-header {
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: white;
-  flex-shrink: 0;
-}
-
-.cc-modal-overlay .cc-modal-header h2 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #2F4156;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-}
-
-.cc-modal-close {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cc-modal-close:hover {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-/* Tabs dentro del modal */
-.cc-modal-overlay .cc-tabs {
-  display: flex;
-  gap: 0;
-  padding: 0 2rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  flex-shrink: 0;
-  overflow-x: auto;
-}
-
-.cc-modal-overlay .cc-tab {
-  padding: 1rem 1.5rem;
-  border: none;
-  background: transparent;
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.cc-modal-overlay .cc-tab:hover {
-  color: #2F4156;
-}
-
-.cc-modal-overlay .cc-tab-active {
-  color: #2F4156;
-  border-bottom-color: #567C8D;
-  background: white;
-}
-
-/* Form dentro del modal - debe ocupar el espacio restante */
-.cc-modal-overlay .cc-modal form {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
-
-.cc-modal-overlay .cc-modal-body {
-  padding: 1.5rem 2rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.cc-modal-overlay .cc-modal-footer {
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  background: white;
-  flex-shrink: 0;
-}
-
-/* Form Grid Full Width */
-.cc-form-full {
-  grid-column: 1 / -1;
-}
-
-/* Form Select */
-.cc-form-select {
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  font-family: inherit;
-  background: white;
-  cursor: pointer;
-}
-
-.cc-form-select:focus {
-  outline: none;
-  border-color: #567C8D;
-}
-
-/* Form Textarea */
-.cc-form-textarea {
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 80px;
-}
-
-.cc-form-textarea:focus {
-  outline: none;
-  border-color: #567C8D;
-}
-
-/* Header Section */
-.cc-header-section {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.cc-header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.cc-filters {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.cc-search-box {
-  position: relative;
-  flex: 1;
-  max-width: 400px;
-}
-
-.cc-search-box .cc-search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-}
-
-.cc-search-box .cc-search-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  background: #f8fafc;
-}
-
-.cc-search-box .cc-search-input:focus {
-  outline: none;
-  border-color: #567C8D;
-  background: white;
-}
-
-/* Card Styles for Proveedores */
-.cc-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.25rem;
-  transition: all 0.2s;
-}
-
-.cc-card:hover {
-  border-color: #C8D9E6;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-}
-
-.cc-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.cc-info-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #64748b;
-  font-size: 0.875rem;
-}
-
-.cc-info-row svg {
-  color: #94a3b8;
-  flex-shrink: 0;
-}
-
-/* Icon Buttons */
-.cc-btn-icon {
-  background: none;
-  border: none;
-  color: #64748b;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cc-btn-icon:hover {
-  background: #f1f5f9;
-  color: #2F4156;
-}
-
-.cc-btn-icon.cc-btn-danger:hover {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-/* Status Badge */
-.cc-status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cc-status-active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.cc-status-active:hover {
-  background: #a7f3d0;
-}
-
-.cc-status-inactive {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.cc-status-inactive:hover {
-  background: #e2e8f0;
-}
-
-/* Empty State */
-.cc-empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: #64748b;
-}
-
-.cc-empty-state svg {
-  color: #cbd5e1;
-  margin-bottom: 1rem;
-}
-
-.cc-empty-state h3 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 0.5rem;
-}
-
-.cc-empty-state p {
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-}
-
-/* Spinner */
-.cc-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #567C8D;
-  border-radius: 50%;
-  animation: cc-spin 0.8s linear infinite;
-}
-
-.cc-spinner-small {
-  width: 18px;
-  height: 18px;
-  border: 2px solid #e2e8f0;
-  border-top-color: white;
-  border-radius: 50%;
-  animation: cc-spin 0.8s linear infinite;
-}
-
-@keyframes cc-spin {
-  to {
-    transform: rotate(360deg);
-  }
+              {/* Costos */}
+              <div className="cc-form-section">
+                <h3 className="cc-section-title">Costos</h3>
+                <div className="cc-form-grid">
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Monto de la Compra</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.monto_compra}
+                      onChange={(e) => handleInputChange('monto_compra', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Cotización Carga</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.cotizacion_carga}
+                      onChange={(e) => handleInputChange('cotizacion_carga', e.target.value)}
+                      placeholder="0.00"
+                      style={{ background: '#f8fafc' }}
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Costo Real Carga</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.costo_carga}
+                      onChange={(e) => handleInputChange('costo_carga', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Gastos Extras</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.gastos_extras}
+                      onChange={(e) => handleInputChange('gastos_extras', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Costo Despacho</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.costo_despacho}
+                      onChange={(e) => handleInputChange('costo_despacho', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="cc-form-group">
+                    <label className="cc-form-label">Costo Transferencia</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="cc-form-input"
+                      value={formData.costo_transferencia}
+                      onChange={(e) => handleInputChange('costo_transferencia', e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                
+                {/* Total */}
+                <div style={{ 
+                  marginTop: '1.5rem', 
+                  padding: '1rem 1.5rem', 
+                  background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)', 
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ color: 'white', fontWeight: '600', fontSize: '1rem' }}>
+                    TOTAL (sin cotización de carga)
+                  </span>
+                  <span style={{ color: 'white', fontWeight: '700', fontSize: '1.5rem' }}>
+                    $ {(
+                      (parseFloat(formData.monto_compra) || 0) +
+                      (parseFloat(formData.costo_carga) || 0) +
+                      (parseFloat(formData.gastos_extras) || 0) +
+                      (parseFloat(formData.costo_despacho) || 0) +
+                      (parseFloat(formData.costo_transferencia) || 0)
+                    ).toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="cc-modal-footer">
+              <button className="cc-btn cc-btn-secondary" onClick={() => setShowModal(false)}>
+                Cancelar
+              </button>
+              <button className="cc-btn cc-btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Guardando...' : (editingItem ? 'Actualizar' : 'Guardar Compra')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
