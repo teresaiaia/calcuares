@@ -167,9 +167,9 @@ export default function OperacionesComerciales() {
         setFormData(prev => ({
           ...prev,
           compra_carga_id: compraId,
-          costo_compra_equipo: compra.monto_compra || prev.costo_compra_equipo,
-          costo_despacho_aduana: compra.costo_despacho || prev.costo_despacho_aduana,
-          costo_logistica_flete: compra.costo_carga || prev.costo_logistica_flete
+          costo_compra_equipo: compra.costo_total || compra.monto_compra || prev.costo_compra_equipo,
+          costo_despacho_aduana: '',
+          costo_logistica_flete: ''
         }));
       }
     }
@@ -752,7 +752,7 @@ export default function OperacionesComerciales() {
                       <option value="">Sin vincular (ingresar costos manualmente)</option>
                       {comprasDisponibles.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.codigo_orden} — {c.proveedor_nombre || 'Sin prov.'} — {c.descripcion || 'Sin desc.'} (${formatMoney(c.monto_compra)})
+                          {c.codigo_orden} — {c.proveedor_nombre || 'Sin prov.'} — {c.descripcion || 'Sin desc.'} (Total: ${formatMoney(c.costo_total || c.monto_compra)})
                         </option>
                       ))}
                     </select>
