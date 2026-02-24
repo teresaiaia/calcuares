@@ -6,6 +6,7 @@ import ComprasCargas from './ComprasCargas';
 import Proveedores from './Proveedores';
 import OperacionesComerciales from './OperacionesComerciales';
 import SeguimientoComercial from './SeguimientoComercial';
+import Articulos from './Articulos';
 import './App.css';
 
 export default function Calcuares() {
@@ -1322,7 +1323,8 @@ export default function Calcuares() {
                 { key: 'compras', label: 'Compras', icon: <Package size={16} /> },
                 { key: 'proveedores', label: 'Proveedores', icon: <Building2 size={16} /> },
                 { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
-                { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> }
+                { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> },
+                { key: 'articulos', label: 'Artículos', icon: <Package size={16} /> }
               ].map(tab => (
                 <button
                   key={tab.key}
@@ -1380,6 +1382,8 @@ export default function Calcuares() {
             <ComprasCargas />
           ) : activeModule === 'proveedores' ? (
             <Proveedores />
+          ) : activeModule === 'articulos' ? (
+            <Articulos />
           ) : activeModule === 'operaciones' ? (
             <OperacionesComerciales />
           ) : activeModule === 'seguimiento' ? (
