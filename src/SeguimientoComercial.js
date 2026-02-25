@@ -34,6 +34,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [soloAlertas, setSoloAlertas] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
+  const [mostrarNoInteresados, setMostrarNoInteresados] = useState(false);
 
   // Config de alertas - admin define, vendedor solo ve
   const [alertaDias, setAlertaDias] = useState(() => {
@@ -373,6 +374,12 @@ export default function SeguimientoComercial({ isAdmin = false }) {
       result = result.filter(c => c.estado === filtroEstado);
     }
 
+    // Ocultar "No Interesado" (verde) si no hay busqueda, no esta el toggle activo,
+    // y no se selecciono explicitamente el filtro verde
+    if (!mostrarNoInteresados && filtroEstado !== 'verde' && !searchTerm) {
+      result = result.filter(c => c.estado !== 'verde');
+    }
+
     // Solo alertas
     if (soloAlertas) {
       result = result.filter(c => c.tiene_alerta);
@@ -426,7 +433,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
 
     return result;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactos, searchTerm, sortConfig, filtroEstado, soloAlertas]);
+  }, [contactos, searchTerm, sortConfig, filtroEstado, soloAlertas, mostrarNoInteresados]);
 
   // Stats
   const stats = useMemo(() => {
@@ -595,6 +602,21 @@ export default function SeguimientoComercial({ isAdmin = false }) {
               {est === 'todos' ? 'Todos' : `${ESTADOS[est]?.icon} ${ESTADOS[est]?.label}`}
             </button>
           ))}
+          <button
+            onClick={() => setMostrarNoInteresados(!mostrarNoInteresados)}
+            style={{
+              padding: '0.3rem 0.75rem', borderRadius: '20px',
+              border: mostrarNoInteresados ? '2px solid #16a34a' : '2px dashed #94a3b8',
+              fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600',
+              background: mostrarNoInteresados ? '#f0fdf4' : 'white',
+              color: mostrarNoInteresados ? '#16a34a' : '#94a3b8',
+              marginLeft: '0.5rem',
+              transition: 'all 0.2s ease'
+            }}
+            title={mostrarNoInteresados ? 'Ocultar No Interesados' : 'Mostrar No Interesados'}
+          >
+            No Interesados ({stats.verdes})
+          </button>
           <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: 'auto' }}>
             {filteredContactos.length} {filteredContactos.length === 1 ? 'resultado' : 'resultados'}
           </span>
