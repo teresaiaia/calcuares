@@ -84,7 +84,7 @@ export default function Calcuares() {
       // Por simplicidad, comparamos contraseña directamente
       // En producción real, deberías usar bcrypt o similar
       // Por ahora aceptamos cualquier contraseña que coincida
-      const isValidPassword = loginPassword === 'admin123' || loginPassword === 'vendedor123';
+      const isValidPassword = loginPassword === 'administrando' || loginPassword === 'vendedor123';
       
       if (!isValidPassword) {
         setLoginError('Usuario o contraseña incorrectos');
