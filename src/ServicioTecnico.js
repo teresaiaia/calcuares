@@ -551,7 +551,12 @@ export default function ServicioTecnico() {
           monto_facturado_partes: parseCosto(r[9]),
           nro_factura: String(r[10] || '').trim() || null,
           fecha_factura: parseExcelDate(r[11]),
-          estado_cobro: parseCosto(r[6]) > 0 ? 'Cobrado' : 'Pendiente',
+          estado_cobro: (() => {
+            const val = String(r[12] || '').trim().toLowerCase();
+            if (val === 'cobrado') return 'Cobrado';
+            if (val === 'no se cobró' || val === 'no se cobro') return 'No se cobró';
+            return 'Pendiente';
+          })(),
           tiene_informe: false,
           informe_texto: null,
           informe_formateado: null
@@ -1184,7 +1189,7 @@ export default function ServicioTecnico() {
                   )}
 
                   <div style={{ background: '#f8f8f8', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', color: '#6b7280' }}>
-                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | $FAC SERV | $FAC PARTES | N° FAC | FECHA FAC
+                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | $FAC SERV | $FAC PARTES | N° FAC | FECHA FAC | ESTADO
                   </div>
                 </>
               )}
