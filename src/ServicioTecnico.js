@@ -1,9 +1,130 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import './ServicioTecnico.css';
 
 const ESTADOS_COBRO = ['Pendiente', 'Cobrado', 'No se cobró'];
+
+// ============================================
+// ComboBox: dropdown con autocompletado + opción de escribir nuevo
+// ============================================
+function ComboBox({ value, onChange, options, placeholder, icon }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState('');
+  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Cerrar al hacer click afuera
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setFilter('');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!filter) return options;
+    const lower = filter.toLowerCase();
+    return options.filter(o => o.toLowerCase().includes(lower));
+  }, [options, filter]);
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setFilter(val);
+    onChange(val);
+    if (!isOpen) setIsOpen(true);
+  };
+
+  const handleSelect = (option) => {
+    onChange(option);
+    setFilter('');
+    setIsOpen(false);
+  };
+
+  const handleFocus = () => {
+    setIsOpen(true);
+    setFilter('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+      setFilter('');
+    }
+    if (e.key === 'Enter' && filtered.length === 1) {
+      handleSelect(filtered[0]);
+    }
+  };
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        border: '2px solid ' + (isOpen ? '#567C8D' : '#C8D9E6'),
+        borderRadius: '8px', transition: 'border-color 0.2s', background: 'white'
+      }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          style={{
+            flex: 1, border: 'none', outline: 'none', padding: '0.55rem 0.75rem',
+            fontSize: '0.85rem', color: '#2F4156', background: 'transparent',
+            borderRadius: '8px'
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => { setIsOpen(!isOpen); if (!isOpen) inputRef.current?.focus(); }}
+          style={{
+            border: 'none', background: 'transparent', cursor: 'pointer',
+            padding: '0.4rem 0.5rem', color: '#567C8D', display: 'flex'
+          }}
+        >
+          <ChevronDown size={14} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
+      </div>
+      {isOpen && options.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+          background: 'white', border: '2px solid #C8D9E6', borderTop: 'none',
+          borderRadius: '0 0 8px 8px', maxHeight: '180px', overflowY: 'auto',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', color: '#9ca3af', fontStyle: 'italic' }}>
+              Nuevo valor: "{value}"
+            </div>
+          ) : (
+            filtered.map((opt, i) => (
+              <div
+                key={i}
+                onClick={() => handleSelect(opt)}
+                style={{
+                  padding: '0.45rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem',
+                  color: '#2F4156', borderBottom: i < filtered.length - 1 ? '1px solid #f0f0f0' : 'none',
+                  background: opt === value ? '#f0f7ff' : 'transparent'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#f0f7ff'}
+                onMouseLeave={(e) => e.target.style.background = opt === value ? '#f0f7ff' : 'transparent'}
+              >
+                {opt}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ServicioTecnico() {
   const [servicios, setServicios] = useState([]);
@@ -426,6 +547,28 @@ export default function ServicioTecnico() {
     }), { costoTotal: 0, facturadoServicio: 0, facturadoPartes: 0, enGarantia: 0, pendientes: 0, conInforme: 0 });
   }, [serviciosFiltrados]);
 
+  // Opciones para dropdowns con cascada
+  const clientesUnicos = useMemo(() => {
+    const set = new Set(servicios.map(s => s.cliente).filter(Boolean));
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [servicios]);
+
+  const modelosFiltrados = useMemo(() => {
+    const source = formData.cliente
+      ? servicios.filter(s => s.cliente === formData.cliente)
+      : servicios;
+    const set = new Set(source.map(s => s.modelo).filter(Boolean));
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [servicios, formData.cliente]);
+
+  const serialesFiltrados = useMemo(() => {
+    let source = servicios;
+    if (formData.cliente) source = source.filter(s => s.cliente === formData.cliente);
+    if (formData.modelo) source = source.filter(s => s.modelo === formData.modelo);
+    const set = new Set(source.map(s => s.serial_number).filter(Boolean));
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [servicios, formData.cliente, formData.modelo]);
+
   // Render icono de ordenamiento
   const SortIcon = ({ field }) => {
     if (sortField !== field) return <ChevronDown size={12} style={{ opacity: 0.3 }} />;
@@ -637,24 +780,33 @@ export default function ServicioTecnico() {
               {/* Fila 2: Cliente */}
               <div className="st-form-group">
                 <label>👤 Cliente *</label>
-                <input type="text" value={formData.cliente}
-                  onChange={(e) => setFormData({...formData, cliente: e.target.value})}
-                  placeholder="Nombre del cliente" />
+                <ComboBox
+                  value={formData.cliente}
+                  onChange={(val) => setFormData({...formData, cliente: val, modelo: '', serial_number: ''})}
+                  options={clientesUnicos}
+                  placeholder="Seleccionar o escribir cliente"
+                />
               </div>
 
               {/* Fila 3: Modelo y S/N */}
               <div className="st-form-row st-form-row-2">
                 <div className="st-form-group">
                   <label>🏷️ Modelo</label>
-                  <input type="text" value={formData.modelo}
-                    onChange={(e) => setFormData({...formData, modelo: e.target.value})}
-                    placeholder="Ej: M22, MiniVac..." />
+                  <ComboBox
+                    value={formData.modelo}
+                    onChange={(val) => setFormData({...formData, modelo: val, serial_number: ''})}
+                    options={modelosFiltrados}
+                    placeholder="Seleccionar o escribir modelo"
+                  />
                 </div>
                 <div className="st-form-group">
                   <label>🔢 Serial Number</label>
-                  <input type="text" value={formData.serial_number}
-                    onChange={(e) => setFormData({...formData, serial_number: e.target.value})}
-                    placeholder="Ej: 22188" />
+                  <ComboBox
+                    value={formData.serial_number}
+                    onChange={(val) => setFormData({...formData, serial_number: val})}
+                    options={serialesFiltrados}
+                    placeholder="Seleccionar o escribir S/N"
+                  />
                 </div>
               </div>
 
