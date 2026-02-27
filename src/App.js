@@ -7,6 +7,7 @@ import Proveedores from './Proveedores';
 import OperacionesComerciales from './OperacionesComerciales';
 import SeguimientoComercial from './SeguimientoComercial';
 import Articulos from './Articulos';
+import ServicioTecnico from './ServicioTecnico';
 import './App.css';
 
 export default function Calcuares() {
@@ -1316,7 +1317,11 @@ export default function Calcuares() {
             <div style={{ 
               display: 'flex', gap: '4px', 
               background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '12px',
-              marginBottom: '1rem'
+              marginBottom: '1rem',
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
             }}>
               {[
                 { key: 'calculos', label: 'Cálculos', icon: <DollarSign size={16} /> },
@@ -1324,22 +1329,28 @@ export default function Calcuares() {
                 { key: 'proveedores', label: 'Proveedores', icon: <Building2 size={16} /> },
                 { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
                 { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> },
-                { key: 'articulos', label: 'Artículos', icon: <Package size={16} /> }
+                { key: 'articulos', label: 'Artículos', icon: <Package size={16} /> },
+                { key: 'servicio_tecnico', label: 'ST', icon: null, discrete: true }
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveModule(tab.key)}
                   style={{
-                    flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
-                    fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer',
+                    flex: tab.discrete ? 0 : 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                    fontWeight: tab.discrete ? '600' : '700', fontSize: tab.discrete ? '0.7rem' : '0.8rem', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
                     background: activeModule === tab.key ? 'white' : 'transparent',
-                    color: activeModule === tab.key ? '#2F4156' : 'rgba(255,255,255,0.65)',
+                    color: activeModule === tab.key ? '#2F4156' : tab.discrete ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.65)',
                     boxShadow: activeModule === tab.key ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    minWidth: tab.discrete ? '36px' : 'fit-content',
+                    flexShrink: 0
                   }}
+                  title={tab.discrete ? 'Servicio Técnico' : tab.label}
                 >
-                  {tab.icon} {tab.label}
+                  {tab.icon && <>{tab.icon} </>}{tab.label}
                 </button>
               ))}
             </div>
@@ -1388,6 +1399,8 @@ export default function Calcuares() {
             <OperacionesComerciales />
           ) : activeModule === 'seguimiento' ? (
             <SeguimientoComercial isAdmin={true} />
+          ) : activeModule === 'servicio_tecnico' ? (
+            <ServicioTecnico />
           ) : (
           <>
           <div className="card">
