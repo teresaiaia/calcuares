@@ -136,6 +136,29 @@
   box-shadow: 0 4px 12px rgba(47, 65, 86, 0.3);
 }
 
+.st-btn-import {
+  padding: 0.5rem 1rem;
+  border: 2px solid #567C8D;
+  border-radius: 8px;
+  background: transparent;
+  color: #567C8D;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.st-btn-import:hover {
+  background: #567C8D;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(86, 124, 141, 0.3);
+}
+
 /* Table */
 .st-table-wrapper {
   background: white;
