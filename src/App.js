@@ -966,6 +966,8 @@ export default function Calcuares() {
               </label>
               <input
                 type="email"
+                name="email"
+                autoComplete="username"
                 value={loginEmail}
                 onChange={(e) => setLoginEmail(e.target.value)}
                 placeholder="usuario@ares.com"
@@ -982,6 +984,8 @@ export default function Calcuares() {
               </label>
               <input
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
                 placeholder="••••••••"
