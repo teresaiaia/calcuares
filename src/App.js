@@ -1345,8 +1345,7 @@ export default function Calcuares() {
                     transition: 'all 0.2s ease',
                     whiteSpace: 'nowrap',
                     flexShrink: 0,
-                    minWidth: tab.discrete ? '36px' : 'fit-content',
-                    flexShrink: 0
+                    minWidth: tab.discrete ? '36px' : 'fit-content'
                   }}
                   title={tab.discrete ? 'Servicio Técnico' : tab.label}
                 >
