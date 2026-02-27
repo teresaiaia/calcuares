@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import './ServicioTecnico.css';
 
 const ESTADOS_COBRO = ['Pendiente', 'Cobrado', 'No se cobró'];
@@ -142,6 +142,15 @@ export default function ServicioTecnico() {
   const [sortDir, setSortDir] = useState('desc');
   const [filterEstado, setFilterEstado] = useState('todos');
   const [filterGarantia, setFilterGarantia] = useState('todos');
+
+  // Estados de importación
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importData, setImportData] = useState([]);
+  const [importDuplicates, setImportDuplicates] = useState([]);
+  const [importStatus, setImportStatus] = useState(''); // '', 'preview', 'importing', 'done'
+  const [importResults, setImportResults] = useState(null);
+  const [duplicateAction, setDuplicateAction] = useState('skip'); // 'skip' | 'overwrite'
+  const importFileRef = useRef(null);
 
   const formInit = {
     nro_reporte: '',
@@ -476,6 +485,148 @@ export default function ServicioTecnico() {
     generarPDF(servicio.informe_formateado, servicio);
   };
 
+  // ============================================
+  // IMPORTACIÓN MASIVA
+  // ============================================
+  const parseExcelDate = (val) => {
+    if (!val) return null;
+    // Si es número (serial de Excel)
+    if (typeof val === 'number') {
+      const d = new Date((val - 25569) * 86400000);
+      return d.toISOString().split('T')[0];
+    }
+    // Si es string con formato dd/mm/yyyy o similar
+    const str = String(val).trim();
+    const parts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+    if (parts) {
+      const year = parts[3].length === 2 ? '20' + parts[3] : parts[3];
+      return `${year}-${parts[2].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+    }
+    // Intentar parse directo
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return null;
+  };
+
+  const parseCosto = (val) => {
+    if (!val) return 0;
+    const str = String(val).replace(/[^0-9.,-]/g, '').replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+
+    try {
+      const XLSX = await import('xlsx');
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      if (rows.length < 2) {
+        alert('El archivo no tiene datos (solo encabezado o está vacío)');
+        return;
+      }
+
+      // Orden fijo: REPO | DATE | CLIENTE | MOD | SN | CASO | K-ING | FINGTIA | $FAC_SERV | $FAC_PARTES | NºFAC | DATEFAC
+      const parsed = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r.length === 0 || !r[0]) continue; // Saltar filas vacías
+
+        const record = {
+          nro_reporte: String(r[0] || '').trim(),
+          fecha: parseExcelDate(r[1]),
+          cliente: String(r[2] || '').trim(),
+          modelo: String(r[3] || '').trim() || null,
+          serial_number: String(r[4] || '').trim() || null,
+          caso: String(r[5] || '').trim() || null,
+          costo_servicio: parseCosto(r[6]),
+          fecha_fin_garantia: parseExcelDate(r[7]),
+          monto_facturado_servicio: parseCosto(r[8]),
+          monto_facturado_partes: parseCosto(r[9]),
+          nro_factura: String(r[10] || '').trim() || null,
+          fecha_factura: parseExcelDate(r[11]),
+          estado_cobro: parseCosto(r[6]) > 0 ? 'Cobrado' : 'Pendiente',
+          tiene_informe: false,
+          informe_texto: null,
+          informe_formateado: null
+        };
+
+        if (record.nro_reporte && record.cliente) {
+          parsed.push(record);
+        }
+      }
+
+      if (parsed.length === 0) {
+        alert('No se encontraron registros válidos en el archivo');
+        return;
+      }
+
+      // Detectar duplicados
+      const existingReportes = new Set(servicios.map(s => s.nro_reporte));
+      const dupes = parsed.filter(p => existingReportes.has(p.nro_reporte));
+      
+      setImportData(parsed);
+      setImportDuplicates(dupes);
+      setImportStatus('preview');
+      setImportResults(null);
+      setDuplicateAction('skip');
+      setShowImportModal(true);
+    } catch (err) {
+      console.error('Error al leer archivo:', err);
+      alert('Error al leer el archivo. Asegurate de que sea un Excel (.xlsx) o CSV válido.');
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    setImportStatus('importing');
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    const existingMap = {};
+    servicios.forEach(s => { existingMap[s.nro_reporte] = s.id; });
+
+    for (const record of importData) {
+      const isDuplicate = existingMap[record.nro_reporte];
+      
+      try {
+        if (isDuplicate) {
+          if (duplicateAction === 'skip') {
+            skipped++;
+            continue;
+          }
+          // Overwrite
+          const { error } = await supabase
+            .from('servicio_tecnico')
+            .update(record)
+            .eq('id', isDuplicate);
+          if (error) throw error;
+          updated++;
+        } else {
+          const { error } = await supabase
+            .from('servicio_tecnico')
+            .insert([record]);
+          if (error) throw error;
+          inserted++;
+        }
+      } catch (err) {
+        console.error('Error importando registro:', record.nro_reporte, err);
+        errors++;
+      }
+    }
+
+    setImportResults({ inserted, updated, skipped, errors, total: importData.length });
+    setImportStatus('done');
+    await fetchServicios();
+  };
+
   // Ordenamiento
   const handleSort = (field) => {
     if (sortField === field) {
@@ -638,6 +789,16 @@ export default function ServicioTecnico() {
         </select>
         <button onClick={fetchServicios} className="st-btn-icon" title="Recargar">
           <RefreshCw size={16} />
+        </button>
+        <input
+          type="file"
+          ref={importFileRef}
+          accept=".xlsx,.xls,.csv"
+          style={{ display: 'none' }}
+          onChange={handleImportFile}
+        />
+        <button onClick={() => importFileRef.current?.click()} className="st-btn-import" title="Importar desde Excel/CSV">
+          <Upload size={16} /> Importar
         </button>
         <button onClick={handleNew} className="st-btn-new">
           <Plus size={16} /> Nuevo Servicio
@@ -940,6 +1101,131 @@ export default function ServicioTecnico() {
                   <><Download size={16} /> Guardar y Generar PDF</>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Importación */}
+      {showImportModal && (
+        <div className="st-modal-overlay" onClick={() => { if (importStatus !== 'importing') { setShowImportModal(false); setImportStatus(''); } }}>
+          <div className="st-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+            <div className="st-modal-header">
+              <h3>📥 Importar Servicios</h3>
+              <button onClick={() => { if (importStatus !== 'importing') { setShowImportModal(false); setImportStatus(''); } }} className="st-modal-close"><X size={20} /></button>
+            </div>
+            <div className="st-modal-body">
+              {importStatus === 'preview' && (
+                <>
+                  <div style={{ background: '#f0f7ff', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem' }}>
+                    <strong>📊 Resumen del archivo:</strong> {importData.length} registros encontrados
+                    {importDuplicates.length > 0 && (
+                      <span style={{ color: '#d97706', display: 'block', marginTop: '4px' }}>
+                        ⚠️ {importDuplicates.length} reportes ya existen en la base de datos
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Tabla preview */}
+                  <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px', marginBottom: '16px' }}>
+                    <table className="st-table" style={{ fontSize: '0.75rem' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ padding: '6px 8px' }}>REPO</th>
+                          <th style={{ padding: '6px 8px' }}>FECHA</th>
+                          <th style={{ padding: '6px 8px' }}>CLIENTE</th>
+                          <th style={{ padding: '6px 8px' }}>MOD</th>
+                          <th style={{ padding: '6px 8px' }}>S/N</th>
+                          <th style={{ padding: '6px 8px' }}>COSTO</th>
+                          <th style={{ padding: '6px 8px' }}>ESTADO</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importData.slice(0, 50).map((r, i) => {
+                          const isDupe = importDuplicates.some(d => d.nro_reporte === r.nro_reporte);
+                          return (
+                            <tr key={i} style={{ background: isDupe ? '#fef3c7' : 'transparent' }}>
+                              <td style={{ padding: '4px 8px', fontWeight: 600 }}>{r.nro_reporte}</td>
+                              <td style={{ padding: '4px 8px' }}>{r.fecha || '-'}</td>
+                              <td style={{ padding: '4px 8px' }}>{r.cliente}</td>
+                              <td style={{ padding: '4px 8px' }}>{r.modelo || '-'}</td>
+                              <td style={{ padding: '4px 8px' }}>{r.serial_number || '-'}</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right' }}>{r.costo_servicio ? `$${formatNumber(r.costo_servicio)}` : '-'}</td>
+                              <td style={{ padding: '4px 8px' }}>
+                                {isDupe ? <span style={{ color: '#d97706', fontWeight: 600 }}>⚠ DUP</span> : '✓ Nuevo'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {importData.length > 50 && (
+                      <div style={{ padding: '8px', textAlign: 'center', color: '#6b7280', fontSize: '0.8rem' }}>
+                        ...y {importData.length - 50} registros más
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manejo de duplicados */}
+                  {importDuplicates.length > 0 && (
+                    <div style={{ background: '#fffbeb', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px' }}>
+                      <strong style={{ color: '#92400e' }}>¿Qué hacer con los {importDuplicates.length} duplicados?</strong>
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                          <input type="radio" name="dupeAction" value="skip" checked={duplicateAction === 'skip'} onChange={() => setDuplicateAction('skip')} />
+                          Saltar duplicados
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                          <input type="radio" name="dupeAction" value="overwrite" checked={duplicateAction === 'overwrite'} onChange={() => setDuplicateAction('overwrite')} />
+                          Sobreescribir con datos del archivo
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ background: '#f8f8f8', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', color: '#6b7280' }}>
+                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | $FAC SERV | $FAC PARTES | N° FAC | FECHA FAC
+                  </div>
+                </>
+              )}
+
+              {importStatus === 'importing' && (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <RefreshCw size={32} className="st-spin" style={{ color: '#567C8D', marginBottom: '16px' }} />
+                  <p style={{ color: '#2F4156', fontSize: '0.95rem' }}>Importando {importData.length} registros...</p>
+                </div>
+              )}
+
+              {importStatus === 'done' && importResults && (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '12px' }}>✅</div>
+                  <h3 style={{ color: '#2F4156', marginBottom: '16px' }}>Importación completada</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxWidth: '300px', margin: '0 auto', textAlign: 'left' }}>
+                    <span style={{ fontWeight: 600, color: '#16a34a' }}>✓ Insertados:</span><span>{importResults.inserted}</span>
+                    {importResults.updated > 0 && <><span style={{ fontWeight: 600, color: '#2563eb' }}>↻ Actualizados:</span><span>{importResults.updated}</span></>}
+                    {importResults.skipped > 0 && <><span style={{ fontWeight: 600, color: '#d97706' }}>⊘ Saltados:</span><span>{importResults.skipped}</span></>}
+                    {importResults.errors > 0 && <><span style={{ fontWeight: 600, color: '#dc2626' }}>✗ Errores:</span><span>{importResults.errors}</span></>}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="st-modal-footer">
+              {importStatus === 'preview' && (
+                <>
+                  <button onClick={() => { setShowImportModal(false); setImportStatus(''); }} className="st-btn-cancel">
+                    <X size={16} /> Cancelar
+                  </button>
+                  <button onClick={handleImportConfirm} className="st-btn-save">
+                    <Upload size={16} /> Importar {importData.length} registros
+                  </button>
+                </>
+              )}
+              {importStatus === 'done' && (
+                <button onClick={() => { setShowImportModal(false); setImportStatus(''); }} className="st-btn-save">
+                  Cerrar
+                </button>
+              )}
             </div>
           </div>
         </div>
