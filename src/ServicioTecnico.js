@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, AlertTriangle, Download, ChevronDown, ChevronUp, Eye } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import './ServicioTecnico.css';
 
 const ESTADOS_COBRO = ['Pendiente', 'Cobrado', 'No se cobró'];
@@ -16,7 +16,7 @@ export default function ServicioTecnico() {
   const [informeServicio, setInformeServicio] = useState(null);
   const [informeTexto, setInformeTexto] = useState('');
   const [generandoInforme, setGenerandoInforme] = useState(false);
-  const [expandedRow, setExpandedRow] = useState(null);
+  const [expandedRow] = useState(null);
   const [sortField, setSortField] = useState('fecha');
   const [sortDir, setSortDir] = useState('desc');
   const [filterEstado, setFilterEstado] = useState('todos');
