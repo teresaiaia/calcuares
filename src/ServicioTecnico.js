@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import './ServicioTecnico.css';
 
-const ESTADOS_COBRO = ['Pendiente', 'Cobrado', 'No se cobró'];
+const ESTADOS_COBRO = ['Pendiente', 'Cobrado', 'No se cobró', 'Exonerado'];
 
 // ============================================
 // ComboBox: dropdown con autocompletado + opción de escribir nuevo
@@ -555,6 +555,7 @@ export default function ServicioTecnico() {
             const val = String(r[12] || '').trim().toLowerCase();
             if (val === 'cobrado') return 'Cobrado';
             if (val === 'no se cobró' || val === 'no se cobro') return 'No se cobró';
+            if (val === 'exonerado') return 'Exonerado';
             return 'Pendiente';
           })(),
           tiene_informe: false,
@@ -781,6 +782,7 @@ export default function ServicioTecnico() {
           <option value="Pendiente">Pendiente</option>
           <option value="Cobrado">Cobrado</option>
           <option value="No se cobró">No se cobró</option>
+          <option value="Exonerado">Exonerado</option>
         </select>
         <select
           value={filterGarantia}
