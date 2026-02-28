@@ -159,6 +159,59 @@
   box-shadow: 0 4px 12px rgba(86, 124, 141, 0.3);
 }
 
+.st-btn-export {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #567C8D;
+  border-radius: 8px;
+  background: transparent;
+  color: #567C8D;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.st-btn-export:hover {
+  background: #567C8D;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(86, 124, 141, 0.3);
+}
+
+.st-export-menu {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.st-export-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: #2F4156;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.st-export-option:hover {
+  background: #f0f4f8;
+}
+
 /* Table */
 .st-table-wrapper {
   background: white;
