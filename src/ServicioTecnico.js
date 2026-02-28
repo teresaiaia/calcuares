@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from './supabaseClient';
-import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp, Upload, ExternalLink } from 'lucide-react';
 import './ServicioTecnico.css';
 
 const ESTADOS_COBRO = ['Pendiente', 'Cobrado', 'No se cobró', 'Exonerado'];
@@ -638,6 +638,126 @@ export default function ServicioTecnico() {
     await fetchServicios();
   };
 
+  // ============================================
+  // EXPORTACIÓN
+  // ============================================
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef(null);
+
+  // Cerrar menú al hacer click afuera
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleExportExcel = async () => {
+    setShowExportMenu(false);
+    try {
+      const XLSX = await import('xlsx');
+      const exportData = serviciosFiltrados.map(s => ({
+        'REPO': s.nro_reporte,
+        'FECHA': s.fecha || '',
+        'CLIENTE': s.cliente,
+        'MODELO': s.modelo || '',
+        'S/N': s.serial_number || '',
+        'CASO': s.caso || '',
+        'COSTO': s.costo_servicio || 0,
+        'FIN GTÍA': s.fecha_fin_garantia || '',
+        'EN GTÍA': estaEnGarantia(s.fecha_fin_garantia) === true ? 'Sí' : estaEnGarantia(s.fecha_fin_garantia) === false ? 'No' : '-',
+        '$FAC SERV': s.monto_facturado_servicio || 0,
+        '$FAC PARTES': s.monto_facturado_partes || 0,
+        'N° FAC': s.nro_factura || '',
+        'FECHA FAC': s.fecha_factura || '',
+        'ESTADO': s.estado_cobro || ''
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const colWidths = [10, 12, 25, 14, 14, 30, 12, 12, 8, 12, 12, 20, 12, 14];
+      ws['!cols'] = colWidths.map(w => ({ wch: w }));
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Servicio Técnico');
+      XLSX.writeFile(wb, `ServicioTecnico_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error('Error al exportar Excel:', err);
+      alert('Error al exportar: ' + err.message);
+    }
+  };
+
+  const handleExportPDF = () => {
+    setShowExportMenu(false);
+    const ventana = window.open('', '_blank');
+    const rows = serviciosFiltrados.map(s => {
+      const enGar = estaEnGarantia(s.fecha_fin_garantia);
+      return `<tr>
+        <td>${s.nro_reporte}</td>
+        <td>${formatDate(s.fecha)}</td>
+        <td>${s.cliente}</td>
+        <td>${s.modelo || ''}</td>
+        <td>${s.serial_number || ''}</td>
+        <td class="caso">${s.caso || ''}</td>
+        <td class="num">${s.costo_servicio ? '$' + formatNumber(s.costo_servicio) : ''}</td>
+        <td>${formatDate(s.fecha_fin_garantia)}</td>
+        <td class="center">${enGar === true ? 'Sí' : enGar === false ? 'No' : '-'}</td>
+        <td class="num">${s.monto_facturado_servicio ? '$' + formatNumber(s.monto_facturado_servicio) : ''}</td>
+        <td class="num">${s.monto_facturado_partes ? '$' + formatNumber(s.monto_facturado_partes) : ''}</td>
+        <td>${s.nro_factura || ''}</td>
+        <td>${formatDate(s.fecha_factura)}</td>
+        <td class="center">${s.estado_cobro || ''}</td>
+      </tr>`;
+    }).join('');
+
+    ventana.document.write(`<!DOCTYPE html><html><head>
+      <title>Servicio Técnico - Exportación</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 20px; color: #2F4156; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #567C8D; padding-bottom: 15px; }
+        .header h1 { font-size: 18px; color: #2F4156; }
+        .header p { color: #567C8D; font-size: 11px; margin-top: 4px; }
+        .stats { display: flex; justify-content: center; gap: 20px; margin-bottom: 15px; font-size: 11px; }
+        .stats span { background: #f0f4f8; padding: 4px 12px; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        th { background: #2F4156; color: white; padding: 6px 4px; text-align: left; font-weight: 600; white-space: nowrap; }
+        td { padding: 4px; border-bottom: 1px solid #e0e0e0; }
+        tr:nth-child(even) { background: #f8fafc; }
+        .num { text-align: right; }
+        .center { text-align: center; }
+        .caso { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .footer { text-align: center; margin-top: 20px; font-size: 9px; color: #94a3b8; border-top: 1px solid #e0e0e0; padding-top: 10px; }
+        @media print { body { padding: 10px; } }
+        @page { size: landscape; margin: 10mm; }
+      </style>
+    </head><body>
+      <div class="header">
+        <h1>ARES MEDICAL EQUIPMENT</h1>
+        <p>Reporte de Servicio Técnico</p>
+      </div>
+      <div class="stats">
+        <span><strong>Registros:</strong> ${serviciosFiltrados.length}</span>
+        <span><strong>Costo Total:</strong> $${formatNumber(totales.costoTotal)}</span>
+        <span><strong>Facturado Serv.:</strong> $${formatNumber(totales.facturadoServicio)}</span>
+        <span><strong>Facturado Partes:</strong> $${formatNumber(totales.facturadoPartes)}</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>REPO</th><th>FECHA</th><th>CLIENTE</th><th>MOD</th><th>S/N</th><th>CASO</th>
+          <th>COSTO</th><th>FIN GTÍA</th><th>GTÍA</th><th>$FAC SERV</th><th>$FAC PARTES</th>
+          <th>N° FAC</th><th>FECHA FAC</th><th>ESTADO</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="footer">Generado el ${new Date().toLocaleDateString('es-AR')} — ARES MEDICAL EQUIPMENT</div>
+    </body></html>`);
+    ventana.document.close();
+    setTimeout(() => ventana.print(), 500);
+  };
+
   // Ordenamiento
   const handleSort = (field) => {
     if (sortField === field) {
@@ -802,6 +922,21 @@ export default function ServicioTecnico() {
         <button onClick={fetchServicios} className="st-btn-icon" title="Recargar">
           <RefreshCw size={16} />
         </button>
+        <div ref={exportMenuRef} style={{ position: 'relative' }}>
+          <button onClick={() => setShowExportMenu(!showExportMenu)} className="st-btn-export" title="Exportar datos">
+            <ExternalLink size={16} />
+          </button>
+          {showExportMenu && (
+            <div className="st-export-menu">
+              <button onClick={handleExportExcel} className="st-export-option">
+                <FileText size={14} /> Exportar a Excel
+              </button>
+              <button onClick={handleExportPDF} className="st-export-option">
+                <Download size={14} /> Exportar a PDF
+              </button>
+            </div>
+          )}
+        </div>
         <input
           type="file"
           ref={importFileRef}
