@@ -207,7 +207,7 @@ export default function ServicioTecnico() {
   // Formatear número con separador de miles
   const formatNumber = (num) => {
     if (!num && num !== 0) return '';
-    return Number(num).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return Math.round(Number(num)).toLocaleString('es-PY', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
 
   // Formatear fecha para mostrar
@@ -233,10 +233,10 @@ export default function ServicioTecnico() {
         modelo: formData.modelo.trim() || null,
         serial_number: formData.serial_number.trim() || null,
         caso: formData.caso.trim() || null,
-        costo_servicio: parseFloat(formData.costo_servicio) || 0,
+        costo_servicio: Math.round(parseFloat(formData.costo_servicio) || 0),
         fecha_fin_garantia: formData.fecha_fin_garantia || null,
-        monto_facturado_servicio: parseFloat(formData.monto_facturado_servicio) || 0,
-        monto_facturado_partes: parseFloat(formData.monto_facturado_partes) || 0,
+        monto_facturado_servicio: Math.round(parseFloat(formData.monto_facturado_servicio) || 0),
+        monto_facturado_partes: Math.round(parseFloat(formData.monto_facturado_partes) || 0),
         nro_factura: formData.nro_factura.trim() || null,
         fecha_factura: formData.fecha_factura || null,
         estado_cobro: formData.estado_cobro,
@@ -376,7 +376,7 @@ export default function ServicioTecnico() {
     });
 
     formateado += `\n${'─'.repeat(50)}\n`;
-    formateado += `Costo del servicio: $${formatNumber(servicio.costo_servicio)}\n`;
+    formateado += `Costo del servicio: ₲${formatNumber(servicio.costo_servicio)}\n`;
     
     if (servicio.fecha_fin_garantia) {
       const enGarantia = estaEnGarantia(servicio.fecha_fin_garantia);
@@ -463,7 +463,7 @@ export default function ServicioTecnico() {
           <div class="info-item"><span class="info-label">Cliente:</span> ${servicio.cliente}</div>
           <div class="info-item"><span class="info-label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
           <div class="info-item"><span class="info-label">S/N:</span> ${servicio.serial_number || 'N/A'}</div>
-          <div class="info-item"><span class="info-label">Costo:</span> $${formatNumber(servicio.costo_servicio)}</div>
+          <div class="info-item"><span class="info-label">Costo:</span> ₲${formatNumber(servicio.costo_servicio)}</div>
         </div>
         <h3 style="color: #2F4156; margin-bottom: 10px;">Descripción del Servicio</h3>
         <div class="content">${textoFormateado.replace(/\n/g, '<br>')}</div>
@@ -534,7 +534,7 @@ export default function ServicioTecnico() {
         return;
       }
 
-      // Orden fijo: REPO | DATE | CLIENTE | MOD | SN | CASO | K-ING | FINGTIA | $FAC_SERV | $FAC_PARTES | NºFAC | DATEFAC
+      // Orden fijo: REPO | DATE | CLIENTE | MOD | SN | CASO | K-ING | FINGTIA | ₲FAC_SERV | ₲FAC_PARTES | NºFAC | DATEFAC
       const parsed = [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
@@ -547,10 +547,10 @@ export default function ServicioTecnico() {
           modelo: String(r[3] || '').trim() || null,
           serial_number: String(r[4] || '').trim() || null,
           caso: String(r[5] || '').trim() || null,
-          costo_servicio: parseCosto(r[6]),
+          costo_servicio: Math.round(parseCosto(r[6])),
           fecha_fin_garantia: parseExcelDate(r[7]),
-          monto_facturado_servicio: parseCosto(r[8]),
-          monto_facturado_partes: parseCosto(r[9]),
+          monto_facturado_servicio: Math.round(parseCosto(r[8])),
+          monto_facturado_partes: Math.round(parseCosto(r[9])),
           nro_factura: String(r[10] || '').trim() || null,
           fecha_factura: parseExcelDate(r[11]),
           estado_cobro: (() => {
@@ -671,8 +671,8 @@ export default function ServicioTecnico() {
         'COSTO': s.costo_servicio || 0,
         'FIN GTÍA': s.fecha_fin_garantia || '',
         'EN GTÍA': estaEnGarantia(s.fecha_fin_garantia) === true ? 'Sí' : estaEnGarantia(s.fecha_fin_garantia) === false ? 'No' : '-',
-        '$FAC SERV': s.monto_facturado_servicio || 0,
-        '$FAC PARTES': s.monto_facturado_partes || 0,
+        '₲FAC SERV': s.monto_facturado_servicio || 0,
+        '₲FAC PARTES': s.monto_facturado_partes || 0,
         'N° FAC': s.nro_factura || '',
         'FECHA FAC': s.fecha_factura || '',
         'ESTADO': s.estado_cobro || ''
@@ -703,11 +703,11 @@ export default function ServicioTecnico() {
         <td>${s.modelo || ''}</td>
         <td>${s.serial_number || ''}</td>
         <td class="caso">${s.caso || ''}</td>
-        <td class="num">${s.costo_servicio ? '$' + formatNumber(s.costo_servicio) : ''}</td>
+        <td class="num">${s.costo_servicio ? '₲' + formatNumber(s.costo_servicio) : ''}</td>
         <td>${formatDate(s.fecha_fin_garantia)}</td>
         <td class="center">${enGar === true ? 'Sí' : enGar === false ? 'No' : '-'}</td>
-        <td class="num">${s.monto_facturado_servicio ? '$' + formatNumber(s.monto_facturado_servicio) : ''}</td>
-        <td class="num">${s.monto_facturado_partes ? '$' + formatNumber(s.monto_facturado_partes) : ''}</td>
+        <td class="num">${s.monto_facturado_servicio ? '₲' + formatNumber(s.monto_facturado_servicio) : ''}</td>
+        <td class="num">${s.monto_facturado_partes ? '₲' + formatNumber(s.monto_facturado_partes) : ''}</td>
         <td>${s.nro_factura || ''}</td>
         <td>${formatDate(s.fecha_factura)}</td>
         <td class="center">${s.estado_cobro || ''}</td>
@@ -742,14 +742,14 @@ export default function ServicioTecnico() {
       </div>
       <div class="stats">
         <span><strong>Registros:</strong> ${serviciosFiltrados.length}</span>
-        <span><strong>Costo Total:</strong> $${formatNumber(totales.costoTotal)}</span>
-        <span><strong>Facturado Serv.:</strong> $${formatNumber(totales.facturadoServicio)}</span>
-        <span><strong>Facturado Partes:</strong> $${formatNumber(totales.facturadoPartes)}</span>
+        <span><strong>Costo Total:</strong> ₲${formatNumber(totales.costoTotal)}</span>
+        <span><strong>Facturado Serv.:</strong> ₲${formatNumber(totales.facturadoServicio)}</span>
+        <span><strong>Facturado Partes:</strong> ₲${formatNumber(totales.facturadoPartes)}</span>
       </div>
       <table>
         <thead><tr>
           <th>REPO</th><th>FECHA</th><th>CLIENTE</th><th>MOD</th><th>S/N</th><th>CASO</th>
-          <th>COSTO</th><th>FIN GTÍA</th><th>GTÍA</th><th>$FAC SERV</th><th>$FAC PARTES</th>
+          <th>COSTO</th><th>FIN GTÍA</th><th>GTÍA</th><th>₲FAC SERV</th><th>₲FAC PARTES</th>
           <th>N° FAC</th><th>FECHA FAC</th><th>ESTADO</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -877,15 +877,15 @@ export default function ServicioTecnico() {
         </div>
         <div className="st-stat-card">
           <span className="st-stat-label">Costo Total</span>
-          <span className="st-stat-value">${formatNumber(totales.costoTotal)}</span>
+          <span className="st-stat-value">₲{formatNumber(totales.costoTotal)}</span>
         </div>
         <div className="st-stat-card">
           <span className="st-stat-label">Facturado Serv.</span>
-          <span className="st-stat-value">${formatNumber(totales.facturadoServicio)}</span>
+          <span className="st-stat-value">₲{formatNumber(totales.facturadoServicio)}</span>
         </div>
         <div className="st-stat-card">
           <span className="st-stat-label">Facturado Partes</span>
-          <span className="st-stat-value">${formatNumber(totales.facturadoPartes)}</span>
+          <span className="st-stat-value">₲{formatNumber(totales.facturadoPartes)}</span>
         </div>
         <div className="st-stat-card st-stat-warning">
           <span className="st-stat-label">Pendientes</span>
@@ -1016,8 +1016,8 @@ export default function ServicioTecnico() {
                 <th onClick={() => handleSort('costo_servicio')}>COSTO <SortIcon field="costo_servicio" /></th>
                 <th>GTÍA FIN</th>
                 <th>EN GTÍA</th>
-                <th>$FAC SERV</th>
-                <th>$FAC PARTES</th>
+                <th>₲FAC SERV</th>
+                <th>₲FAC PARTES</th>
                 <th>N° FAC</th>
                 <th>FECHA FAC</th>
                 <th>ESTADO</th>
@@ -1037,7 +1037,7 @@ export default function ServicioTecnico() {
                     <td>{s.serial_number}</td>
                     <td className="st-cell-caso" title={s.caso}>{s.caso}</td>
                     <td className="st-cell-number">
-                      {s.costo_servicio ? `$${formatNumber(s.costo_servicio)}` : ''}
+                      {s.costo_servicio ? `₲${formatNumber(s.costo_servicio)}` : ''}
                     </td>
                     <td>{formatDate(s.fecha_fin_garantia)}</td>
                     <td className="st-cell-center">
@@ -1050,10 +1050,10 @@ export default function ServicioTecnico() {
                       )}
                     </td>
                     <td className="st-cell-number">
-                      {s.monto_facturado_servicio ? `$${formatNumber(s.monto_facturado_servicio)}` : ''}
+                      {s.monto_facturado_servicio ? `₲${formatNumber(s.monto_facturado_servicio)}` : ''}
                     </td>
                     <td className="st-cell-number">
-                      {s.monto_facturado_partes ? `$${formatNumber(s.monto_facturado_partes)}` : ''}
+                      {s.monto_facturado_partes ? `₲${formatNumber(s.monto_facturado_partes)}` : ''}
                     </td>
                     <td>{s.nro_factura}</td>
                     <td>{formatDate(s.fecha_factura)}</td>
@@ -1170,7 +1170,7 @@ export default function ServicioTecnico() {
               <div className="st-form-row st-form-row-3">
                 <div className="st-form-group">
                   <label>💵 Costo Servicio</label>
-                  <input type="number" step="0.01" value={formData.costo_servicio}
+                  <input type="number" step="1" value={formData.costo_servicio}
                     onChange={(e) => setFormData({...formData, costo_servicio: e.target.value})}
                     placeholder="0" />
                 </div>
@@ -1197,14 +1197,14 @@ export default function ServicioTecnico() {
               {/* Fila 6: Montos facturados */}
               <div className="st-form-row st-form-row-2">
                 <div className="st-form-group">
-                  <label>$FAC Servicio</label>
-                  <input type="number" step="0.01" value={formData.monto_facturado_servicio}
+                  <label>₲FAC Servicio</label>
+                  <input type="number" step="1" value={formData.monto_facturado_servicio}
                     onChange={(e) => setFormData({...formData, monto_facturado_servicio: e.target.value})}
                     placeholder="0" />
                 </div>
                 <div className="st-form-group">
-                  <label>$FAC Partes</label>
-                  <input type="number" step="0.01" value={formData.monto_facturado_partes}
+                  <label>₲FAC Partes</label>
+                  <input type="number" step="1" value={formData.monto_facturado_partes}
                     onChange={(e) => setFormData({...formData, monto_facturado_partes: e.target.value})}
                     placeholder="0" />
                 </div>
@@ -1333,7 +1333,7 @@ export default function ServicioTecnico() {
                               <td style={{ padding: '4px 8px' }}>{r.cliente}</td>
                               <td style={{ padding: '4px 8px' }}>{r.modelo || '-'}</td>
                               <td style={{ padding: '4px 8px' }}>{r.serial_number || '-'}</td>
-                              <td style={{ padding: '4px 8px', textAlign: 'right' }}>{r.costo_servicio ? `$${formatNumber(r.costo_servicio)}` : '-'}</td>
+                              <td style={{ padding: '4px 8px', textAlign: 'right' }}>{r.costo_servicio ? `₲${formatNumber(r.costo_servicio)}` : '-'}</td>
                               <td style={{ padding: '4px 8px' }}>
                                 {isDupe ? <span style={{ color: '#d97706', fontWeight: 600 }}>⚠ DUP</span> : '✓ Nuevo'}
                               </td>
@@ -1367,7 +1367,7 @@ export default function ServicioTecnico() {
                   )}
 
                   <div style={{ background: '#f8f8f8', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', color: '#6b7280' }}>
-                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | $FAC SERV | $FAC PARTES | N° FAC | FECHA FAC | ESTADO
+                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | ₲FAC SERV | ₲FAC PARTES | N° FAC | FECHA FAC | ESTADO
                   </div>
                 </>
               )}
