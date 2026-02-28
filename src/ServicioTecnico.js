@@ -142,6 +142,8 @@ export default function ServicioTecnico() {
   const [sortDir, setSortDir] = useState('desc');
   const [filterEstado, setFilterEstado] = useState('todos');
   const [filterGarantia, setFilterGarantia] = useState('todos');
+  const [filterFechaDesde, setFilterFechaDesde] = useState('');
+  const [filterFechaHasta, setFilterFechaHasta] = useState('');
 
   // Estados de importación
   const [showImportModal, setShowImportModal] = useState(false);
@@ -801,6 +803,14 @@ export default function ServicioTecnico() {
       });
     }
 
+    // Filtro por rango de fechas
+    if (filterFechaDesde) {
+      filtered = filtered.filter(s => s.fecha && s.fecha >= filterFechaDesde);
+    }
+    if (filterFechaHasta) {
+      filtered = filtered.filter(s => s.fecha && s.fecha <= filterFechaHasta);
+    }
+
     // Ordenamiento
     filtered.sort((a, b) => {
       let valA = a[sortField];
@@ -815,7 +825,7 @@ export default function ServicioTecnico() {
     });
 
     return filtered;
-  }, [servicios, searchTerm, sortField, sortDir, filterEstado, filterGarantia]);
+  }, [servicios, searchTerm, sortField, sortDir, filterEstado, filterGarantia, filterFechaDesde, filterFechaHasta]);
 
   // Totales
   const totales = useMemo(() => {
@@ -919,6 +929,32 @@ export default function ServicioTecnico() {
           <option value="no">Fuera de garantía</option>
           <option value="sin">Sin definir</option>
         </select>
+        <div className="st-date-range">
+          <input
+            type="date"
+            value={filterFechaDesde}
+            onChange={(e) => setFilterFechaDesde(e.target.value)}
+            className="st-date-input"
+            title="Fecha desde"
+          />
+          <span className="st-date-separator">→</span>
+          <input
+            type="date"
+            value={filterFechaHasta}
+            onChange={(e) => setFilterFechaHasta(e.target.value)}
+            className="st-date-input"
+            title="Fecha hasta"
+          />
+          {(filterFechaDesde || filterFechaHasta) && (
+            <button
+              onClick={() => { setFilterFechaDesde(''); setFilterFechaHasta(''); }}
+              className="st-date-clear"
+              title="Limpiar fechas"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
         <button onClick={fetchServicios} className="st-btn-icon" title="Recargar">
           <RefreshCw size={16} />
         </button>
