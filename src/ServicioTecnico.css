@@ -212,6 +212,59 @@
   background: #f0f4f8;
 }
 
+.st-date-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+.st-date-input {
+  border: none;
+  outline: none;
+  font-size: 0.78rem;
+  color: #2F4156;
+  background: transparent;
+  padding: 4px 2px;
+  width: 120px;
+  cursor: pointer;
+}
+
+.st-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.st-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.st-date-separator {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.st-date-clear {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.st-date-clear:hover {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
 /* Table */
 .st-table-wrapper {
   background: white;
