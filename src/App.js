@@ -111,6 +111,20 @@ export default function Calcuares() {
       setCurrentUser(userSession);
       setIsAuthenticated(true);
       setView(userSession.rol === 'admin' ? 'admin' : 'ventas');
+
+      // Señalar al navegador que guarde las credenciales
+      if (window.PasswordCredential) {
+        try {
+          const cred = new window.PasswordCredential({
+            id: loginEmail,
+            password: loginPassword,
+            name: userSession.nombre || loginEmail
+          });
+          await navigator.credentials.store(cred);
+        } catch (credErr) {
+          // Silenciar si el navegador no soporta o rechaza
+        }
+      }
       
       // Cargar productos
       await fetchProducts();
@@ -959,12 +973,13 @@ export default function Calcuares() {
             </p>
           </div>
 
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} id="login-form" method="post" action="#">
             <div style={{ marginBottom: '1.5rem' }}>
-              <label className="input-label" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
+              <label className="input-label" htmlFor="login-email" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
                 📧 Correo Electrónico
               </label>
               <input
+                id="login-email"
                 type="email"
                 name="email"
                 autoComplete="username"
@@ -979,10 +994,11 @@ export default function Calcuares() {
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <label className="input-label" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
+              <label className="input-label" htmlFor="login-password" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
                 🔒 Contraseña
               </label>
               <input
+                id="login-password"
                 type="password"
                 name="password"
                 autoComplete="current-password"
