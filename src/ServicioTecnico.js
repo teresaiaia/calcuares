@@ -595,6 +595,7 @@ export default function ServicioTecnico() {
     let updated = 0;
     let skipped = 0;
     let errors = 0;
+    const errorDetails = [];
 
     const existingMap = {};
     servicios.forEach(s => { existingMap[s.nro_reporte] = s.id; });
@@ -608,7 +609,6 @@ export default function ServicioTecnico() {
             skipped++;
             continue;
           }
-          // Overwrite
           const { error } = await supabase
             .from('servicio_tecnico')
             .update(record)
@@ -625,10 +625,15 @@ export default function ServicioTecnico() {
       } catch (err) {
         console.error('Error importando registro:', record.nro_reporte, err);
         errors++;
+        errorDetails.push({
+          nro_reporte: record.nro_reporte,
+          cliente: record.cliente,
+          motivo: err.message || 'Error desconocido'
+        });
       }
     }
 
-    setImportResults({ inserted, updated, skipped, errors, total: importData.length });
+    setImportResults({ inserted, updated, skipped, errors, total: importData.length, errorDetails });
     setImportStatus('done');
     await fetchServicios();
   };
@@ -1205,7 +1210,7 @@ export default function ServicioTecnico() {
 
               {importStatus === 'done' && importResults && (
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: '12px' }}>✅</div>
+                  <div style={{ fontSize: '2rem', marginBottom: '12px' }}>{importResults.errors > 0 ? '⚠️' : '✅'}</div>
                   <h3 style={{ color: '#2F4156', marginBottom: '16px' }}>Importación completada</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxWidth: '300px', margin: '0 auto', textAlign: 'left' }}>
                     <span style={{ fontWeight: 600, color: '#16a34a' }}>✓ Insertados:</span><span>{importResults.inserted}</span>
@@ -1213,6 +1218,33 @@ export default function ServicioTecnico() {
                     {importResults.skipped > 0 && <><span style={{ fontWeight: 600, color: '#d97706' }}>⊘ Saltados:</span><span>{importResults.skipped}</span></>}
                     {importResults.errors > 0 && <><span style={{ fontWeight: 600, color: '#dc2626' }}>✗ Errores:</span><span>{importResults.errors}</span></>}
                   </div>
+
+                  {/* Detalle de errores */}
+                  {importResults.errorDetails && importResults.errorDetails.length > 0 && (
+                    <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                      <h4 style={{ color: '#dc2626', fontSize: '0.9rem', marginBottom: '8px' }}>Detalle de errores:</h4>
+                      <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #fca5a5', borderRadius: '8px', background: '#fef2f2' }}>
+                        <table style={{ width: '100%', fontSize: '0.78rem', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ background: '#fee2e2' }}>
+                              <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600 }}>REPO</th>
+                              <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600 }}>CLIENTE</th>
+                              <th style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 600 }}>MOTIVO</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importResults.errorDetails.map((err, i) => (
+                              <tr key={i} style={{ borderTop: '1px solid #fca5a5' }}>
+                                <td style={{ padding: '5px 10px', fontWeight: 600 }}>{err.nro_reporte}</td>
+                                <td style={{ padding: '5px 10px' }}>{err.cliente}</td>
+                                <td style={{ padding: '5px 10px', color: '#991b1b', fontSize: '0.75rem' }}>{err.motivo}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
