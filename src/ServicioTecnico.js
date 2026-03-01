@@ -136,6 +136,8 @@ export default function ServicioTecnico() {
   const [editingServicio, setEditingServicio] = useState(null);
   const [informeServicio, setInformeServicio] = useState(null);
   const [informeTexto, setInformeTexto] = useState('');
+  const [informeEditado, setInformeEditado] = useState(null); // {descripcion, repuestos, recomendaciones, costo_texto, observaciones}
+  const [informePaso, setInformePaso] = useState(1); // 1=pegar, 2=editar, 3=preview
   const [generandoInforme, setGenerandoInforme] = useState(false);
   const [expandedRow] = useState(null);
   const [sortField, setSortField] = useState('fecha');
@@ -319,39 +321,153 @@ export default function ServicioTecnico() {
   // Abrir modal de informe
   const handleOpenInforme = (servicio) => {
     setInformeServicio(servicio);
-    setInformeTexto(servicio.informe_texto || '');
+    if (servicio.informe_formateado) {
+      // Si ya tiene informe guardado, cargar para editar
+      try {
+        const saved = JSON.parse(servicio.informe_formateado);
+        setInformeEditado(saved);
+        setInformeTexto(servicio.informe_texto || '');
+        setInformePaso(2);
+      } catch {
+        setInformeTexto(servicio.informe_texto || '');
+        setInformeEditado(null);
+        setInformePaso(1);
+      }
+    } else {
+      setInformeTexto('');
+      setInformeEditado(null);
+      setInformePaso(1);
+    }
     setShowInformeModal(true);
   };
 
-  // Guardar informe y generar PDF formateado
-  const handleGuardarInforme = async () => {
+  // Paso 1→2: Procesar texto pegado y estructurarlo
+  const handleProcesarInforme = () => {
     if (!informeTexto.trim()) {
       alert('Pegá el texto del informe primero');
       return;
     }
+    const estructurado = procesarTextoInforme(informeTexto);
+    setInformeEditado(estructurado);
+    setInformePaso(2);
+  };
 
+  // Procesar texto crudo → estructura editable
+  const procesarTextoInforme = (texto) => {
+    const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+    
+    let descripcionLineas = [];
+    let repuestos = [];
+    let recomendaciones = [];
+    
+    // Detectar secciones por palabras clave
+    let seccionActual = 'descripcion';
+    
+    lineas.forEach(linea => {
+      const lower = linea.toLowerCase();
+      
+      // Detectar cambio de sección
+      if (lower.includes('repuesto') || lower.includes('filtro') || lower.includes('parte') || 
+          lower.includes('cambio de') || lower.includes('se reemplaz') || lower.includes('se cambi')) {
+        if (seccionActual === 'descripcion' && descripcionLineas.length > 0) {
+          seccionActual = 'repuestos';
+        }
+        repuestos.push(linea);
+        return;
+      }
+      
+      if (lower.includes('recomend') || lower.includes('suger') || lower.includes('se aconseja') ||
+          lower.includes('a futuro') || lower.includes('próximo') || lower.includes('proximo') ||
+          lower.includes('correctiv') || lower.includes('preventiv')) {
+        seccionActual = 'recomendaciones';
+        recomendaciones.push(linea);
+        return;
+      }
+      
+      if (seccionActual === 'recomendaciones') {
+        recomendaciones.push(linea);
+      } else if (seccionActual === 'repuestos') {
+        repuestos.push(linea);
+      } else {
+        descripcionLineas.push(linea);
+      }
+    });
+
+    // Reformular descripción: técnica, breve, profesional
+    const descripcionLimpia = limpiarRedaccion(descripcionLineas.join(' '));
+
+    return {
+      descripcion: descripcionLimpia,
+      repuestos: repuestos.map(r => limpiarLinea(r)).filter(r => r),
+      recomendaciones: recomendaciones.map(r => limpiarLinea(r)).filter(r => r),
+      costo_texto: informeServicio ? `₲${formatNumber(informeServicio.costo_servicio)}` : '',
+      observaciones: ''
+    };
+  };
+
+  // Limpiar redacción: corregir mayúsculas, puntuación básica
+  const limpiarLinea = (texto) => {
+    let t = texto.trim();
+    // Quitar guiones, asteriscos, bullets al inicio
+    t = t.replace(/^[-*•●◦▪]+\s*/, '');
+    // Capitalizar primera letra
+    if (t.length > 0) t = t.charAt(0).toUpperCase() + t.slice(1);
+    return t;
+  };
+
+  const limpiarRedaccion = (texto) => {
+    let t = texto.trim();
+    if (!t) return '';
+    // Separar en oraciones
+    const oraciones = t.split(/[.!]+/).map(o => o.trim()).filter(o => o);
+    const limpias = oraciones.map(o => {
+      let s = o.charAt(0).toUpperCase() + o.slice(1);
+      return s;
+    });
+    return limpias.join('. ') + (limpias.length > 0 ? '.' : '');
+  };
+
+  // Guardar informe estructurado
+  const handleGuardarInforme = async () => {
+    if (!informeEditado) return;
     setGenerandoInforme(true);
     try {
-      // Guardar el texto original y generar versión formateada
-      const textoFormateado = formatearInforme(informeTexto, informeServicio);
-      
       const { error } = await supabase
         .from('servicio_tecnico')
         .update({
           tiene_informe: true,
           informe_texto: informeTexto,
-          informe_formateado: textoFormateado
+          informe_formateado: JSON.stringify(informeEditado)
         })
         .eq('id', informeServicio.id);
 
       if (error) throw error;
+      await fetchServicios();
+      alert('Informe guardado correctamente');
+    } catch (error) {
+      alert('Error al guardar informe: ' + error.message);
+    } finally {
+      setGenerandoInforme(false);
+    }
+  };
 
-      // Generar y descargar PDF
-      generarPDF(textoFormateado, informeServicio);
+  // Guardar y exportar PDF
+  const handleGuardarYExportarPDF = async () => {
+    if (!informeEditado) return;
+    setGenerandoInforme(true);
+    try {
+      const { error } = await supabase
+        .from('servicio_tecnico')
+        .update({
+          tiene_informe: true,
+          informe_texto: informeTexto,
+          informe_formateado: JSON.stringify(informeEditado)
+        })
+        .eq('id', informeServicio.id);
 
+      if (error) throw error;
+      generarPDFInforme(informeEditado, informeServicio);
       setShowInformeModal(false);
-      setInformeServicio(null);
-      setInformeTexto('');
       await fetchServicios();
     } catch (error) {
       alert('Error al guardar informe: ' + error.message);
@@ -360,134 +476,112 @@ export default function ServicioTecnico() {
     }
   };
 
-  // Formatear el informe crudo en texto estructurado
-  const formatearInforme = (textoOriginal, servicio) => {
-    const lineas = textoOriginal.split('\n').map(l => l.trim()).filter(l => l);
-    
-    let formateado = `INFORME DE SERVICIO TÉCNICO\n`;
-    formateado += `${'═'.repeat(50)}\n\n`;
-    formateado += `N° Reporte: ${servicio.nro_reporte}\n`;
-    formateado += `Fecha: ${formatDate(servicio.fecha)}\n`;
-    formateado += `Cliente: ${servicio.cliente}\n`;
-    formateado += `Modelo: ${servicio.modelo || 'N/A'}\n`;
-    formateado += `S/N: ${servicio.serial_number || 'N/A'}\n`;
-    formateado += `${'─'.repeat(50)}\n\n`;
-    formateado += `DESCRIPCIÓN DEL SERVICIO:\n\n`;
-    
-    lineas.forEach(linea => {
-      formateado += `  ${linea}\n`;
-    });
-
-    formateado += `\n${'─'.repeat(50)}\n`;
-    formateado += `Costo del servicio: ₲${formatNumber(servicio.costo_servicio)}\n`;
-    
-    if (servicio.fecha_fin_garantia) {
-      const enGarantia = estaEnGarantia(servicio.fecha_fin_garantia);
-      formateado += `Garantía hasta: ${formatDate(servicio.fecha_fin_garantia)} (${enGarantia ? 'EN GARANTÍA' : 'FUERA DE GARANTÍA'})\n`;
-    }
-    
-    formateado += `${'═'.repeat(50)}\n`;
-    formateado += `ARES MEDICAL EQUIPMENT\n`;
-
-    return formateado;
-  };
-
-  // Generar PDF simple usando una ventana de impresión
-  const generarPDF = (textoFormateado, servicio) => {
+  // Generar PDF del informe estructurado
+  const generarPDFInforme = (datos, servicio) => {
     const ventana = window.open('', '_blank');
-    ventana.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Informe ST - ${servicio.nro_reporte}</title>
-        <style>
-          body { 
-            font-family: 'Courier New', monospace; 
-            padding: 40px; 
-            max-width: 800px; 
-            margin: 0 auto;
-            color: #2F4156;
-            line-height: 1.6;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 3px solid #567C8D;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-          }
-          .header h1 {
-            color: #2F4156;
-            font-size: 22px;
-            margin: 0;
-          }
-          .header p {
-            color: #567C8D;
-            margin: 5px 0 0;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 25px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-          }
-          .info-item { font-size: 13px; }
-          .info-label { font-weight: bold; color: #2F4156; }
-          .content {
-            padding: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            white-space: pre-wrap;
-            font-size: 13px;
-          }
-          .footer {
-            text-align: center;
-            border-top: 2px solid #567C8D;
-            padding-top: 15px;
-            color: #567C8D;
-            font-size: 12px;
-          }
-          @media print {
-            body { padding: 20px; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>ARES MEDICAL EQUIPMENT</h1>
-          <p>Informe de Servicio Técnico</p>
-        </div>
-        <div class="info-grid">
-          <div class="info-item"><span class="info-label">N° Reporte:</span> ${servicio.nro_reporte}</div>
-          <div class="info-item"><span class="info-label">Fecha:</span> ${formatDate(servicio.fecha)}</div>
-          <div class="info-item"><span class="info-label">Cliente:</span> ${servicio.cliente}</div>
-          <div class="info-item"><span class="info-label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
-          <div class="info-item"><span class="info-label">S/N:</span> ${servicio.serial_number || 'N/A'}</div>
-          <div class="info-item"><span class="info-label">Costo:</span> ₲${formatNumber(servicio.costo_servicio)}</div>
-        </div>
-        <h3 style="color: #2F4156; margin-bottom: 10px;">Descripción del Servicio</h3>
-        <div class="content">${textoFormateado.replace(/\n/g, '<br>')}</div>
-        <div class="footer">
-          <p>ARES MEDICAL EQUIPMENT - Servicio Técnico</p>
-          <p>Documento generado el ${new Date().toLocaleDateString('es-AR')}</p>
-        </div>
-      </body>
-      </html>
-    `);
+    const enGar = estaEnGarantia(servicio.fecha_fin_garantia);
+    const garantiaTexto = servicio.fecha_fin_garantia 
+      ? `${formatDate(servicio.fecha_fin_garantia)} (${enGar ? 'EN GARANTÍA' : 'FUERA DE GARANTÍA'})` 
+      : 'No definida';
+
+    const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
+      ? `<div class="section repuestos">
+          <h3>🔧 Repuestos / Partes Reemplazadas</h3>
+          <ul>${datos.repuestos.map(r => `<li>${r}</li>`).join('')}</ul>
+        </div>` 
+      : '';
+
+    const recomendacionesHTML = datos.recomendaciones && datos.recomendaciones.length > 0
+      ? `<div class="section recomendaciones">
+          <h3>⚠️ Recomendaciones y Acciones Futuras</h3>
+          <ul>${datos.recomendaciones.map(r => `<li>${r}</li>`).join('')}</ul>
+        </div>`
+      : '';
+
+    const observacionesHTML = datos.observaciones && datos.observaciones.trim()
+      ? `<div class="section observaciones">
+          <h3>📝 Observaciones Adicionales</h3>
+          <p>${datos.observaciones.replace(/\n/g, '<br>')}</p>
+        </div>`
+      : '';
+
+    ventana.document.write(`<!DOCTYPE html><html><head>
+      <title>Informe ST - ${servicio.nro_reporte}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #2F4156; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 3px solid #567C8D; padding-bottom: 20px; margin-bottom: 25px; }
+        .header h1 { color: #2F4156; font-size: 22px; margin: 0; }
+        .header p { color: #567C8D; margin: 5px 0 0; font-size: 14px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #567C8D; font-size: 13px; }
+        .info-item .label { font-weight: 700; color: #2F4156; }
+        .section { margin-bottom: 20px; }
+        .section h3 { color: #2F4156; font-size: 14px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #d0d8e0; }
+        .descripcion p { font-size: 13px; text-align: justify; }
+        .repuestos { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 15px; }
+        .repuestos h3 { color: #c2410c; border-bottom-color: #fed7aa; }
+        .repuestos ul { padding-left: 20px; font-size: 13px; }
+        .repuestos li { margin-bottom: 4px; }
+        .recomendaciones { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 15px; }
+        .recomendaciones h3 { color: #a16207; border-bottom-color: #fde68a; }
+        .recomendaciones ul { padding-left: 20px; font-size: 13px; }
+        .recomendaciones li { margin-bottom: 4px; }
+        .observaciones { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 15px; }
+        .observaciones h3 { color: #0369a1; border-bottom-color: #bae6fd; }
+        .observaciones p { font-size: 13px; }
+        .costo-box { text-align: center; padding: 12px; background: #2F4156; color: white; border-radius: 8px; font-size: 18px; font-weight: 700; margin: 20px 0; }
+        .footer { text-align: center; border-top: 2px solid #567C8D; padding-top: 15px; margin-top: 25px; color: #567C8D; font-size: 11px; }
+        @media print { body { padding: 20px; } }
+        @page { margin: 15mm; }
+      </style>
+    </head><body>
+      <div class="header">
+        <h1>ARES MEDICAL EQUIPMENT</h1>
+        <p>Informe de Servicio Técnico</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-item"><span class="label">N° Reporte:</span> ${servicio.nro_reporte}</div>
+        <div class="info-item"><span class="label">N° RT:</span> ${servicio.nro_rt || '-'}</div>
+        <div class="info-item"><span class="label">Fecha:</span> ${formatDate(servicio.fecha)}</div>
+        <div class="info-item"><span class="label">Cliente:</span> ${servicio.cliente}</div>
+        <div class="info-item"><span class="label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
+        <div class="info-item"><span class="label">S/N:</span> ${servicio.serial_number || 'N/A'}</div>
+        <div class="info-item"><span class="label">Garantía:</span> ${garantiaTexto}</div>
+        <div class="info-item"><span class="label">Estado:</span> ${servicio.estado_cobro || '-'}</div>
+      </div>
+      <div class="section descripcion">
+        <h3>📋 Descripción del Servicio Realizado</h3>
+        <p>${datos.descripcion}</p>
+      </div>
+      ${repuestosHTML}
+      ${recomendacionesHTML}
+      <div class="costo-box">Costo del Servicio: ${datos.costo_texto || '₲0'}</div>
+      ${observacionesHTML}
+      <div class="footer">
+        <p><strong>ARES MEDICAL EQUIPMENT</strong> — Servicio Técnico</p>
+        <p>Documento generado el ${new Date().toLocaleDateString('es-PY')}</p>
+      </div>
+    </body></html>`);
     ventana.document.close();
     setTimeout(() => ventana.print(), 500);
   };
 
-  // Solo re-descargar PDF de un informe ya existente
+  // Re-descargar PDF de un informe ya existente
   const handleDescargarInforme = (servicio) => {
     if (!servicio.informe_formateado) {
       alert('Este servicio no tiene informe generado');
       return;
     }
-    generarPDF(servicio.informe_formateado, servicio);
+    try {
+      const datos = JSON.parse(servicio.informe_formateado);
+      generarPDFInforme(datos, servicio);
+    } catch {
+      // Formato antiguo, abrir con el texto plano
+      const ventana = window.open('', '_blank');
+      ventana.document.write(`<pre style="font-family:monospace;padding:40px;">${servicio.informe_formateado}</pre>`);
+      ventana.document.close();
+      setTimeout(() => ventana.print(), 500);
+    }
   };
 
   // ============================================
@@ -1269,42 +1363,150 @@ export default function ServicioTecnico() {
       {/* Modal de Informe */}
       {showInformeModal && (
         <div className="st-modal-overlay" onClick={() => setShowInformeModal(false)}>
-          <div className="st-modal st-modal-informe" onClick={(e) => e.stopPropagation()}>
+          <div className="st-modal st-modal-informe" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px' }}>
             <div className="st-modal-header">
-              <h3>📄 Informe - Reporte #{informeServicio?.nro_reporte}</h3>
+              <h3>📄 Informe - Reporte #{informeServicio?.nro_reporte} {informeServicio?.nro_rt ? `(RT: ${informeServicio.nro_rt})` : ''}</h3>
               <button onClick={() => setShowInformeModal(false)} className="st-modal-close"><X size={20} /></button>
             </div>
             <div className="st-modal-body">
+              {/* Info del servicio */}
               <div className="st-informe-info">
                 <span><strong>Cliente:</strong> {informeServicio?.cliente}</span>
-                <span><strong>Modelo:</strong> {informeServicio?.modelo}</span>
+                <span><strong>Modelo:</strong> {informeServicio?.modelo} — S/N: {informeServicio?.serial_number}</span>
                 <span><strong>Caso:</strong> {informeServicio?.caso}</span>
               </div>
-              <div className="st-form-group">
-                <label>📋 Pegá el texto del informe aquí:</label>
-                <textarea
-                  value={informeTexto}
-                  onChange={(e) => setInformeTexto(e.target.value)}
-                  placeholder="Pegá el texto del informe de la planilla aquí. El sistema lo reformulará y generará un PDF formateado con el encabezado de Ares Medical Equipment."
-                  rows={12}
-                  className="st-informe-textarea"
-                />
-              </div>
-              <div className="st-informe-hint">
-                💡 El texto será reformateado automáticamente con el encabezado de la empresa y los datos del servicio. Se abrirá una ventana para imprimir/guardar como PDF.
-              </div>
+
+              {/* PASO 1: Pegar texto */}
+              {informePaso === 1 && (
+                <>
+                  <div className="st-form-group">
+                    <label>📋 Pegá el texto del informe aquí:</label>
+                    <textarea
+                      value={informeTexto}
+                      onChange={(e) => setInformeTexto(e.target.value)}
+                      placeholder="Pegá el texto del informe técnico tal como viene. El sistema lo reformulará en un informe profesional, separando descripción, repuestos y recomendaciones."
+                      rows={10}
+                      className="st-informe-textarea"
+                    />
+                  </div>
+                  <div className="st-informe-hint">
+                    💡 El texto será procesado automáticamente: se reformulará la redacción, se separarán los repuestos/partes cambiadas y las recomendaciones a futuro en secciones diferenciadas.
+                  </div>
+                </>
+              )}
+
+              {/* PASO 2: Editar informe estructurado */}
+              {informePaso === 2 && informeEditado && (
+                <div className="st-informe-editor">
+                  <div className="st-form-group">
+                    <label>📋 Descripción del servicio realizado</label>
+                    <textarea
+                      value={informeEditado.descripcion}
+                      onChange={(e) => setInformeEditado({...informeEditado, descripcion: e.target.value})}
+                      rows={5}
+                      className="st-informe-textarea"
+                    />
+                  </div>
+
+                  {/* Repuestos */}
+                  <div className="st-informe-section-edit" style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+                    <label style={{ color: '#c2410c', fontWeight: 700, fontSize: '0.85rem', marginBottom: '6px', display: 'block' }}>🔧 Repuestos / Partes Reemplazadas</label>
+                    {informeEditado.repuestos.map((r, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '4px', alignItems: 'center' }}>
+                        <input type="text" value={r}
+                          onChange={(e) => {
+                            const arr = [...informeEditado.repuestos];
+                            arr[i] = e.target.value;
+                            setInformeEditado({...informeEditado, repuestos: arr});
+                          }}
+                          style={{ flex: 1, padding: '6px 8px', border: '1px solid #fed7aa', borderRadius: '4px', fontSize: '0.82rem' }}
+                        />
+                        <button onClick={() => {
+                          const arr = informeEditado.repuestos.filter((_, idx) => idx !== i);
+                          setInformeEditado({...informeEditado, repuestos: arr});
+                        }} style={{ background: 'none', border: 'none', color: '#c2410c', cursor: 'pointer', padding: '2px' }}><X size={14} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => setInformeEditado({...informeEditado, repuestos: [...informeEditado.repuestos, '']})}
+                      style={{ background: 'none', border: '1px dashed #fed7aa', color: '#c2410c', padding: '4px 10px', borderRadius: '4px', fontSize: '0.78rem', cursor: 'pointer', marginTop: '4px' }}>
+                      <Plus size={12} /> Agregar repuesto
+                    </button>
+                  </div>
+
+                  {/* Recomendaciones */}
+                  <div className="st-informe-section-edit" style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+                    <label style={{ color: '#a16207', fontWeight: 700, fontSize: '0.85rem', marginBottom: '6px', display: 'block' }}>⚠️ Recomendaciones y Acciones Futuras</label>
+                    {informeEditado.recomendaciones.map((r, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '4px', alignItems: 'center' }}>
+                        <input type="text" value={r}
+                          onChange={(e) => {
+                            const arr = [...informeEditado.recomendaciones];
+                            arr[i] = e.target.value;
+                            setInformeEditado({...informeEditado, recomendaciones: arr});
+                          }}
+                          style={{ flex: 1, padding: '6px 8px', border: '1px solid #fde68a', borderRadius: '4px', fontSize: '0.82rem' }}
+                        />
+                        <button onClick={() => {
+                          const arr = informeEditado.recomendaciones.filter((_, idx) => idx !== i);
+                          setInformeEditado({...informeEditado, recomendaciones: arr});
+                        }} style={{ background: 'none', border: 'none', color: '#a16207', cursor: 'pointer', padding: '2px' }}><X size={14} /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => setInformeEditado({...informeEditado, recomendaciones: [...informeEditado.recomendaciones, '']})}
+                      style={{ background: 'none', border: '1px dashed #fde68a', color: '#a16207', padding: '4px 10px', borderRadius: '4px', fontSize: '0.78rem', cursor: 'pointer', marginTop: '4px' }}>
+                      <Plus size={12} /> Agregar recomendación
+                    </button>
+                  </div>
+
+                  {/* Costo */}
+                  <div className="st-form-row st-form-row-2">
+                    <div className="st-form-group">
+                      <label>💰 Costo del servicio (texto para PDF)</label>
+                      <input type="text" value={informeEditado.costo_texto}
+                        onChange={(e) => setInformeEditado({...informeEditado, costo_texto: e.target.value})}
+                        placeholder="Ej: ₲450.000" />
+                    </div>
+                  </div>
+
+                  {/* Observaciones */}
+                  <div className="st-form-group">
+                    <label>📝 Observaciones adicionales</label>
+                    <textarea
+                      value={informeEditado.observaciones}
+                      onChange={(e) => setInformeEditado({...informeEditado, observaciones: e.target.value})}
+                      rows={3}
+                      className="st-informe-textarea"
+                      placeholder="Cualquier observación extra que quieras incluir en el informe..."
+                    />
+                  </div>
+                </div>
+              )}
             </div>
+
             <div className="st-modal-footer">
-              <button onClick={() => setShowInformeModal(false)} className="st-btn-cancel">
-                <X size={16} /> Cancelar
-              </button>
-              <button onClick={handleGuardarInforme} className="st-btn-save" disabled={generandoInforme}>
-                {generandoInforme ? (
-                  <><RefreshCw size={16} className="st-spin" /> Generando...</>
-                ) : (
-                  <><Download size={16} /> Guardar y Generar PDF</>
-                )}
-              </button>
+              {informePaso === 1 && (
+                <>
+                  <button onClick={() => setShowInformeModal(false)} className="st-btn-cancel">
+                    <X size={16} /> Cancelar
+                  </button>
+                  <button onClick={handleProcesarInforme} className="st-btn-save">
+                    <FileText size={16} /> Procesar Texto
+                  </button>
+                </>
+              )}
+              {informePaso === 2 && (
+                <>
+                  <button onClick={() => setInformePaso(1)} className="st-btn-cancel">
+                    ← Volver a pegar texto
+                  </button>
+                  <button onClick={handleGuardarInforme} className="st-btn-import" disabled={generandoInforme}>
+                    <Save size={16} /> {generandoInforme ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  <button onClick={handleGuardarYExportarPDF} className="st-btn-save" disabled={generandoInforme}>
+                    <Download size={16} /> {generandoInforme ? 'Generando...' : 'Guardar y Exportar PDF'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
