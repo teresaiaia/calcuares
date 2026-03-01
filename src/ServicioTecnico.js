@@ -341,50 +341,104 @@ export default function ServicioTecnico() {
     setShowInformeModal(true);
   };
 
-  // Paso 1→2: Procesar texto pegado y estructurarlo
-  const handleProcesarInforme = () => {
+  // Paso 1→2: Enviar texto a Claude para reformulación profesional
+  const handleProcesarInforme = async () => {
     if (!informeTexto.trim()) {
       alert('Pegá el texto del informe primero');
       return;
     }
-    const estructurado = procesarTextoInforme(informeTexto);
-    setInformeEditado(estructurado);
-    setInformePaso(2);
+    setGenerandoInforme(true);
+    try {
+      const prompt = `Sos un redactor técnico de informes de servicio para equipos médicos de la empresa ARES MEDICAL EQUIPMENT.
+
+Te voy a pasar un texto crudo de un informe de servicio técnico. Necesito que lo transformes en un informe profesional y estructurado.
+
+DATOS DEL SERVICIO:
+- Cliente: ${informeServicio?.cliente || 'N/A'}
+- Equipo: ${informeServicio?.modelo || 'N/A'}
+- Serial: ${informeServicio?.serial_number || 'N/A'}
+- Caso: ${informeServicio?.caso || 'N/A'}
+
+TEXTO ORIGINAL DEL TÉCNICO:
+${informeTexto}
+
+INSTRUCCIONES:
+Respondé SOLO con un JSON válido (sin markdown, sin backticks) con esta estructura exacta:
+{
+  "descripcion": "Texto profesional, técnico, formal y breve describiendo el servicio realizado. Redacción clara para un profesional médico dueño del equipo.",
+  "repuestos": ["item1", "item2"],
+  "recomendaciones": ["recomendación1", "recomendación2"],
+  "observaciones": ""
+}
+
+REGLAS:
+- "descripcion": Reformulá el texto con lenguaje técnico simple, formal y comprensible. Que sea breve y preciso.
+- "repuestos": Lista de filtros, partes, piezas, componentes que se cambiaron, reemplazaron o agregaron. Si no hay, dejá el array vacío [].
+- "recomendaciones": Sugerencias de mantenimiento futuro, cambios preventivos, acciones correctivas que el técnico haya mencionado. Si no hay, dejá el array vacío [].
+- "observaciones": Cualquier nota adicional relevante. Si no hay, dejá string vacío "".
+- NO agregues información que no esté en el texto original.
+- Respondé SOLO el JSON, nada más.`;
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1500,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al conectar con el servicio de IA');
+      }
+
+      const data = await response.json();
+      const textoRespuesta = data.content.map(c => c.text || '').join('');
+      
+      // Limpiar posibles backticks
+      const jsonLimpio = textoRespuesta.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const resultado = JSON.parse(jsonLimpio);
+
+      setInformeEditado({
+        descripcion: resultado.descripcion || '',
+        repuestos: resultado.repuestos || [],
+        recomendaciones: resultado.recomendaciones || [],
+        costo_texto: informeServicio ? `₲${formatNumber(informeServicio.costo_servicio)}` : '',
+        observaciones: resultado.observaciones || ''
+      });
+      setInformePaso(2);
+    } catch (error) {
+      console.error('Error procesando informe:', error);
+      // Fallback: procesamiento local
+      alert('No se pudo conectar con el servicio de IA. Se procesará localmente.');
+      const estructurado = procesarTextoLocal(informeTexto);
+      setInformeEditado(estructurado);
+      setInformePaso(2);
+    } finally {
+      setGenerandoInforme(false);
+    }
   };
 
-  // Procesar texto crudo → estructura editable
-  const procesarTextoInforme = (texto) => {
+  // Fallback: procesamiento local si la API falla
+  const procesarTextoLocal = (texto) => {
     const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
-    
     let descripcionLineas = [];
     let repuestos = [];
     let recomendaciones = [];
-    
-    // Detectar secciones por palabras clave
     let seccionActual = 'descripcion';
-    
+
     lineas.forEach(linea => {
       const lower = linea.toLowerCase();
-      
-      // Detectar cambio de sección
-      if (lower.includes('repuesto') || lower.includes('filtro') || lower.includes('parte') || 
-          lower.includes('cambio de') || lower.includes('se reemplaz') || lower.includes('se cambi')) {
-        if (seccionActual === 'descripcion' && descripcionLineas.length > 0) {
-          seccionActual = 'repuestos';
-        }
+      if (lower.includes('repuesto') || lower.includes('filtro') || lower.includes('se reemplaz') || 
+          lower.includes('se cambi') || lower.includes('cambio de')) {
+        seccionActual = 'repuestos';
         repuestos.push(linea);
-        return;
-      }
-      
-      if (lower.includes('recomend') || lower.includes('suger') || lower.includes('se aconseja') ||
-          lower.includes('a futuro') || lower.includes('próximo') || lower.includes('proximo') ||
-          lower.includes('correctiv') || lower.includes('preventiv')) {
+      } else if (lower.includes('recomend') || lower.includes('suger') || lower.includes('a futuro') || 
+                 lower.includes('correctiv') || lower.includes('preventiv')) {
         seccionActual = 'recomendaciones';
         recomendaciones.push(linea);
-        return;
-      }
-      
-      if (seccionActual === 'recomendaciones') {
+      } else if (seccionActual === 'recomendaciones') {
         recomendaciones.push(linea);
       } else if (seccionActual === 'repuestos') {
         repuestos.push(linea);
@@ -393,38 +447,13 @@ export default function ServicioTecnico() {
       }
     });
 
-    // Reformular descripción: técnica, breve, profesional
-    const descripcionLimpia = limpiarRedaccion(descripcionLineas.join(' '));
-
     return {
-      descripcion: descripcionLimpia,
-      repuestos: repuestos.map(r => limpiarLinea(r)).filter(r => r),
-      recomendaciones: recomendaciones.map(r => limpiarLinea(r)).filter(r => r),
+      descripcion: descripcionLineas.join('. '),
+      repuestos: repuestos,
+      recomendaciones: recomendaciones,
       costo_texto: informeServicio ? `₲${formatNumber(informeServicio.costo_servicio)}` : '',
       observaciones: ''
     };
-  };
-
-  // Limpiar redacción: corregir mayúsculas, puntuación básica
-  const limpiarLinea = (texto) => {
-    let t = texto.trim();
-    // Quitar guiones, asteriscos, bullets al inicio
-    t = t.replace(/^[-*•●◦▪]+\s*/, '');
-    // Capitalizar primera letra
-    if (t.length > 0) t = t.charAt(0).toUpperCase() + t.slice(1);
-    return t;
-  };
-
-  const limpiarRedaccion = (texto) => {
-    let t = texto.trim();
-    if (!t) return '';
-    // Separar en oraciones
-    const oraciones = t.split(/[.!]+/).map(o => o.trim()).filter(o => o);
-    const limpias = oraciones.map(o => {
-      let s = o.charAt(0).toUpperCase() + o.slice(1);
-      return s;
-    });
-    return limpias.join('. ') + (limpias.length > 0 ? '.' : '');
   };
 
   // Guardar informe estructurado
@@ -915,15 +944,23 @@ export default function ServicioTecnico() {
 
     // Ordenamiento
     filtered.sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
-      const numericFields = ['costo_servicio', 'monto_facturado_servicio', 'monto_facturado_partes'];
-      if (numericFields.includes(sortField)) {
-        valA = parseFloat(valA) || 0;
-        valB = parseFloat(valB) || 0;
+      let valA, valB;
+      if (sortField === 'garantia_orden') {
+        // SÍ=1, NO=2, -=3
+        const g = (s) => { const e = estaEnGarantia(s.fecha_fin_garantia); return e === true ? 1 : e === false ? 2 : 3; };
+        valA = g(a);
+        valB = g(b);
       } else {
-        valA = (valA || '').toString().toLowerCase();
-        valB = (valB || '').toString().toLowerCase();
+        valA = a[sortField];
+        valB = b[sortField];
+        const numericFields = ['costo_servicio', 'monto_facturado_servicio', 'monto_facturado_partes'];
+        if (numericFields.includes(sortField)) {
+          valA = parseFloat(valA) || 0;
+          valB = parseFloat(valB) || 0;
+        } else {
+          valA = (valA || '').toString().toLowerCase();
+          valB = (valB || '').toString().toLowerCase();
+        }
       }
       if (valA < valB) return sortDir === 'asc' ? -1 : 1;
       if (valA > valB) return sortDir === 'asc' ? 1 : -1;
@@ -1122,7 +1159,7 @@ export default function ServicioTecnico() {
                 <th onClick={() => handleSort('serial_number')}>S/N <SortIcon field="serial_number" /></th>
                 <th onClick={() => handleSort('caso')}>CASO <SortIcon field="caso" /></th>
                 <th onClick={() => handleSort('costo_servicio')}>COSTO <SortIcon field="costo_servicio" /></th>
-                <th>GTÍA</th>
+                <th onClick={() => handleSort('garantia_orden')}>GTÍA <SortIcon field="garantia_orden" /></th>
                 <th onClick={() => handleSort('monto_facturado_servicio')}>₲FAC SERV <SortIcon field="monto_facturado_servicio" /></th>
                 <th onClick={() => handleSort('monto_facturado_partes')}>₲FAC PARTES <SortIcon field="monto_facturado_partes" /></th>
                 <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
@@ -1388,7 +1425,7 @@ export default function ServicioTecnico() {
                     />
                   </div>
                   <div className="st-informe-hint">
-                    💡 El texto será procesado automáticamente: se reformulará la redacción, se separarán los repuestos/partes cambiadas y las recomendaciones a futuro en secciones diferenciadas.
+                    🤖 El texto será procesado por inteligencia artificial: reformulará la redacción con lenguaje técnico formal, separará repuestos/partes cambiadas y recomendaciones a futuro. Después podrás editar todo antes de generar el PDF.
                   </div>
                 </>
               )}
@@ -1487,8 +1524,12 @@ export default function ServicioTecnico() {
                   <button onClick={() => setShowInformeModal(false)} className="st-btn-cancel">
                     <X size={16} /> Cancelar
                   </button>
-                  <button onClick={handleProcesarInforme} className="st-btn-save">
-                    <FileText size={16} /> Procesar Texto
+                  <button onClick={handleProcesarInforme} className="st-btn-save" disabled={generandoInforme}>
+                    {generandoInforme ? (
+                      <><RefreshCw size={16} className="st-spin" /> Procesando con IA...</>
+                    ) : (
+                      <><FileText size={16} /> Procesar con IA</>
+                    )}
                   </button>
                 </>
               )}
@@ -1504,6 +1545,11 @@ export default function ServicioTecnico() {
                     <Download size={16} /> {generandoInforme ? 'Generando...' : 'Guardar y Exportar PDF'}
                   </button>
                 </>
+              )}
+              {informePaso === 2 && informeServicio?.informe_formateado && (
+                <button onClick={() => { handleDescargarInforme(informeServicio); }} className="st-btn-import" style={{ marginLeft: '0' }}>
+                  <Download size={16} /> Ver PDF anterior
+                </button>
               )}
             </div>
           </div>
