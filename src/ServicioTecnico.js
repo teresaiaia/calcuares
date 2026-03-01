@@ -349,43 +349,15 @@ export default function ServicioTecnico() {
     }
     setGenerandoInforme(true);
     try {
-      const prompt = `Sos un redactor técnico de informes de servicio para equipos médicos de la empresa ARES MEDICAL EQUIPMENT.
-
-Te voy a pasar un texto crudo de un informe de servicio técnico. Necesito que lo transformes en un informe profesional y estructurado.
-
-DATOS DEL SERVICIO:
-- Cliente: ${informeServicio?.cliente || 'N/A'}
-- Equipo: ${informeServicio?.modelo || 'N/A'}
-- Serial: ${informeServicio?.serial_number || 'N/A'}
-- Caso: ${informeServicio?.caso || 'N/A'}
-
-TEXTO ORIGINAL DEL TÉCNICO:
-${informeTexto}
-
-INSTRUCCIONES:
-Respondé SOLO con un JSON válido (sin markdown, sin backticks) con esta estructura exacta:
-{
-  "descripcion": "Texto profesional, técnico, formal y breve describiendo el servicio realizado. Redacción clara para un profesional médico dueño del equipo.",
-  "repuestos": ["item1", "item2"],
-  "recomendaciones": ["recomendación1", "recomendación2"],
-  "observaciones": ""
-}
-
-REGLAS:
-- "descripcion": Reformulá el texto con lenguaje técnico simple, formal y comprensible. Que sea breve y preciso.
-- "repuestos": Lista de filtros, partes, piezas, componentes que se cambiaron, reemplazaron o agregaron. Si no hay, dejá el array vacío [].
-- "recomendaciones": Sugerencias de mantenimiento futuro, cambios preventivos, acciones correctivas que el técnico haya mencionado. Si no hay, dejá el array vacío [].
-- "observaciones": Cualquier nota adicional relevante. Si no hay, dejá string vacío "".
-- NO agregues información que no esté en el texto original.
-- Respondé SOLO el JSON, nada más.`;
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/reformular', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1500,
-          messages: [{ role: 'user', content: prompt }]
+          texto: informeTexto,
+          cliente: informeServicio?.cliente,
+          modelo: informeServicio?.modelo,
+          serial: informeServicio?.serial_number,
+          caso: informeServicio?.caso
         })
       });
 
@@ -393,12 +365,8 @@ REGLAS:
         throw new Error('Error al conectar con el servicio de IA');
       }
 
-      const data = await response.json();
-      const textoRespuesta = data.content.map(c => c.text || '').join('');
-      
-      // Limpiar posibles backticks
-      const jsonLimpio = textoRespuesta.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      const resultado = JSON.parse(jsonLimpio);
+      const resultado = await response.json();
+      if (resultado.error) throw new Error(resultado.error);
 
       setInformeEditado({
         descripcion: resultado.descripcion || '',
@@ -1387,6 +1355,11 @@ REGLAS:
               <button onClick={() => setShowModal(false)} className="st-btn-cancel">
                 <X size={16} /> Cancelar
               </button>
+              {editingServicio && (
+                <button onClick={() => { setShowModal(false); handleOpenInforme(editingServicio); }} className="st-btn-import">
+                  <FileText size={16} /> Informe
+                </button>
+              )}
               <button onClick={handleSave} className="st-btn-save" disabled={saving}>
                 {saving ? <><RefreshCw size={16} className="st-spin" /> Guardando...</> : <><Save size={16} /> Guardar</>}
               </button>
