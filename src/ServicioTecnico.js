@@ -1122,8 +1122,7 @@ export default function ServicioTecnico() {
                 <th onClick={() => handleSort('serial_number')}>S/N <SortIcon field="serial_number" /></th>
                 <th onClick={() => handleSort('caso')}>CASO <SortIcon field="caso" /></th>
                 <th onClick={() => handleSort('costo_servicio')}>COSTO <SortIcon field="costo_servicio" /></th>
-                <th onClick={() => handleSort('fecha_fin_garantia')}>GTÍA FIN <SortIcon field="fecha_fin_garantia" /></th>
-                <th>EN GTÍA</th>
+                <th>GTÍA</th>
                 <th onClick={() => handleSort('monto_facturado_servicio')}>₲FAC SERV <SortIcon field="monto_facturado_servicio" /></th>
                 <th onClick={() => handleSort('monto_facturado_partes')}>₲FAC PARTES <SortIcon field="monto_facturado_partes" /></th>
                 <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
@@ -1148,7 +1147,6 @@ export default function ServicioTecnico() {
                     <td className="st-cell-number">
                       {s.costo_servicio ? `₲${formatNumber(s.costo_servicio)}` : ''}
                     </td>
-                    <td>{formatDate(s.fecha_fin_garantia)}</td>
                     <td className="st-cell-center">
                       {enGarantia === null ? (
                         <span className="st-badge-neutral">-</span>
