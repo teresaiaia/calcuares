@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp, Upload, ExternalLink } from 'lucide-react';
 import './ServicioTecnico.css';
 
-const ESTADOS_COBRO = ['Pendiente', 'Cobrado', 'No se cobró', 'Exonerado'];
+const ESTADOS_COBRO = ['En proceso', 'Pendiente', 'Cobrado', 'No se cobró', 'Exonerado'];
 
 // ============================================
 // ComboBox: dropdown con autocompletado + opción de escribir nuevo
@@ -156,6 +156,7 @@ export default function ServicioTecnico() {
 
   const formInit = {
     nro_reporte: '',
+    nro_rt: '',
     fecha: new Date().toISOString().split('T')[0],
     cliente: '',
     modelo: '',
@@ -228,6 +229,7 @@ export default function ServicioTecnico() {
     try {
       const payload = {
         nro_reporte: formData.nro_reporte.trim(),
+        nro_rt: formData.nro_rt.trim() || null,
         fecha: formData.fecha || null,
         cliente: formData.cliente.trim(),
         modelo: formData.modelo.trim() || null,
@@ -287,6 +289,7 @@ export default function ServicioTecnico() {
     setEditingServicio(servicio);
     setFormData({
       nro_reporte: servicio.nro_reporte || '',
+      nro_rt: servicio.nro_rt || '',
       fecha: servicio.fecha || '',
       cliente: servicio.cliente || '',
       modelo: servicio.modelo || '',
@@ -534,11 +537,11 @@ export default function ServicioTecnico() {
         return;
       }
 
-      // Orden fijo: REPO | DATE | CLIENTE | MOD | SN | CASO | K-ING | FINGTIA | ₲FAC_SERV | ₲FAC_PARTES | NºFAC | DATEFAC
+      // Orden fijo: REPO | FECHA | CLIENTE | MOD | SN | CASO | COSTO | FINGTIA | ₲FAC_SERV | ₲FAC_PARTES | NºFAC | DATEFAC | ESTADO | RT
       const parsed = [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
-        if (!r || r.length === 0 || !r[0]) continue; // Saltar filas vacías
+        if (!r || r.length === 0 || !r[0]) continue;
 
         const record = {
           nro_reporte: String(r[0] || '').trim(),
@@ -558,8 +561,10 @@ export default function ServicioTecnico() {
             if (val === 'cobrado') return 'Cobrado';
             if (val === 'no se cobró' || val === 'no se cobro') return 'No se cobró';
             if (val === 'exonerado') return 'Exonerado';
+            if (val === 'en proceso') return 'En proceso';
             return 'Pendiente';
           })(),
+          nro_rt: String(r[13] || '').trim() || null,
           tiene_informe: false,
           informe_texto: null,
           informe_formateado: null
@@ -663,6 +668,7 @@ export default function ServicioTecnico() {
       const XLSX = await import('xlsx');
       const exportData = serviciosFiltrados.map(s => ({
         'REPO': s.nro_reporte,
+        'RT': s.nro_rt || '',
         'FECHA': s.fecha || '',
         'CLIENTE': s.cliente,
         'MODELO': s.modelo || '',
@@ -679,7 +685,7 @@ export default function ServicioTecnico() {
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
-      const colWidths = [10, 12, 25, 14, 14, 30, 12, 12, 8, 12, 12, 20, 12, 14];
+      const colWidths = [10, 10, 12, 25, 14, 14, 30, 12, 12, 8, 12, 12, 20, 12, 14];
       ws['!cols'] = colWidths.map(w => ({ wch: w }));
 
       const wb = XLSX.utils.book_new();
@@ -698,6 +704,7 @@ export default function ServicioTecnico() {
       const enGar = estaEnGarantia(s.fecha_fin_garantia);
       return `<tr>
         <td>${s.nro_reporte}</td>
+        <td>${s.nro_rt || ''}</td>
         <td>${formatDate(s.fecha)}</td>
         <td>${s.cliente}</td>
         <td>${s.modelo || ''}</td>
@@ -748,7 +755,7 @@ export default function ServicioTecnico() {
       </div>
       <table>
         <thead><tr>
-          <th>REPO</th><th>FECHA</th><th>CLIENTE</th><th>MOD</th><th>S/N</th><th>CASO</th>
+          <th>REPO</th><th>RT</th><th>FECHA</th><th>CLIENTE</th><th>MOD</th><th>S/N</th><th>CASO</th>
           <th>COSTO</th><th>FIN GTÍA</th><th>GTÍA</th><th>₲FAC SERV</th><th>₲FAC PARTES</th>
           <th>N° FAC</th><th>FECHA FAC</th><th>ESTADO</th>
         </tr></thead>
@@ -779,6 +786,7 @@ export default function ServicioTecnico() {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(s =>
         (s.nro_reporte || '').toLowerCase().includes(term) ||
+        (s.nro_rt || '').toLowerCase().includes(term) ||
         (s.cliente || '').toLowerCase().includes(term) ||
         (s.modelo || '').toLowerCase().includes(term) ||
         (s.serial_number || '').toLowerCase().includes(term) ||
@@ -815,9 +823,13 @@ export default function ServicioTecnico() {
     filtered.sort((a, b) => {
       let valA = a[sortField];
       let valB = b[sortField];
-      if (sortField === 'costo_servicio' || sortField === 'monto_facturado_servicio') {
+      const numericFields = ['costo_servicio', 'monto_facturado_servicio', 'monto_facturado_partes'];
+      if (numericFields.includes(sortField)) {
         valA = parseFloat(valA) || 0;
         valB = parseFloat(valB) || 0;
+      } else {
+        valA = (valA || '').toString().toLowerCase();
+        valB = (valB || '').toString().toLowerCase();
       }
       if (valA < valB) return sortDir === 'asc' ? -1 : 1;
       if (valA > valB) return sortDir === 'asc' ? 1 : -1;
@@ -914,6 +926,7 @@ export default function ServicioTecnico() {
           className="st-filter-select"
         >
           <option value="todos">Todos los estados</option>
+          <option value="En proceso">En proceso</option>
           <option value="Pendiente">Pendiente</option>
           <option value="Cobrado">Cobrado</option>
           <option value="No se cobró">No se cobró</option>
@@ -1008,19 +1021,20 @@ export default function ServicioTecnico() {
             <thead>
               <tr>
                 <th onClick={() => handleSort('nro_reporte')}>REPO <SortIcon field="nro_reporte" /></th>
+                <th onClick={() => handleSort('nro_rt')}>RT <SortIcon field="nro_rt" /></th>
                 <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
                 <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
                 <th onClick={() => handleSort('modelo')}>MOD <SortIcon field="modelo" /></th>
-                <th>S/N</th>
-                <th>CASO</th>
+                <th onClick={() => handleSort('serial_number')}>S/N <SortIcon field="serial_number" /></th>
+                <th onClick={() => handleSort('caso')}>CASO <SortIcon field="caso" /></th>
                 <th onClick={() => handleSort('costo_servicio')}>COSTO <SortIcon field="costo_servicio" /></th>
-                <th>GTÍA FIN</th>
+                <th onClick={() => handleSort('fecha_fin_garantia')}>GTÍA FIN <SortIcon field="fecha_fin_garantia" /></th>
                 <th>EN GTÍA</th>
-                <th>₲FAC SERV</th>
-                <th>₲FAC PARTES</th>
-                <th>N° FAC</th>
-                <th>FECHA FAC</th>
-                <th>ESTADO</th>
+                <th onClick={() => handleSort('monto_facturado_servicio')}>₲FAC SERV <SortIcon field="monto_facturado_servicio" /></th>
+                <th onClick={() => handleSort('monto_facturado_partes')}>₲FAC PARTES <SortIcon field="monto_facturado_partes" /></th>
+                <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
+                <th onClick={() => handleSort('fecha_factura')}>FECHA FAC <SortIcon field="fecha_factura" /></th>
+                <th onClick={() => handleSort('estado_cobro')}>ESTADO <SortIcon field="estado_cobro" /></th>
                 <th>INF</th>
                 <th>ACC</th>
               </tr>
@@ -1031,6 +1045,7 @@ export default function ServicioTecnico() {
                 return (
                   <tr key={s.id} className={expandedRow === s.id ? 'st-row-expanded' : ''}>
                     <td className="st-cell-repo">{s.nro_reporte}</td>
+                    <td>{s.nro_rt}</td>
                     <td>{formatDate(s.fecha)}</td>
                     <td className="st-cell-cliente">{s.cliente}</td>
                     <td>{s.modelo}</td>
@@ -1106,13 +1121,19 @@ export default function ServicioTecnico() {
               <button onClick={() => setShowModal(false)} className="st-modal-close"><X size={20} /></button>
             </div>
             <div className="st-modal-body">
-              {/* Fila 1: Reporte y Fecha */}
-              <div className="st-form-row st-form-row-2">
+              {/* Fila 1: Reporte, RT y Fecha */}
+              <div className="st-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <div className="st-form-group">
                   <label>📋 N° Reporte *</label>
                   <input type="text" value={formData.nro_reporte}
                     onChange={(e) => setFormData({...formData, nro_reporte: e.target.value})}
                     placeholder="Ej: 1278" />
+                </div>
+                <div className="st-form-group">
+                  <label>🔖 N° RT</label>
+                  <input type="text" value={formData.nro_rt}
+                    onChange={(e) => setFormData({...formData, nro_rt: e.target.value})}
+                    placeholder="Ej: RT-0045" />
                 </div>
                 <div className="st-form-group">
                   <label>📅 Fecha *</label>
@@ -1367,7 +1388,7 @@ export default function ServicioTecnico() {
                   )}
 
                   <div style={{ background: '#f8f8f8', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', color: '#6b7280' }}>
-                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | ₲FAC SERV | ₲FAC PARTES | N° FAC | FECHA FAC | ESTADO
+                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | ₲FAC SERV | ₲FAC PARTES | N° FAC | FECHA FAC | ESTADO | RT
                   </div>
                 </>
               )}
