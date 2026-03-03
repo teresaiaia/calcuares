@@ -603,7 +603,7 @@ export default function ServicioTecnico() {
         <div class="costo-box">Costo del Servicio: ${costoTexto}</div>
         ${observacionesHTML}
         <div class="footer">
-          <p><strong>ARES MEDICAL EQUIPMENT</strong> — Servicio Técnico</p>
+          <p><strong>ARES PARAGUAY SRL</strong> — Servicio Técnico</p>
           <p class="whatsapp">Para consultas y asistencia comunicarse por WhatsApp al (0981) 000207</p>
           <p style="margin-top:3px; font-size:9px; color:#94a3b8;">Documento generado el ${new Date().toLocaleDateString('es-PY')}</p>
         </div>
