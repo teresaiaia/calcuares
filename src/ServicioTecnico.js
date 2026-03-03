@@ -586,7 +586,7 @@ export default function ServicioTecnico() {
         </div>
         <div class="info-grid">
           <div class="info-item"><span class="label">N° Reporte:</span> ${servicio.nro_reporte}</div>
-          <div class="info-item"><span class="label">N° RT:</span> ${servicio.nro_rt || '-'}</div>
+          <div class="info-item"><span class="label">N° RPT:</span> ${servicio.nro_rt || '-'}</div>
           <div class="info-item"><span class="label">Fecha:</span> ${formatDate(servicio.fecha)}</div>
           <div class="info-item"><span class="label">Cliente:</span> ${servicio.cliente}</div>
           <div class="info-item"><span class="label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
@@ -603,7 +603,7 @@ export default function ServicioTecnico() {
         <div class="costo-box">Costo del Servicio: ${costoTexto}</div>
         ${observacionesHTML}
         <div class="footer">
-          <p><strong>ARES PARAGUAY SRL</strong> — Servicio Técnico</p>
+          <p><strong>ARES MEDICAL EQUIPMENT</strong> — Servicio Técnico</p>
           <p class="whatsapp">Para consultas y asistencia comunicarse por WhatsApp al (0981) 000207</p>
           <p style="margin-top:3px; font-size:9px; color:#94a3b8;">Documento generado el ${new Date().toLocaleDateString('es-PY')}</p>
         </div>
@@ -809,7 +809,7 @@ export default function ServicioTecnico() {
       const XLSX = await import('xlsx');
       const exportData = serviciosFiltrados.map(s => ({
         'REPO': s.nro_reporte,
-        'RT': s.nro_rt || '',
+        'RPT': s.nro_rt || '',
         'FECHA': s.fecha || '',
         'CLIENTE': s.cliente,
         'MODELO': s.modelo || '',
@@ -896,7 +896,7 @@ export default function ServicioTecnico() {
       </div>
       <table>
         <thead><tr>
-          <th>REPO</th><th>RT</th><th>FECHA</th><th>CLIENTE</th><th>MOD</th><th>S/N</th><th>CASO</th>
+          <th>REPO</th><th>RPT</th><th>FECHA</th><th>CLIENTE</th><th>MOD</th><th>S/N</th><th>CASO</th>
           <th>COSTO</th><th>FIN GTÍA</th><th>GTÍA</th><th>₲FAC SERV</th><th>₲FAC PARTES</th>
           <th>N° FAC</th><th>FECHA FAC</th><th>ESTADO</th>
         </tr></thead>
@@ -1170,7 +1170,7 @@ export default function ServicioTecnico() {
             <thead>
               <tr>
                 <th onClick={() => handleSort('nro_reporte')}>REPO <SortIcon field="nro_reporte" /></th>
-                <th onClick={() => handleSort('nro_rt')}>RT <SortIcon field="nro_rt" /></th>
+                <th onClick={() => handleSort('nro_rt')}>RPT <SortIcon field="nro_rt" /></th>
                 <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
                 <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
                 <th onClick={() => handleSort('modelo')}>MOD <SortIcon field="modelo" /></th>
@@ -1268,7 +1268,7 @@ export default function ServicioTecnico() {
               <button onClick={() => setShowModal(false)} className="st-modal-close"><X size={20} /></button>
             </div>
             <div className="st-modal-body">
-              {/* Fila 1: Reporte, RT y Fecha */}
+              {/* Fila 1: Reporte, RPT y Fecha */}
               <div className="st-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <div className="st-form-group">
                   <label>📋 N° Reporte *</label>
@@ -1277,10 +1277,10 @@ export default function ServicioTecnico() {
                     placeholder="Ej: 1278" />
                 </div>
                 <div className="st-form-group">
-                  <label>🔖 N° RT</label>
+                  <label>🔖 N° RPT</label>
                   <input type="text" value={formData.nro_rt}
                     onChange={(e) => setFormData({...formData, nro_rt: e.target.value})}
-                    placeholder="Ej: RT-0045" />
+                    placeholder="Ej: RPT-0045" />
                 </div>
                 <div className="st-form-group">
                   <label>📅 Fecha *</label>
@@ -1423,7 +1423,7 @@ export default function ServicioTecnico() {
         <div className="st-modal-overlay" onClick={() => setShowInformeModal(false)}>
           <div className="st-modal st-modal-informe" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px' }}>
             <div className="st-modal-header">
-              <h3>📄 Informe - Reporte #{informeServicio?.nro_reporte} {informeServicio?.nro_rt ? `(RT: ${informeServicio.nro_rt})` : ''}</h3>
+              <h3>📄 Informe - Reporte #{informeServicio?.nro_reporte} {informeServicio?.nro_rt ? `(RPT: ${informeServicio.nro_rt})` : ''}</h3>
               <button onClick={() => setShowInformeModal(false)} className="st-modal-close"><X size={20} /></button>
             </div>
             <div className="st-modal-body">
@@ -1658,7 +1658,7 @@ export default function ServicioTecnico() {
                   )}
 
                   <div style={{ background: '#f8f8f8', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', color: '#6b7280' }}>
-                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | ₲FAC SERV | ₲FAC PARTES | N° FAC | FECHA FAC | ESTADO | RT
+                    <strong>Orden de columnas:</strong> REPO | FECHA | CLIENTE | MODELO | S/N | CASO | COSTO | FIN GTÍA | ₲FAC SERV | ₲FAC PARTES | N° FAC | FECHA FAC | ESTADO | RPT
                   </div>
                 </>
               )}
