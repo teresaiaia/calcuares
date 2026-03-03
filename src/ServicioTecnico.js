@@ -645,6 +645,31 @@ export default function ServicioTecnico() {
     }
   };
 
+  // Borrar informe existente
+  const handleBorrarInforme = async () => {
+    if (!informeServicio) return;
+    if (!window.confirm('¿Eliminar el informe de este servicio? Esta acción no se puede deshacer.')) return;
+    try {
+      const { error } = await supabase
+        .from('servicio_tecnico')
+        .update({
+          tiene_informe: false,
+          informe_texto: null,
+          informe_formateado: null
+        })
+        .eq('id', informeServicio.id);
+
+      if (error) throw error;
+      setShowInformeModal(false);
+      setInformeServicio(null);
+      setInformeTexto('');
+      setInformeEditado(null);
+      await fetchServicios();
+    } catch (error) {
+      alert('Error al borrar informe: ' + error.message);
+    }
+  };
+
   // ============================================
   // IMPORTACIÓN MASIVA
   // ============================================
@@ -1596,9 +1621,14 @@ export default function ServicioTecnico() {
                 </>
               )}
               {informePaso === 2 && informeServicio?.informe_formateado && (
-                <button onClick={() => { handleDescargarInforme(informeServicio); }} className="st-btn-import" style={{ marginLeft: '0' }}>
-                  <Download size={16} /> Ver PDF anterior
-                </button>
+                <>
+                  <button onClick={() => { handleDescargarInforme(informeServicio); }} className="st-btn-import" style={{ marginLeft: '0' }}>
+                    <Download size={16} /> Ver PDF anterior
+                  </button>
+                  <button onClick={handleBorrarInforme} className="st-btn-cancel" style={{ marginLeft: '0', color: '#dc2626', borderColor: '#dc2626' }}>
+                    <Trash2 size={16} /> Borrar informe
+                  </button>
+                </>
               )}
             </div>
           </div>
