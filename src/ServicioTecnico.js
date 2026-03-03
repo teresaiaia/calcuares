@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, ChevronDown, ChevronUp, Upload, ExternalLink } from 'lucide-react';
+import { FONDO_ARES_BASE64 } from './fondoAresBase64';
 import './ServicioTecnico.css';
 
 const ESTADOS_COBRO = ['En proceso', 'Pendiente', 'Cobrado', 'No se cobró', 'Exonerado'];
@@ -481,82 +482,131 @@ export default function ServicioTecnico() {
       ? `${formatDate(servicio.fecha_fin_garantia)} (${enGar ? 'EN GARANTÍA' : 'FUERA DE GARANTÍA'})` 
       : 'No definida';
 
+    // Costo: doble de mano de obra + IVA incluido
+    const costoBase = parseFloat(servicio.costo_servicio) || 0;
+    const costoDoble = Math.round(costoBase * 2);
+    const costoTexto = `₲${formatNumber(costoDoble)} - IVA incluido`;
+
     const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
       ? `<div class="section repuestos">
-          <h3>🔧 Repuestos / Partes Reemplazadas</h3>
+          <h3>Repuestos / Partes Reemplazadas</h3>
           <ul>${datos.repuestos.map(r => `<li>${r}</li>`).join('')}</ul>
         </div>` 
       : '';
 
     const recomendacionesHTML = datos.recomendaciones && datos.recomendaciones.length > 0
       ? `<div class="section recomendaciones">
-          <h3>⚠️ Recomendaciones y Acciones Futuras</h3>
+          <h3>Recomendaciones y Acciones Futuras</h3>
           <ul>${datos.recomendaciones.map(r => `<li>${r}</li>`).join('')}</ul>
         </div>`
       : '';
 
     const observacionesHTML = datos.observaciones && datos.observaciones.trim()
       ? `<div class="section observaciones">
-          <h3>📝 Observaciones Adicionales</h3>
+          <h3>Observaciones Adicionales</h3>
           <p>${datos.observaciones.replace(/\n/g, '<br>')}</p>
         </div>`
       : '';
 
     ventana.document.write(`<!DOCTYPE html><html><head>
-      <title>Informe ST - ${servicio.nro_reporte}</title>
+      <title>Reporte ServTec ${servicio.nro_reporte} - Ares Paraguay</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #2F4156; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 3px solid #567C8D; padding-bottom: 20px; margin-bottom: 25px; }
-        .header h1 { color: #2F4156; font-size: 22px; margin: 0; }
-        .header p { color: #567C8D; margin: 5px 0 0; font-size: 14px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #567C8D; font-size: 13px; }
-        .info-item .label { font-weight: 700; color: #2F4156; }
-        .section { margin-bottom: 20px; }
-        .section h3 { color: #2F4156; font-size: 14px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #d0d8e0; }
-        .descripcion p { font-size: 13px; text-align: justify; }
-        .repuestos { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 15px; }
+        @page { size: A4; margin: 0; }
+        body { 
+          font-family: 'Segoe UI', Arial, sans-serif; 
+          color: #2F4156; 
+          line-height: 1.5;
+          width: 210mm;
+          min-height: 297mm;
+          position: relative;
+        }
+        .bg-image {
+          position: fixed;
+          top: 0; left: 0;
+          width: 210mm;
+          height: 297mm;
+          z-index: -1;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+        .content-wrapper {
+          position: relative;
+          z-index: 1;
+          padding: 35mm 25mm 30mm 25mm;
+          min-height: 297mm;
+        }
+        .header { text-align: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #1a3352; }
+        .header h1 { color: #1a3352; font-size: 18px; margin: 0; letter-spacing: 1px; }
+        .header .subtitle { color: #567C8D; font-size: 12px; margin-top: 4px; }
+        .info-grid { 
+          display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; 
+          margin-bottom: 18px; padding: 12px; 
+          background: rgba(248,249,250,0.9); border-radius: 6px; 
+          border-left: 3px solid #1a3352; font-size: 11.5px; 
+        }
+        .info-item .label { font-weight: 700; color: #1a3352; }
+        .section { margin-bottom: 14px; }
+        .section h3 { color: #1a3352; font-size: 12.5px; font-weight: 700; margin-bottom: 6px; padding-bottom: 3px; border-bottom: 1px solid #c0cdd8; }
+        .descripcion p { font-size: 12px; text-align: justify; }
+        .repuestos { background: rgba(255,247,237,0.9); border: 1px solid #fed7aa; border-radius: 6px; padding: 12px; }
         .repuestos h3 { color: #c2410c; border-bottom-color: #fed7aa; }
-        .repuestos ul { padding-left: 20px; font-size: 13px; }
-        .repuestos li { margin-bottom: 4px; }
-        .recomendaciones { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 15px; }
+        .repuestos ul { padding-left: 18px; font-size: 11.5px; }
+        .repuestos li { margin-bottom: 3px; }
+        .recomendaciones { background: rgba(254,252,232,0.9); border: 1px solid #fde68a; border-radius: 6px; padding: 12px; }
         .recomendaciones h3 { color: #a16207; border-bottom-color: #fde68a; }
-        .recomendaciones ul { padding-left: 20px; font-size: 13px; }
-        .recomendaciones li { margin-bottom: 4px; }
-        .observaciones { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 15px; }
+        .recomendaciones ul { padding-left: 18px; font-size: 11.5px; }
+        .recomendaciones li { margin-bottom: 3px; }
+        .observaciones { background: rgba(240,249,255,0.9); border: 1px solid #bae6fd; border-radius: 6px; padding: 12px; }
         .observaciones h3 { color: #0369a1; border-bottom-color: #bae6fd; }
-        .observaciones p { font-size: 13px; }
-        .costo-box { text-align: center; padding: 12px; background: #2F4156; color: white; border-radius: 8px; font-size: 18px; font-weight: 700; margin: 20px 0; }
-        .footer { text-align: center; border-top: 2px solid #567C8D; padding-top: 15px; margin-top: 25px; color: #567C8D; font-size: 11px; }
-        @media print { body { padding: 20px; } }
-        @page { margin: 15mm; }
+        .observaciones p { font-size: 11.5px; }
+        .costo-box { 
+          text-align: center; padding: 10px; 
+          background: rgba(26,51,82,0.95); color: white; 
+          border-radius: 6px; font-size: 16px; font-weight: 700; 
+          margin: 16px 0; letter-spacing: 0.5px;
+        }
+        .footer { 
+          text-align: center; border-top: 2px solid #1a3352; 
+          padding-top: 10px; margin-top: 20px; 
+          color: #1a3352; font-size: 10px; 
+        }
+        .footer .whatsapp { margin-top: 4px; font-size: 10px; color: #567C8D; }
+        @media print { 
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .bg-image { position: fixed; }
+        }
       </style>
     </head><body>
-      <div class="header">
-        <h1>ARES MEDICAL EQUIPMENT</h1>
-        <p>Informe de Servicio Técnico</p>
-      </div>
-      <div class="info-grid">
-        <div class="info-item"><span class="label">N° Reporte:</span> ${servicio.nro_reporte}</div>
-        <div class="info-item"><span class="label">N° RT:</span> ${servicio.nro_rt || '-'}</div>
-        <div class="info-item"><span class="label">Fecha:</span> ${formatDate(servicio.fecha)}</div>
-        <div class="info-item"><span class="label">Cliente:</span> ${servicio.cliente}</div>
-        <div class="info-item"><span class="label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
-        <div class="info-item"><span class="label">S/N:</span> ${servicio.serial_number || 'N/A'}</div>
-        <div class="info-item"><span class="label">Garantía:</span> ${garantiaTexto}</div>
-        <div class="info-item"><span class="label">Estado:</span> ${servicio.estado_cobro || '-'}</div>
-      </div>
-      <div class="section descripcion">
-        <h3>📋 Descripción del Servicio Realizado</h3>
-        <p>${datos.descripcion}</p>
-      </div>
-      ${repuestosHTML}
-      ${recomendacionesHTML}
-      <div class="costo-box">Costo del Servicio: ${datos.costo_texto || '₲0'}</div>
-      ${observacionesHTML}
-      <div class="footer">
-        <p><strong>ARES MEDICAL EQUIPMENT</strong> — Servicio Técnico</p>
-        <p>Documento generado el ${new Date().toLocaleDateString('es-PY')}</p>
+      <img class="bg-image" src="${FONDO_ARES_BASE64}" />
+      <div class="content-wrapper">
+        <div class="header">
+          <h1>Reporte ServTec - Ares Paraguay</h1>
+          <div class="subtitle">Informe de Servicio Técnico N° ${servicio.nro_reporte}</div>
+        </div>
+        <div class="info-grid">
+          <div class="info-item"><span class="label">N° Reporte:</span> ${servicio.nro_reporte}</div>
+          <div class="info-item"><span class="label">N° RT:</span> ${servicio.nro_rt || '-'}</div>
+          <div class="info-item"><span class="label">Fecha:</span> ${formatDate(servicio.fecha)}</div>
+          <div class="info-item"><span class="label">Cliente:</span> ${servicio.cliente}</div>
+          <div class="info-item"><span class="label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
+          <div class="info-item"><span class="label">S/N:</span> ${servicio.serial_number || 'N/A'}</div>
+          <div class="info-item"><span class="label">Garantía:</span> ${garantiaTexto}</div>
+          <div class="info-item"><span class="label">Estado:</span> ${servicio.estado_cobro || '-'}</div>
+        </div>
+        <div class="section descripcion">
+          <h3>Descripción del Servicio Realizado</h3>
+          <p>${datos.descripcion}</p>
+        </div>
+        ${repuestosHTML}
+        ${recomendacionesHTML}
+        <div class="costo-box">Costo del Servicio: ${costoTexto}</div>
+        ${observacionesHTML}
+        <div class="footer">
+          <p><strong>ARES MEDICAL EQUIPMENT</strong> — Servicio Técnico</p>
+          <p class="whatsapp">Para consultas y asistencia comunicarse por WhatsApp al (0981) 000207</p>
+          <p style="margin-top:3px; font-size:9px; color:#94a3b8;">Documento generado el ${new Date().toLocaleDateString('es-PY')}</p>
+        </div>
       </div>
     </body></html>`);
     ventana.document.close();
@@ -1466,13 +1516,14 @@ export default function ServicioTecnico() {
                     </button>
                   </div>
 
-                  {/* Costo */}
-                  <div className="st-form-row st-form-row-2">
-                    <div className="st-form-group">
-                      <label>💰 Costo del servicio (texto para PDF)</label>
-                      <input type="text" value={informeEditado.costo_texto}
-                        onChange={(e) => setInformeEditado({...informeEditado, costo_texto: e.target.value})}
-                        placeholder="Ej: ₲450.000" />
+                  {/* Costo - calculado automáticamente */}
+                  <div className="st-form-group">
+                    <label>💰 Costo en el PDF (se calcula automáticamente: costo × 2 + IVA incluido)</label>
+                    <div style={{ padding: '8px 12px', background: '#f0f4f8', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 600, color: '#2F4156' }}>
+                      ₲{formatNumber(Math.round((parseFloat(informeServicio?.costo_servicio) || 0) * 2))} - IVA incluido
+                      <span style={{ fontWeight: 400, fontSize: '0.78rem', color: '#94a3b8', marginLeft: '10px' }}>
+                        (base: ₲{formatNumber(informeServicio?.costo_servicio || 0)})
+                      </span>
                     </div>
                   </div>
 
