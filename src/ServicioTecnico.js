@@ -230,6 +230,13 @@ export default function ServicioTecnico() {
 
     setSaving(true);
     try {
+      const parseMonto = (val) => {
+        if (!val && val !== 0) return 0;
+        // Quitar puntos de miles y espacios, dejar solo dígitos
+        const limpio = String(val).replace(/\./g, '').replace(/\s/g, '').replace(/,/g, '');
+        return Math.round(parseFloat(limpio) || 0);
+      };
+
       const payload = {
         nro_reporte: formData.nro_reporte.trim(),
         nro_rt: formData.nro_rt.trim() || null,
@@ -238,10 +245,10 @@ export default function ServicioTecnico() {
         modelo: formData.modelo.trim() || null,
         serial_number: formData.serial_number.trim() || null,
         caso: formData.caso.trim() || null,
-        costo_servicio: Math.round(parseFloat(formData.costo_servicio) || 0),
+        costo_servicio: parseMonto(formData.costo_servicio),
         fecha_fin_garantia: formData.fecha_fin_garantia || null,
-        monto_facturado_servicio: Math.round(parseFloat(formData.monto_facturado_servicio) || 0),
-        monto_facturado_partes: Math.round(parseFloat(formData.monto_facturado_partes) || 0),
+        monto_facturado_servicio: parseMonto(formData.monto_facturado_servicio),
+        monto_facturado_partes: parseMonto(formData.monto_facturado_partes),
         nro_factura: formData.nro_factura.trim() || null,
         fecha_factura: formData.fecha_factura || null,
         estado_cobro: formData.estado_cobro,
@@ -482,10 +489,17 @@ export default function ServicioTecnico() {
       ? `${formatDate(servicio.fecha_fin_garantia)} (${enGar ? 'EN GARANTÍA' : 'FUERA DE GARANTÍA'})` 
       : 'No definida';
 
-    // Costo: doble de mano de obra + IVA incluido
+    // Costo para el informe: si hay montos facturados, usar ₲FAC SERV + ₲FAC PARTES; sino doble de mano de obra
+    const facServ = parseFloat(servicio.monto_facturado_servicio) || 0;
+    const facPartes = parseFloat(servicio.monto_facturado_partes) || 0;
     const costoBase = parseFloat(servicio.costo_servicio) || 0;
-    const costoDoble = Math.round(costoBase * 2);
-    const costoTexto = `₲${formatNumber(costoDoble)} - IVA incluido`;
+    let costoInforme;
+    if (facServ > 0 || facPartes > 0) {
+      costoInforme = Math.round(facServ + facPartes);
+    } else {
+      costoInforme = Math.round(costoBase * 2);
+    }
+    const costoTexto = `₲${formatNumber(costoInforme)} - IVA incluido`;
 
     const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
       ? `<div class="section repuestos">
@@ -1518,12 +1532,23 @@ export default function ServicioTecnico() {
 
                   {/* Costo - calculado automáticamente */}
                   <div className="st-form-group">
-                    <label>💰 Costo en el PDF (se calcula automáticamente: costo × 2 + IVA incluido)</label>
+                    <label>💰 Costo en el PDF (automático: si hay ₲FAC cargados se suman, sino costo × 2) + IVA incluido</label>
                     <div style={{ padding: '8px 12px', background: '#f0f4f8', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 600, color: '#2F4156' }}>
-                      ₲{formatNumber(Math.round((parseFloat(informeServicio?.costo_servicio) || 0) * 2))} - IVA incluido
-                      <span style={{ fontWeight: 400, fontSize: '0.78rem', color: '#94a3b8', marginLeft: '10px' }}>
-                        (base: ₲{formatNumber(informeServicio?.costo_servicio || 0)})
-                      </span>
+                      {(() => {
+                        const fs = parseFloat(informeServicio?.monto_facturado_servicio) || 0;
+                        const fp = parseFloat(informeServicio?.monto_facturado_partes) || 0;
+                        const cb = parseFloat(informeServicio?.costo_servicio) || 0;
+                        const total = (fs > 0 || fp > 0) ? Math.round(fs + fp) : Math.round(cb * 2);
+                        const origen = (fs > 0 || fp > 0) 
+                          ? `₲FAC Serv: ₲${formatNumber(fs)} + ₲FAC Partes: ₲${formatNumber(fp)}`
+                          : `costo base: ₲${formatNumber(cb)} × 2`;
+                        return <>
+                          ₲{formatNumber(total)} - IVA incluido
+                          <span style={{ fontWeight: 400, fontSize: '0.78rem', color: '#94a3b8', marginLeft: '10px' }}>
+                            ({origen})
+                          </span>
+                        </>;
+                      })()}
                     </div>
                   </div>
 
