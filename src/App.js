@@ -113,6 +113,7 @@ export default function Calcuares() {
       setView(userSession.rol === 'admin' ? 'admin' : 'ventas');
 
       // Señalar al navegador que guarde las credenciales
+      // Método 1: PasswordCredential API
       if (window.PasswordCredential) {
         try {
           const cred = new window.PasswordCredential({
@@ -124,6 +125,44 @@ export default function Calcuares() {
         } catch (credErr) {
           // Silenciar si el navegador no soporta o rechaza
         }
+      }
+
+      // Método 2: Submit real en iframe oculto para que Chrome detecte el login
+      try {
+        const iframe = document.createElement('iframe');
+        iframe.name = 'login-save-frame';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'about:blank';
+        form.target = 'login-save-frame';
+
+        const emailInput = document.createElement('input');
+        emailInput.type = 'email';
+        emailInput.name = 'email';
+        emailInput.autocomplete = 'username';
+        emailInput.value = loginEmail;
+        form.appendChild(emailInput);
+
+        const passInput = document.createElement('input');
+        passInput.type = 'password';
+        passInput.name = 'password';
+        passInput.autocomplete = 'current-password';
+        passInput.value = loginPassword;
+        form.appendChild(passInput);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        // Limpiar después de un momento
+        setTimeout(() => {
+          document.body.removeChild(form);
+          document.body.removeChild(iframe);
+        }, 2000);
+      } catch (e) {
+        // Silenciar errores del iframe
       }
       
       // Cargar productos
