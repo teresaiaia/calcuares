@@ -1352,6 +1352,16 @@ export default function Calcuares() {
                     Guardando...
                   </div>
                 )}
+                <button onClick={() => setActiveModule('proveedores')} style={{ 
+                  padding: '0.4rem 0.75rem', borderRadius: '8px', border: 'none',
+                  background: activeModule === 'proveedores' ? 'white' : 'rgba(255,255,255,0.2)', 
+                  color: activeModule === 'proveedores' ? '#2F4156' : 'white', 
+                  cursor: 'pointer',
+                  fontWeight: '600', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem',
+                  transition: 'all 0.2s ease'
+                }}>
+                  <Building2 size={14} /> Proveedores
+                </button>
                 <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.15)', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
                   <User size={14} />
                   {currentUser?.nombre || 'Admin'}
@@ -1385,7 +1395,6 @@ export default function Calcuares() {
               {[
                 { key: 'calculos', label: 'Cálculos', icon: <DollarSign size={16} /> },
                 { key: 'compras', label: 'Compras', icon: <Package size={16} /> },
-                { key: 'proveedores', label: 'Proveedores', icon: <Building2 size={16} /> },
                 { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
                 { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> },
                 { key: 'articulos', label: 'Artículos', icon: <Package size={16} /> },
