@@ -201,11 +201,14 @@ export default function ServicioTecnico() {
   };
 
   // Calcular si está en garantía
-  const estaEnGarantia = (fechaFin) => {
+  // Determinar si estaba en garantía al momento del servicio
+  // Compara fecha del reporte vs fecha fin de garantía
+  const estaEnGarantia = (fechaFin, fechaReporte) => {
     if (!fechaFin) return null; // No definido
-    const hoy = new Date();
     const fin = new Date(fechaFin);
-    return fin >= hoy;
+    // Si hay fecha de reporte, comparar contra esa fecha; sino contra hoy
+    const referencia = fechaReporte ? new Date(fechaReporte) : new Date();
+    return fin >= referencia;
   };
 
   // Formatear número con separador de miles
@@ -484,7 +487,7 @@ export default function ServicioTecnico() {
   // Generar PDF del informe estructurado
   const generarPDFInforme = (datos, servicio) => {
     const ventana = window.open('', '_blank');
-    const enGar = estaEnGarantia(servicio.fecha_fin_garantia);
+    const enGar = estaEnGarantia(servicio.fecha_fin_garantia, servicio.fecha);
     const garantiaTexto = servicio.fecha_fin_garantia 
       ? `${formatDate(servicio.fecha_fin_garantia)} (${enGar ? 'EN GARANTÍA' : 'FUERA DE GARANTÍA'})` 
       : 'No definida';
@@ -856,7 +859,7 @@ export default function ServicioTecnico() {
         'CASO': s.caso || '',
         'COSTO': s.costo_servicio || 0,
         'FIN GTÍA': s.fecha_fin_garantia || '',
-        'EN GTÍA': estaEnGarantia(s.fecha_fin_garantia) === true ? 'Sí' : estaEnGarantia(s.fecha_fin_garantia) === false ? 'No' : '-',
+        'EN GTÍA': estaEnGarantia(s.fecha_fin_garantia, s.fecha) === true ? 'Sí' : estaEnGarantia(s.fecha_fin_garantia, s.fecha) === false ? 'No' : '-',
         '₲FAC SERV': s.monto_facturado_servicio || 0,
         '₲FAC PARTES': s.monto_facturado_partes || 0,
         'N° FAC': s.nro_factura || '',
@@ -881,7 +884,7 @@ export default function ServicioTecnico() {
     setShowExportMenu(false);
     const ventana = window.open('', '_blank');
     const rows = serviciosFiltrados.map(s => {
-      const enGar = estaEnGarantia(s.fecha_fin_garantia);
+      const enGar = estaEnGarantia(s.fecha_fin_garantia, s.fecha);
       return `<tr>
         <td>${s.nro_reporte}</td>
         <td>${s.nro_rt || ''}</td>
@@ -983,7 +986,7 @@ export default function ServicioTecnico() {
     // Filtro garantía
     if (filterGarantia !== 'todos') {
       filtered = filtered.filter(s => {
-        const enGar = estaEnGarantia(s.fecha_fin_garantia);
+        const enGar = estaEnGarantia(s.fecha_fin_garantia, s.fecha);
         if (filterGarantia === 'si') return enGar === true;
         if (filterGarantia === 'no') return enGar === false;
         if (filterGarantia === 'sin') return enGar === null;
@@ -1004,7 +1007,7 @@ export default function ServicioTecnico() {
       let valA, valB;
       if (sortField === 'garantia_orden') {
         // SÍ=1, NO=2, -=3
-        const g = (s) => { const e = estaEnGarantia(s.fecha_fin_garantia); return e === true ? 1 : e === false ? 2 : 3; };
+        const g = (s) => { const e = estaEnGarantia(s.fecha_fin_garantia, s.fecha); return e === true ? 1 : e === false ? 2 : 3; };
         valA = g(a);
         valB = g(b);
       } else {
@@ -1033,7 +1036,7 @@ export default function ServicioTecnico() {
       costoTotal: acc.costoTotal + (parseFloat(s.costo_servicio) || 0),
       facturadoServicio: acc.facturadoServicio + (parseFloat(s.monto_facturado_servicio) || 0),
       facturadoPartes: acc.facturadoPartes + (parseFloat(s.monto_facturado_partes) || 0),
-      enGarantia: acc.enGarantia + (estaEnGarantia(s.fecha_fin_garantia) === true ? 1 : 0),
+      enGarantia: acc.enGarantia + (estaEnGarantia(s.fecha_fin_garantia, s.fecha) === true ? 1 : 0),
       pendientes: acc.pendientes + (s.estado_cobro === 'Pendiente' ? 1 : 0),
       conInforme: acc.conInforme + (s.tiene_informe ? 1 : 0)
     }), { costoTotal: 0, facturadoServicio: 0, facturadoPartes: 0, enGarantia: 0, pendientes: 0, conInforme: 0 });
@@ -1228,7 +1231,7 @@ export default function ServicioTecnico() {
             </thead>
             <tbody>
               {serviciosFiltrados.map(s => {
-                const enGarantia = estaEnGarantia(s.fecha_fin_garantia);
+                const enGarantia = estaEnGarantia(s.fecha_fin_garantia, s.fecha);
                 return (
                   <tr key={s.id} className={expandedRow === s.id ? 'st-row-expanded' : ''}>
                     <td className="st-cell-repo">{s.nro_reporte}</td>
@@ -1354,7 +1357,21 @@ export default function ServicioTecnico() {
                   <label>🔢 Serial Number</label>
                   <ComboBox
                     value={formData.serial_number}
-                    onChange={(val) => setFormData({...formData, serial_number: val})}
+                    onChange={(val) => {
+                      const updated = {...formData, serial_number: val};
+                      // Autocompletar fecha de garantía si no tiene y existe un servicio previo con mismo serial + cliente
+                      if (val && !formData.fecha_fin_garantia) {
+                        const previo = servicios.find(s => 
+                          s.serial_number === val && 
+                          s.cliente === formData.cliente && 
+                          s.fecha_fin_garantia
+                        );
+                        if (previo) {
+                          updated.fecha_fin_garantia = previo.fecha_fin_garantia;
+                        }
+                      }
+                      setFormData(updated);
+                    }}
                     options={serialesFiltrados}
                     placeholder="Seleccionar o escribir S/N"
                   />
@@ -1390,10 +1407,10 @@ export default function ServicioTecnico() {
                   <label>Estado Garantía</label>
                   <div className={`st-garantia-badge ${
                     !formData.fecha_fin_garantia ? 'st-gar-na' :
-                    estaEnGarantia(formData.fecha_fin_garantia) ? 'st-gar-si' : 'st-gar-no'
+                    estaEnGarantia(formData.fecha_fin_garantia, formData.fecha) ? 'st-gar-si' : 'st-gar-no'
                   }`}>
                     {!formData.fecha_fin_garantia ? 'No definido' :
-                     estaEnGarantia(formData.fecha_fin_garantia) ? '✓ EN GARANTÍA' : '✗ FUERA DE GARANTÍA'}
+                     estaEnGarantia(formData.fecha_fin_garantia, formData.fecha) ? '✓ EN GARANTÍA' : '✗ FUERA DE GARANTÍA'}
                   </div>
                 </div>
               </div>
