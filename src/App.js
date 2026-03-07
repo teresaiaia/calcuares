@@ -1166,6 +1166,20 @@ export default function Calcuares() {
               >
                 <Users size={18} /> Comercial
               </button>
+              <button 
+                onClick={() => setVentasModule('servicio_tecnico')} 
+                style={{ 
+                  flex: 1, padding: '0.65rem 1rem', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                  background: ventasModule === 'servicio_tecnico' ? 'white' : 'transparent',
+                  color: ventasModule === 'servicio_tecnico' ? '#2F4156' : 'rgba(255,255,255,0.7)',
+                  boxShadow: ventasModule === 'servicio_tecnico' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Serv. Técnico
+              </button>
             </div>
 
             {ventasModule === 'precios' && (
@@ -1181,6 +1195,8 @@ export default function Calcuares() {
 
           {ventasModule === 'seguimiento' ? (
             <SeguimientoComercial />
+          ) : ventasModule === 'servicio_tecnico' ? (
+            <ServicioTecnico />
           ) : (
           <>
           <div className="card">
