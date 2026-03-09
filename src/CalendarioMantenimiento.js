@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Plus, Save, X, Trash2, Search, RefreshCw, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Save, X, Trash2, Edit2, Search, RefreshCw, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 const PERIODICIDADES = [
   { key: 'mensual', label: 'Mensual', meses: 1 },
   { key: 'bimestral', label: 'Bimestral', meses: 2 },
   { key: 'trimestral', label: 'Trimestral', meses: 3 },
+  { key: 'cuatrimestral', label: 'Cuatrimestral', meses: 4 },
   { key: 'semestral', label: 'Semestral', meses: 6 },
   { key: 'anual', label: 'Anual', meses: 12 }
 ];
@@ -309,6 +310,7 @@ const CalendarioMantenimiento = () => {
         .cm-badge-mensual { background: #dbeafe; color: #1e40af; }
         .cm-badge-bimestral { background: #e0e7ff; color: #3730a3; }
         .cm-badge-trimestral { background: #d1fae5; color: #065f46; }
+        .cm-badge-cuatrimestral { background: #e0f2fe; color: #0369a1; }
         .cm-badge-semestral { background: #fef3c7; color: #92400e; }
         .cm-badge-anual { background: #fce7f3; color: #9d174d; }
         .cm-auth-btn { border: none; border-radius: 4px; padding: 3px 6px; cursor: pointer; font-size: 0.7rem; font-weight: 700; transition: all 0.15s; }
@@ -465,7 +467,7 @@ const CalendarioMantenimiento = () => {
                   <td>
                     <div className="cm-cell-actions">
                       <button onClick={() => handleEdit(m)} className="cm-btn-icon" title="Editar">
-                        <Search size={13} />
+                        <Edit2 size={13} />
                       </button>
                       <button onClick={() => handleDelete(m.id)} className="cm-btn-icon" title="Eliminar" style={{ color: '#dc2626' }}>
                         <Trash2 size={13} />
