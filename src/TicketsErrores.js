@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { Plus, Save, X, Trash2, Edit2, Search, RefreshCw, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 
 const PRIORIDADES = ['Alta', 'Media', 'Baja'];
-const ESTADOS_TICKET = ['Abierto', 'En proceso', 'Resuelto', 'Cerrado'];
+const ESTADOS_TICKET = ['Abierto', 'En proceso', 'Resuelto', 'Facturado'];
 
 const TicketsErrores = () => {
   const [tickets, setTickets] = useState([]);
@@ -245,7 +245,7 @@ const TicketsErrores = () => {
     const abiertos = tickets.filter(t => t.estado === 'Abierto').length;
     const enProceso = tickets.filter(t => t.estado === 'En proceso').length;
     const resueltos = tickets.filter(t => t.estado === 'Resuelto').length;
-    const alta = tickets.filter(t => t.prioridad === 'Alta' && t.estado !== 'Cerrado' && t.estado !== 'Resuelto').length;
+    const alta = tickets.filter(t => t.prioridad === 'Alta' && t.estado !== 'Facturado' && t.estado !== 'Resuelto').length;
     return { total: tickets.length, abiertos, enProceso, resueltos, alta };
   }, [tickets]);
 
@@ -280,7 +280,7 @@ const TicketsErrores = () => {
         .tk-estado-abierto { background: #fee2e2; color: #991b1b; }
         .tk-estado-en-proceso { background: #fef3c7; color: #92400e; }
         .tk-estado-resuelto { background: #d1fae5; color: #065f46; }
-        .tk-estado-cerrado { background: #f1f5f9; color: #64748b; }
+        .tk-estado-facturado { background: #f1f5f9; color: #64748b; }
         .tk-estado-select { padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; outline: none; background: white; }
         .tk-cell-actions { display: flex; gap: 4px; }
         .tk-btn-icon { padding: 4px; border: none; border-radius: 4px; cursor: pointer; background: transparent; color: #64748b; transition: all 0.15s; }
@@ -388,14 +388,14 @@ const TicketsErrores = () => {
             </thead>
             <tbody>
               {ticketsFiltrados.map(t => (
-                <tr key={t.id} className={t.prioridad === 'Alta' && t.estado !== 'Cerrado' && t.estado !== 'Resuelto' ? 'tk-row-alta' : ''}>
+                <tr key={t.id} className={t.prioridad === 'Alta' && t.estado !== 'Facturado' && t.estado !== 'Resuelto' ? 'tk-row-alta' : ''}>
                   <td>{formatDate(t.fecha_reporte)}</td>
                   <td style={{ fontWeight: 600 }}>{t.cliente}</td>
                   <td>{t.modelo}</td>
                   <td style={{ fontSize: '0.72rem' }}>{t.serial_number}</td>
                   <td className="tk-cell-desc" title={t.descripcion}>{t.descripcion}</td>
                   <td>
-                    {t.estado === 'Cerrado' ? (
+                    {t.estado === 'Facturado' ? (
                       <span className="tk-badge" style={{ background: '#f1f5f9', color: '#94a3b8' }}>—</span>
                     ) : (
                       <span className={`tk-badge tk-prio-${t.prioridad?.toLowerCase()}`}>
