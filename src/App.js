@@ -53,7 +53,7 @@ export default function Calcuares() {
       const user = JSON.parse(savedUser);
       setCurrentUser(user);
       setIsAuthenticated(true);
-      setView(user.rol === 'admin' ? 'admin' : 'ventas');
+      setView(user.rol === 'admin' ? 'admin' : user.rol === 'servicio_tecnico' ? 'servicio_tecnico' : 'ventas');
       fetchProducts();
     } else {
       setLoading(false);
@@ -85,7 +85,7 @@ export default function Calcuares() {
       // Por simplicidad, comparamos contraseña directamente
       // En producción real, deberías usar bcrypt o similar
       // Por ahora aceptamos cualquier contraseña que coincida
-      const isValidPassword = loginPassword === 'administrando' || loginPassword === 'vendedor123';
+      const isValidPassword = loginPassword === 'administrando' || loginPassword === 'vendedor123' || loginPassword === 'servtec2026';
       
       if (!isValidPassword) {
         setLoginError('Usuario o contraseña incorrectos');
@@ -110,7 +110,7 @@ export default function Calcuares() {
       localStorage.setItem('currentUser', JSON.stringify(userSession));
       setCurrentUser(userSession);
       setIsAuthenticated(true);
-      setView(userSession.rol === 'admin' ? 'admin' : 'ventas');
+      setView(userSession.rol === 'admin' ? 'admin' : userSession.rol === 'servicio_tecnico' ? 'servicio_tecnico' : 'ventas');
 
       // Señalar al navegador que guarde las credenciales
       // Método 1: PasswordCredential API
@@ -1166,20 +1166,6 @@ export default function Calcuares() {
               >
                 <Users size={18} /> Comercial
               </button>
-              <button 
-                onClick={() => setVentasModule('servicio_tecnico')} 
-                style={{ 
-                  flex: 1, padding: '0.65rem 1rem', borderRadius: '10px', border: 'none',
-                  fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                  background: ventasModule === 'servicio_tecnico' ? 'white' : 'transparent',
-                  color: ventasModule === 'servicio_tecnico' ? '#2F4156' : 'rgba(255,255,255,0.7)',
-                  boxShadow: ventasModule === 'servicio_tecnico' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Serv. Técnico
-              </button>
             </div>
 
             {ventasModule === 'precios' && (
@@ -1195,8 +1181,6 @@ export default function Calcuares() {
 
           {ventasModule === 'seguimiento' ? (
             <SeguimientoComercial />
-          ) : ventasModule === 'servicio_tecnico' ? (
-            <ServicioTecnico />
           ) : (
           <>
           <div className="card">
@@ -1349,6 +1333,33 @@ export default function Calcuares() {
           </>
           )}
         </>
+      ) : view === 'servicio_tecnico' ? (
+        // VISTA SERVICIO TÉCNICO
+        <>
+          <div className="card header-card" style={{ background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '0.15rem' }}>
+                  🔧 Servicio Técnico
+                </h1>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>Ares Paraguay — Gestión de Servicios</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.15)', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                  <User size={14} />
+                  {currentUser?.nombre || 'Técnico'}
+                </div>
+                <button onClick={handleLogout} style={{ 
+                  padding: '0.4rem', borderRadius: '8px', border: 'none',
+                  background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)', cursor: 'pointer'
+                }} title="Salir">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+          <ServicioTecnico />
+        </>
       ) : (
         // VISTA ADMIN
         <>
@@ -1414,7 +1425,7 @@ export default function Calcuares() {
                 { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
                 { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> },
                 { key: 'articulos', label: 'Artículos', icon: <Package size={16} /> },
-                { key: 'servicio_tecnico', label: 'ST', icon: null, discrete: true }
+                { key: 'servicio_tecnico', label: 'Serv. Técnico', icon: null }
               ].map(tab => (
                 <button
                   key={tab.key}
