@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Plus, Save, X, Trash2, Edit2, Search, RefreshCw, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Save, X, Trash2, Edit2, Search, RefreshCw, Check, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 
 const PERIODICIDADES = [
   { key: 'mensual', label: 'Mensual', meses: 1 },
@@ -258,6 +258,19 @@ const CalendarioMantenimiento = () => {
     }
   };
 
+  const handleToggleAtt = async (id, valorActual) => {
+    try {
+      const { error } = await supabase
+        .from('mantenimientos_preventivos')
+        .update({ atencion: !valorActual })
+        .eq('id', id);
+      if (error) throw error;
+      await fetchMantenimientos();
+    } catch (err) {
+      alert('Error al actualizar: ' + err.message);
+    }
+  };
+
   const periodoLabel = (key) => {
     const p = PERIODICIDADES.find(pr => pr.key === key);
     return p ? p.label : key;
@@ -317,6 +330,9 @@ const CalendarioMantenimiento = () => {
         .cm-auth-si { background: #d1fae5; color: #065f46; }
         .cm-auth-no { background: #f1f5f9; color: #94a3b8; }
         .cm-auth-no:hover { background: #e2e8f0; }
+        .cm-att-on { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+        .cm-att-off { background: #f8fafc; color: #cbd5e1; border: 1px solid transparent; }
+        .cm-att-off:hover { color: #f59e0b; }
         .cm-cell-actions { display: flex; gap: 4px; }
         .cm-btn-icon { padding: 4px; border: none; border-radius: 4px; cursor: pointer; background: transparent; color: #64748b; transition: all 0.15s; }
         .cm-btn-icon:hover { background: #f1f5f9; color: #2F4156; }
@@ -408,6 +424,7 @@ const CalendarioMantenimiento = () => {
                 <th onClick={() => handleSort('proximo3')}>PRÓXIMO 3 <SortIcon field="proximo3" /></th>
                 <th>AUT.</th>
                 <th>ACC</th>
+                <th>ATT</th>
               </tr>
             </thead>
             <tbody>
@@ -473,6 +490,15 @@ const CalendarioMantenimiento = () => {
                         <Trash2 size={13} />
                       </button>
                     </div>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      onClick={() => handleToggleAtt(m.id, m.atencion)}
+                      className={`cm-auth-btn ${m.atencion ? 'cm-att-on' : 'cm-att-off'}`}
+                      title={m.atencion ? 'Atención activa — click para quitar' : 'Click para marcar atención'}
+                    >
+                      <AlertTriangle size={13} />
+                    </button>
                   </td>
                 </tr>
               ))}
