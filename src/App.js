@@ -8,6 +8,7 @@ import OperacionesComerciales from './OperacionesComerciales';
 import SeguimientoComercial from './SeguimientoComercial';
 import Articulos from './Articulos';
 import ServicioTecnico from './ServicioTecnico';
+import CalendarioMantenimiento from './CalendarioMantenimiento';
 import './App.css';
 
 export default function Calcuares() {
@@ -25,7 +26,8 @@ export default function Calcuares() {
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState('admin');
   const [activeModule, setActiveModule] = useState('calculos');
-  const [ventasModule, setVentasModule] = useState('precios'); // 'calculos', 'compras' o 'proveedores'
+  const [ventasModule, setVentasModule] = useState('precios');
+  const [stModule, setStModule] = useState('servicios'); // 'servicios' o 'calendario'
   const [expandedFlete, setExpandedFlete] = useState({}); // Para controlar qué tarjetas tienen flete expandido
   
   // Estados de autenticación
@@ -1357,8 +1359,40 @@ export default function Calcuares() {
                 </button>
               </div>
             </div>
+            {/* Tabs ST */}
+            <div style={{ 
+              display: 'flex', gap: '4px', 
+              background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '12px'
+            }}>
+              <button onClick={() => setStModule('servicios')} style={{
+                flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                background: stModule === 'servicios' ? 'white' : 'transparent',
+                color: stModule === 'servicios' ? '#2F4156' : 'rgba(255,255,255,0.65)',
+                boxShadow: stModule === 'servicios' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s ease'
+              }}>
+                🔧 Servicios
+              </button>
+              <button onClick={() => setStModule('calendario')} style={{
+                flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                background: stModule === 'calendario' ? 'white' : 'transparent',
+                color: stModule === 'calendario' ? '#2F4156' : 'rgba(255,255,255,0.65)',
+                boxShadow: stModule === 'calendario' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s ease'
+              }}>
+                📅 Mantenimientos
+              </button>
+            </div>
           </div>
-          <ServicioTecnico />
+          {stModule === 'calendario' ? (
+            <CalendarioMantenimiento />
+          ) : (
+            <ServicioTecnico />
+          )}
         </>
       ) : (
         // VISTA ADMIN
