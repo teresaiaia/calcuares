@@ -9,6 +9,7 @@ import SeguimientoComercial from './SeguimientoComercial';
 import Articulos from './Articulos';
 import ServicioTecnico from './ServicioTecnico';
 import CalendarioMantenimiento from './CalendarioMantenimiento';
+import TicketsErrores from './TicketsErrores';
 import './App.css';
 
 export default function Calcuares() {
@@ -1386,10 +1387,23 @@ export default function Calcuares() {
               }}>
                 📅 Mantenimientos
               </button>
+              <button onClick={() => setStModule('tickets')} style={{
+                flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                background: stModule === 'tickets' ? 'white' : 'transparent',
+                color: stModule === 'tickets' ? '#2F4156' : 'rgba(255,255,255,0.65)',
+                boxShadow: stModule === 'tickets' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s ease'
+              }}>
+                🎫 Tickets
+              </button>
             </div>
           </div>
           {stModule === 'calendario' ? (
             <CalendarioMantenimiento />
+          ) : stModule === 'tickets' ? (
+            <TicketsErrores />
           ) : (
             <ServicioTecnico />
           )}
