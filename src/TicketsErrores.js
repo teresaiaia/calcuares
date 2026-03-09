@@ -395,9 +395,13 @@ const TicketsErrores = () => {
                   <td style={{ fontSize: '0.72rem' }}>{t.serial_number}</td>
                   <td className="tk-cell-desc" title={t.descripcion}>{t.descripcion}</td>
                   <td>
-                    <span className={`tk-badge tk-prio-${t.prioridad?.toLowerCase()}`}>
-                      {t.prioridad}
-                    </span>
+                    {t.estado === 'Cerrado' ? (
+                      <span className="tk-badge" style={{ background: '#f1f5f9', color: '#94a3b8' }}>—</span>
+                    ) : (
+                      <span className={`tk-badge tk-prio-${t.prioridad?.toLowerCase()}`}>
+                        {t.prioridad}
+                      </span>
+                    )}
                   </td>
                   <td>
                     <select
