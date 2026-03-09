@@ -4,7 +4,7 @@ import { Search, Plus, Edit2, Trash2, X, Save, FileText, RefreshCw, Download, Ch
 import { FONDO_ARES_BASE64 } from './fondoAresBase64';
 import './ServicioTecnico.css';
 
-const ESTADOS_COBRO = ['En proceso', 'Pendiente', 'Cobrado', 'No se cobró', 'Exonerado'];
+const ESTADOS_COBRO = ['En proceso', 'Pendiente', 'Facturado', 'No se cobró', 'Exonerado'];
 
 // ============================================
 // ComboBox: dropdown con autocompletado + opción de escribir nuevo
@@ -742,7 +742,7 @@ export default function ServicioTecnico() {
           fecha_factura: parseExcelDate(r[11]),
           estado_cobro: (() => {
             const val = String(r[12] || '').trim().toLowerCase();
-            if (val === 'cobrado') return 'Cobrado';
+            if (val === 'cobrado' || val === 'facturado') return 'Facturado';
             if (val === 'no se cobró' || val === 'no se cobro') return 'No se cobró';
             if (val === 'exonerado') return 'Exonerado';
             if (val === 'en proceso') return 'En proceso';
@@ -1120,7 +1120,7 @@ export default function ServicioTecnico() {
           <option value="todos">Todos los estados</option>
           <option value="En proceso">En proceso</option>
           <option value="Pendiente">Pendiente</option>
-          <option value="Cobrado">Cobrado</option>
+          <option value="Facturado">Facturado</option>
           <option value="No se cobró">No se cobró</option>
           <option value="Exonerado">Exonerado</option>
         </select>
