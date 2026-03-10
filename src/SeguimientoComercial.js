@@ -808,28 +808,30 @@ export default function SeguimientoComercial({ isAdmin = false }) {
               {/* Estado y Seguimiento */}
               <div className="cc-form-section">
                 <h3 className="cc-section-title">Estado y Seguimiento</h3>
-                <div className="cc-form-grid">
-                  <div className="cc-form-group">
-                    <label className="cc-form-label">Estado</label>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      {Object.entries(ESTADOS).map(([key, val]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => handleInputChange('estado', key)}
-                          style={{
-                            flex: 1, padding: '0.5rem', borderRadius: '8px', cursor: 'pointer',
-                            border: formData.estado === key ? `2px solid ${val.color}` : '2px solid #e2e8f0',
-                            background: formData.estado === key ? val.bg : 'white',
-                            color: formData.estado === key ? val.color : '#94a3b8',
-                            fontWeight: '600', fontSize: '0.8rem', textAlign: 'center'
-                          }}
-                        >
-                          {val.icon} {val.label}
-                        </button>
-                      ))}
-                    </div>
+                {/* Fila de estados - ancho completo */}
+                <div className="cc-form-group" style={{ marginBottom: '0.75rem' }}>
+                  <label className="cc-form-label">Estado</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {Object.entries(ESTADOS).map(([key, val]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handleInputChange('estado', key)}
+                        style={{
+                          flex: 1, padding: '0.5rem', borderRadius: '8px', cursor: 'pointer',
+                          border: formData.estado === key ? `2px solid ${val.color}` : '2px solid #e2e8f0',
+                          background: formData.estado === key ? val.bg : 'white',
+                          color: formData.estado === key ? val.color : '#94a3b8',
+                          fontWeight: '600', fontSize: '0.8rem', textAlign: 'center'
+                        }}
+                      >
+                        {val.icon} {val.label}
+                      </button>
+                    ))}
                   </div>
+                </div>
+                {/* Canal, Último Contacto */}
+                <div className="cc-form-grid">
                   <div className="cc-form-group">
                     <label className="cc-form-label">Canal Preferido</label>
                     <select className="cc-form-input" value={formData.canal_preferido}
