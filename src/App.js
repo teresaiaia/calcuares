@@ -1542,7 +1542,51 @@ export default function Calcuares() {
           ) : activeModule === 'seguimiento' ? (
             <SeguimientoComercial isAdmin={true} />
           ) : activeModule === 'servicio_tecnico' ? (
-            <ServicioTecnico />
+            <>
+              <div style={{ 
+                display: 'flex', gap: '4px', 
+                background: 'rgba(47,65,86,0.1)', padding: '4px', borderRadius: '12px',
+                marginBottom: '1rem'
+              }}>
+                <button onClick={() => setStModule('servicios')} style={{
+                  flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  background: stModule === 'servicios' ? '#2F4156' : 'transparent',
+                  color: stModule === 'servicios' ? 'white' : '#64748b',
+                  transition: 'all 0.2s ease'
+                }}>
+                  🔧 Servicios
+                </button>
+                <button onClick={() => setStModule('calendario')} style={{
+                  flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  background: stModule === 'calendario' ? '#2F4156' : 'transparent',
+                  color: stModule === 'calendario' ? 'white' : '#64748b',
+                  transition: 'all 0.2s ease'
+                }}>
+                  📅 Mantenimientos
+                </button>
+                <button onClick={() => setStModule('tickets')} style={{
+                  flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  background: stModule === 'tickets' ? '#2F4156' : 'transparent',
+                  color: stModule === 'tickets' ? 'white' : '#64748b',
+                  transition: 'all 0.2s ease'
+                }}>
+                  🎫 Tickets
+                </button>
+              </div>
+              {stModule === 'calendario' ? (
+                <CalendarioMantenimiento />
+              ) : stModule === 'tickets' ? (
+                <TicketsErrores />
+              ) : (
+                <ServicioTecnico />
+              )}
+            </>
           ) : (
           <>
           <div className="card">
