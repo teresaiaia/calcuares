@@ -14,6 +14,7 @@ const PERIODICIDADES = [
 const CalendarioMantenimiento = () => {
   const [mantenimientos, setMantenimientos] = useState([]);
   const [equipos, setEquipos] = useState([]); // equipos únicos de servicio_tecnico
+  const [ticketsActivos, setTicketsActivos] = useState([]); // tickets no facturados
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -35,6 +36,7 @@ const CalendarioMantenimiento = () => {
   useEffect(() => {
     fetchMantenimientos();
     fetchEquipos();
+    fetchTicketsActivos();
   }, []);
 
   const fetchMantenimientos = async () => {
@@ -72,6 +74,27 @@ const CalendarioMantenimiento = () => {
     } catch (err) {
       console.error('Error cargando equipos:', err);
     }
+  };
+
+  const fetchTicketsActivos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tickets_errores')
+        .select('cliente, serial_number')
+        .neq('estado', 'Facturado');
+      if (error) throw error;
+      setTicketsActivos(data || []);
+    } catch (err) {
+      console.error('Error cargando tickets:', err);
+    }
+  };
+
+  // Verificar si un equipo tiene ticket activo
+  const tieneTicketActivo = (cliente, serialNumber) => {
+    if (!serialNumber) return false;
+    return ticketsActivos.some(t => 
+      t.serial_number === serialNumber && t.cliente === cliente
+    );
   };
 
   // Calcular próximos servicios
@@ -333,6 +356,7 @@ const CalendarioMantenimiento = () => {
         .cm-att-on { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
         .cm-att-off { background: #f8fafc; color: #cbd5e1; border: 1px solid transparent; }
         .cm-att-off:hover { color: #f59e0b; }
+        @keyframes cm-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .cm-cell-actions { display: flex; gap: 4px; }
         .cm-btn-icon { padding: 4px; border: none; border-radius: 4px; cursor: pointer; background: transparent; color: #64748b; transition: all 0.15s; }
         .cm-btn-icon:hover { background: #f1f5f9; color: #2F4156; }
@@ -492,13 +516,20 @@ const CalendarioMantenimiento = () => {
                     </div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <button
-                      onClick={() => handleToggleAtt(m.id, m.atencion)}
-                      className={`cm-auth-btn ${m.atencion ? 'cm-att-on' : 'cm-att-off'}`}
-                      title={m.atencion ? 'Atención activa — click para quitar' : 'Click para marcar atención'}
-                    >
-                      <AlertTriangle size={13} />
-                    </button>
+                    {(() => {
+                      const ticketAct = tieneTicketActivo(m.cliente, m.serial_number);
+                      const activo = m.atencion || ticketAct;
+                      return (
+                        <button
+                          onClick={() => !ticketAct ? handleToggleAtt(m.id, m.atencion) : null}
+                          className={`cm-auth-btn ${activo ? 'cm-att-on' : 'cm-att-off'}`}
+                          title={ticketAct ? 'Ticket abierto en este equipo' : m.atencion ? 'Atención manual — click para quitar' : 'Click para marcar atención'}
+                          style={ticketAct ? { cursor: 'default', animation: 'cm-pulse 1.5s infinite' } : {}}
+                        >
+                          <AlertTriangle size={13} />
+                        </button>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}
