@@ -20,6 +20,7 @@ const ALERTA_DEFAULTS = {
 const ESTADOS = {
   rojo: { label: 'Seguimiento Activo', color: '#dc2626', bg: '#fef2f2', icon: '🔴' },
   amarillo: { label: 'Con Interés', color: '#d97706', bg: '#fffbeb', icon: '🟡' },
+  lila: { label: 'Confirmado', color: '#7c3aed', bg: '#f5f3ff', icon: '🟣' },
   verde: { label: 'No Interesado', color: '#16a34a', bg: '#f0fdf4', icon: '🟢' }
 };
 
@@ -129,7 +130,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
 
   // Verificar si necesita alerta (basado en proximo_contacto)
   const necesitaAlerta = (contacto) => {
-    if (contacto.estado === 'verde') return false;
+    if (contacto.estado === 'verde' || contacto.estado === 'lila') return false;
     if (!contacto.proximo_contacto) {
       // Si no tiene próximo contacto, usar lógica de días sin contacto
       const dias = diasSinContacto(contacto.ultimo_contacto);
@@ -374,10 +375,10 @@ export default function SeguimientoComercial({ isAdmin = false }) {
       result = result.filter(c => c.estado === filtroEstado);
     }
 
-    // Ocultar "No Interesado" (verde) si no hay busqueda, no esta el toggle activo,
-    // y no se selecciono explicitamente el filtro verde
-    if (!mostrarNoInteresados && filtroEstado !== 'verde' && !searchTerm) {
-      result = result.filter(c => c.estado !== 'verde');
+    // Ocultar "No Interesado" (verde) y "Confirmado" (lila) si no hay busqueda, no esta el toggle activo,
+    // y no se selecciono explicitamente el filtro verde o lila
+    if (!mostrarNoInteresados && filtroEstado !== 'verde' && filtroEstado !== 'lila' && !searchTerm) {
+      result = result.filter(c => c.estado !== 'verde' && c.estado !== 'lila');
     }
 
     // Solo alertas
@@ -442,7 +443,8 @@ export default function SeguimientoComercial({ isAdmin = false }) {
     const rojos = contactos.filter(c => c.estado === 'rojo').length;
     const amarillos = contactos.filter(c => c.estado === 'amarillo').length;
     const verdes = contactos.filter(c => c.estado === 'verde').length;
-    return { total, conAlerta, rojos, amarillos, verdes };
+    const lilas = contactos.filter(c => c.estado === 'lila').length;
+    return { total, conAlerta, rojos, amarillos, verdes, lilas };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactos]);
 
@@ -613,9 +615,9 @@ export default function SeguimientoComercial({ isAdmin = false }) {
               marginLeft: '0.5rem',
               transition: 'all 0.2s ease'
             }}
-            title={mostrarNoInteresados ? 'Ocultar No Interesados' : 'Mostrar No Interesados'}
+            title={mostrarNoInteresados ? 'Ocultar Confirmados y No Interesados' : 'Mostrar Confirmados y No Interesados'}
           >
-            No Interesados ({stats.verdes})
+            Confirmados ({stats.lilas}) / No Interesados ({stats.verdes})
           </button>
           <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: 'auto' }}>
             {filteredContactos.length} {filteredContactos.length === 1 ? 'resultado' : 'resultados'}
@@ -685,7 +687,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
                       if (proximoFecha) {
                         const hoy = new Date(); hoy.setHours(0,0,0,0);
                         const fp = new Date(proximoFecha + 'T00:00:00');
-                        const vencido = fp <= hoy && c.estado !== 'verde';
+                        const vencido = fp <= hoy && c.estado !== 'verde' && c.estado !== 'lila';
                         return (
                           <span style={{
                             padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700',
