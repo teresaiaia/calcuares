@@ -742,7 +742,7 @@ export default function SeguimientoComercial({ isAdmin = false }) {
       {/* Modal Nuevo/Editar */}
       {showModal && (
         <div className="cc-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="cc-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+          <div className="cc-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px' }}>
             <div className="cc-modal-header">
               <h2><Users size={20} /> {editingItem ? 'Editar Contacto' : 'Nuevo Contacto'}</h2>
               <button onClick={() => setShowModal(false)} className="cc-modal-close"><X size={20} /></button>
