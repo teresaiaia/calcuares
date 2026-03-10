@@ -157,6 +157,11 @@ export default function ServicioTecnico() {
   const [duplicateAction, setDuplicateAction] = useState('skip'); // 'skip' | 'overwrite'
   const importFileRef = useRef(null);
 
+  // Catálogo de repuestos
+  const [catalogoRepuestos, setCatalogoRepuestos] = useState([]);
+  const [tipoCambioUSD, setTipoCambioUSD] = useState(0);
+  const [costoRepuestosInforme, setCostoRepuestosInforme] = useState(0);
+
   const formInit = {
     nro_reporte: '',
     nro_rt: '',
@@ -181,7 +186,28 @@ export default function ServicioTecnico() {
 
   useEffect(() => {
     fetchServicios();
+    fetchCatalogoRepuestos();
   }, []);
+
+  const fetchCatalogoRepuestos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('catalogo_repuestos')
+        .select('*')
+        .order('nombre');
+      if (error) throw error;
+      setCatalogoRepuestos(data || []);
+      // Buscar tipo de cambio guardado
+      const { data: config } = await supabase
+        .from('catalogo_repuestos')
+        .select('precio_usd')
+        .eq('nombre', '__TIPO_CAMBIO_USD__')
+        .single();
+      if (config) setTipoCambioUSD(config.precio_usd);
+    } catch (err) {
+      console.error('Error cargando catálogo:', err);
+    }
+  };
 
   const fetchServicios = async () => {
     try {
@@ -350,6 +376,7 @@ export default function ServicioTecnico() {
       setInformePaso(1);
     }
     setShowInformeModal(true);
+    setCostoRepuestosInforme(0);
   };
 
   // Paso 1→2: Enviar texto a Claude para reformulación profesional
@@ -1540,6 +1567,34 @@ export default function ServicioTecnico() {
                   {/* Repuestos */}
                   <div className="st-informe-section-edit" style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
                     <label style={{ color: '#c2410c', fontWeight: 700, fontSize: '0.85rem', marginBottom: '6px', display: 'block' }}>🔧 Repuestos / Partes Reemplazadas</label>
+                    
+                    {/* Dropdown catálogo */}
+                    {catalogoRepuestos.filter(r => r.nombre !== '__TIPO_CAMBIO_USD__').length > 0 && tipoCambioUSD > 0 && (
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center' }}>
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            const rep = catalogoRepuestos.find(r => r.id === parseInt(e.target.value));
+                            if (rep) {
+                              const precioGs = Math.round(rep.precio_usd * tipoCambioUSD);
+                              const texto = `${rep.nombre} — USD ${rep.precio_usd} (₲${formatNumber(precioGs)})`;
+                              setInformeEditado({...informeEditado, repuestos: [...informeEditado.repuestos, texto]});
+                              setCostoRepuestosInforme(prev => prev + precioGs);
+                            }
+                            e.target.value = '';
+                          }}
+                          style={{ flex: 1, padding: '6px 8px', border: '1px solid #fed7aa', borderRadius: '4px', fontSize: '0.82rem', background: 'white' }}
+                        >
+                          <option value="">+ Agregar del catálogo (TC: 1 USD = ₲{formatNumber(tipoCambioUSD)})</option>
+                          {catalogoRepuestos.filter(r => r.nombre !== '__TIPO_CAMBIO_USD__').map(r => (
+                            <option key={r.id} value={r.id}>
+                              {r.nombre} — USD {r.precio_usd} (₲{formatNumber(Math.round(r.precio_usd * tipoCambioUSD))})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     {informeEditado.repuestos.map((r, i) => (
                       <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '4px', alignItems: 'center' }}>
                         <input type="text" value={r}
@@ -1558,8 +1613,13 @@ export default function ServicioTecnico() {
                     ))}
                     <button onClick={() => setInformeEditado({...informeEditado, repuestos: [...informeEditado.repuestos, '']})}
                       style={{ background: 'none', border: '1px dashed #fed7aa', color: '#c2410c', padding: '4px 10px', borderRadius: '4px', fontSize: '0.78rem', cursor: 'pointer', marginTop: '4px' }}>
-                      <Plus size={12} /> Agregar repuesto
+                      <Plus size={12} /> Agregar repuesto manual
                     </button>
+                    {costoRepuestosInforme > 0 && (
+                      <div style={{ marginTop: '8px', padding: '6px 10px', background: '#fef2f2', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, color: '#c2410c' }}>
+                        Costo repuestos agregados: ₲{formatNumber(costoRepuestosInforme)}
+                      </div>
+                    )}
                   </div>
 
                   {/* Recomendaciones */}
