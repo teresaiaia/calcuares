@@ -1321,9 +1321,21 @@ export default function ServicioTecnico() {
                 </div>
                 <div className="st-form-group">
                   <label>🔖 N° RPT</label>
-                  <input type="text" value={formData.nro_rt}
-                    onChange={(e) => setFormData({...formData, nro_rt: e.target.value})}
-                    placeholder="Ej: RPT-0045" />
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ 
+                      padding: '0.5rem 0.6rem', background: '#e2e8f0', border: '2px solid #e2e8f0', 
+                      borderRight: 'none', borderRadius: '8px 0 0 8px', fontSize: '0.85rem', 
+                      fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' 
+                    }}>RPT-</span>
+                    <input type="text" 
+                      value={formData.nro_rt.replace(/^RPT-/i, '')}
+                      onChange={(e) => {
+                        const num = e.target.value.replace(/^RPT-/i, '');
+                        setFormData({...formData, nro_rt: num ? `RPT-${num}` : ''});
+                      }}
+                      placeholder="0045"
+                      style={{ borderRadius: '0 8px 8px 0', borderLeft: 'none' }} />
+                  </div>
                 </div>
                 <div className="st-form-group">
                   <label>📅 Fecha *</label>
