@@ -10,6 +10,7 @@ import Articulos from './Articulos';
 import ServicioTecnico from './ServicioTecnico';
 import CalendarioMantenimiento from './CalendarioMantenimiento';
 import TicketsErrores from './TicketsErrores';
+import CatalogoRepuestos from './CatalogoRepuestos';
 import './App.css';
 
 export default function Calcuares() {
@@ -1398,12 +1399,25 @@ export default function Calcuares() {
               }}>
                 🎫 Tickets
               </button>
+              <button onClick={() => setStModule('repuestos')} style={{
+                flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                background: stModule === 'repuestos' ? 'white' : 'transparent',
+                color: stModule === 'repuestos' ? '#2F4156' : 'rgba(255,255,255,0.65)',
+                boxShadow: stModule === 'repuestos' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s ease'
+              }}>
+                🔩 Repuestos
+              </button>
             </div>
           </div>
           {stModule === 'calendario' ? (
             <CalendarioMantenimiento />
           ) : stModule === 'tickets' ? (
             <TicketsErrores />
+          ) : stModule === 'repuestos' ? (
+            <CatalogoRepuestos />
           ) : (
             <ServicioTecnico />
           )}
@@ -1578,11 +1592,23 @@ export default function Calcuares() {
                 }}>
                   🎫 Tickets
                 </button>
+                <button onClick={() => setStModule('repuestos')} style={{
+                  flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  background: stModule === 'repuestos' ? '#2F4156' : 'transparent',
+                  color: stModule === 'repuestos' ? 'white' : '#64748b',
+                  transition: 'all 0.2s ease'
+                }}>
+                  🔩 Repuestos
+                </button>
               </div>
               {stModule === 'calendario' ? (
                 <CalendarioMantenimiento />
               ) : stModule === 'tickets' ? (
                 <TicketsErrores />
+              ) : stModule === 'repuestos' ? (
+                <CatalogoRepuestos />
               ) : (
                 <ServicioTecnico />
               )}
