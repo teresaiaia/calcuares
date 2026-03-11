@@ -196,14 +196,11 @@ export default function ServicioTecnico() {
         .select('*')
         .order('nombre');
       if (error) throw error;
-      setCatalogoRepuestos(data || []);
-      // Buscar tipo de cambio guardado
-      const { data: config } = await supabase
-        .from('catalogo_repuestos')
-        .select('precio_usd')
-        .eq('nombre', '__TIPO_CAMBIO_USD__')
-        .single();
-      if (config) setTipoCambioUSD(config.precio_usd);
+      const items = data || [];
+      setCatalogoRepuestos(items);
+      // Buscar tipo de cambio dentro de los datos ya cargados
+      const tcRow = items.find(r => r.nombre === '__TIPO_CAMBIO_USD__');
+      if (tcRow) setTipoCambioUSD(parseFloat(tcRow.precio_usd) || 0);
     } catch (err) {
       console.error('Error cargando catálogo:', err);
     }
@@ -501,7 +498,7 @@ export default function ServicioTecnico() {
         .eq('id', informeServicio.id);
 
       if (error) throw error;
-      generarPDFInforme(informeEditado, informeServicio);
+      generarPDFInforme(informeEditado, informeServicio, costoRepuestosInforme);
       setShowInformeModal(false);
       await fetchServicios();
     } catch (error) {
@@ -512,7 +509,7 @@ export default function ServicioTecnico() {
   };
 
   // Generar PDF del informe estructurado
-  const generarPDFInforme = (datos, servicio) => {
+  const generarPDFInforme = (datos, servicio, costoExtraRepuestos = 0) => {
     const ventana = window.open('', '_blank');
     const enGar = estaEnGarantia(servicio.fecha_fin_garantia, servicio.fecha);
     const garantiaTexto = servicio.fecha_fin_garantia 
@@ -529,6 +526,7 @@ export default function ServicioTecnico() {
     } else {
       costoInforme = Math.round(costoBase * 2);
     }
+    costoInforme += costoExtraRepuestos;
     const costoTexto = `₲${formatNumber(costoInforme)} - IVA incluido`;
 
     const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
@@ -1649,20 +1647,21 @@ export default function ServicioTecnico() {
 
                   {/* Costo - calculado automáticamente */}
                   <div className="st-form-group">
-                    <label>💰 Costo en el PDF (automático: si hay ₲FAC cargados se suman, sino costo × 2) + IVA incluido</label>
+                    <label>💰 Costo en el PDF (automático + repuestos del catálogo) - IVA incluido</label>
                     <div style={{ padding: '8px 12px', background: '#f0f4f8', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 600, color: '#2F4156' }}>
                       {(() => {
                         const fs = parseFloat(informeServicio?.monto_facturado_servicio) || 0;
                         const fp = parseFloat(informeServicio?.monto_facturado_partes) || 0;
                         const cb = parseFloat(informeServicio?.costo_servicio) || 0;
-                        const total = (fs > 0 || fp > 0) ? Math.round(fs + fp) : Math.round(cb * 2);
+                        const baseTotal = (fs > 0 || fp > 0) ? Math.round(fs + fp) : Math.round(cb * 2);
+                        const total = baseTotal + costoRepuestosInforme;
                         const origen = (fs > 0 || fp > 0) 
                           ? `₲FAC Serv: ₲${formatNumber(fs)} + ₲FAC Partes: ₲${formatNumber(fp)}`
                           : `costo base: ₲${formatNumber(cb)} × 2`;
                         return <>
                           ₲{formatNumber(total)} - IVA incluido
                           <span style={{ fontWeight: 400, fontSize: '0.78rem', color: '#94a3b8', marginLeft: '10px' }}>
-                            ({origen})
+                            ({origen}{costoRepuestosInforme > 0 ? ` + repuestos: ₲${formatNumber(costoRepuestosInforme)}` : ''})
                           </span>
                         </>;
                       })()}
