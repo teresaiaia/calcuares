@@ -562,7 +562,7 @@ export default function ServicioTecnico() {
       : '';
 
     ventana.document.write(`<!DOCTYPE html><html><head>
-      <title>Reporte ServTec ${servicio.nro_reporte} - Ares Paraguay</title>
+      <title>Rep. ${servicio.nro_reporte} - ${servicio.modelo || 'Equipo'} - ${servicio.cliente}</title>
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         @page { size: A4; margin: 0; }
