@@ -529,6 +529,17 @@ export default function ServicioTecnico() {
     costoInforme += costoExtraRepuestos;
     const costoTexto = `₲${formatNumber(costoInforme)} - IVA incluido`;
 
+    // Desglose para el PDF
+    let costoServicio, costoPartes;
+    if (facServ > 0 || facPartes > 0) {
+      costoServicio = Math.round(facServ);
+      costoPartes = Math.round(facPartes) + costoExtraRepuestos;
+    } else {
+      costoServicio = Math.round(costoBase * 2);
+      costoPartes = costoExtraRepuestos;
+    }
+    const desgloseHTML = `<div style="text-align:center; font-size:9px; color:#567C8D; margin-top:4px;">Servicio: ₲${formatNumber(costoServicio)}${costoPartes > 0 ? ` — Partes/Repuestos: ₲${formatNumber(costoPartes)}` : ''}</div>`;
+
     const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
       ? `<div class="section repuestos">
           <h3>Repuestos / Partes Reemplazadas</h3>
@@ -643,6 +654,7 @@ export default function ServicioTecnico() {
         ${repuestosHTML}
         ${recomendacionesHTML}
         <div class="costo-box">Costo del Servicio: ${costoTexto}</div>
+        ${desgloseHTML}
         ${observacionesHTML}
         <div class="footer">
           <p><strong>Ares Paraguay SRL</strong> — Servicio Técnico</p>
