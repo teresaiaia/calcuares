@@ -645,7 +645,6 @@ export default function ServicioTecnico() {
           <div class="info-item"><span class="label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
           <div class="info-item"><span class="label">S/N:</span> ${servicio.serial_number || 'N/A'}</div>
           <div class="info-item"><span class="label">Garantía:</span> ${garantiaTexto}</div>
-          <div class="info-item"><span class="label">Estado:</span> ${servicio.estado_cobro || '-'}</div>
         </div>
         <div class="section descripcion">
           <h3>Descripción del Servicio Realizado</h3>
