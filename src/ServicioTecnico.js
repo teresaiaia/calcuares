@@ -361,6 +361,7 @@ export default function ServicioTecnico() {
         const saved = JSON.parse(servicio.informe_formateado);
         setInformeEditado(saved);
         setInformeTexto(servicio.informe_texto || '');
+        setCostoRepuestosInforme(saved.costoRepuestos || 0);
         setInformePaso(2);
       } catch {
         setInformeTexto(servicio.informe_texto || '');
@@ -373,7 +374,6 @@ export default function ServicioTecnico() {
       setInformePaso(1);
     }
     setShowInformeModal(true);
-    setCostoRepuestosInforme(0);
   };
 
   // Paso 1→2: Enviar texto a Claude para reformulación profesional
@@ -464,12 +464,13 @@ export default function ServicioTecnico() {
     if (!informeEditado) return;
     setGenerandoInforme(true);
     try {
+      const datosGuardar = {...informeEditado, costoRepuestos: costoRepuestosInforme};
       const { error } = await supabase
         .from('servicio_tecnico')
         .update({
           tiene_informe: true,
           informe_texto: informeTexto,
-          informe_formateado: JSON.stringify(informeEditado)
+          informe_formateado: JSON.stringify(datosGuardar)
         })
         .eq('id', informeServicio.id);
 
@@ -488,12 +489,13 @@ export default function ServicioTecnico() {
     if (!informeEditado) return;
     setGenerandoInforme(true);
     try {
+      const datosGuardar = {...informeEditado, costoRepuestos: costoRepuestosInforme};
       const { error } = await supabase
         .from('servicio_tecnico')
         .update({
           tiene_informe: true,
           informe_texto: informeTexto,
-          informe_formateado: JSON.stringify(informeEditado)
+          informe_formateado: JSON.stringify(datosGuardar)
         })
         .eq('id', informeServicio.id);
 
@@ -513,8 +515,8 @@ export default function ServicioTecnico() {
     const ventana = window.open('', '_blank');
     const enGar = estaEnGarantia(servicio.fecha_fin_garantia, servicio.fecha);
     const garantiaTexto = servicio.fecha_fin_garantia 
-      ? `${formatDate(servicio.fecha_fin_garantia)} (${enGar ? 'EN GARANTÍA' : 'FUERA DE GARANTÍA'})` 
-      : 'No definida';
+      ? (enGar ? 'Garantía vigente' : 'Garantía expirada')
+      : '';
 
     // Costo para el informe: si hay montos facturados, usar ₲FAC SERV + ₲FAC PARTES; sino doble de mano de obra
     const facServ = parseFloat(servicio.monto_facturado_servicio) || 0;
@@ -675,7 +677,7 @@ export default function ServicioTecnico() {
     }
     try {
       const datos = JSON.parse(servicio.informe_formateado);
-      generarPDFInforme(datos, servicio);
+      generarPDFInforme(datos, servicio, datos.costoRepuestos || 0);
     } catch {
       // Formato antiguo, abrir con el texto plano
       const ventana = window.open('', '_blank');
