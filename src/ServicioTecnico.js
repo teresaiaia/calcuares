@@ -542,18 +542,25 @@ export default function ServicioTecnico() {
       costoInforme = Math.round(costoBase * 2);
     }
     costoInforme += costoExtraRepuestos;
-    const costoTexto = `₲${formatNumber(costoInforme)} - IVA incluido`;
+
+    // Si el costo base es 0 y no hay facturación ni repuestos, no mostrar costo
+    const mostrarCosto = costoBase > 0 || facServ > 0 || facPartes > 0 || costoExtraRepuestos > 0;
+    const costoTexto = mostrarCosto ? `₲${formatNumber(costoInforme)} - IVA incluido` : '';
 
     // Desglose para el PDF
-    let costoServicio, costoPartes;
-    if (facServ > 0 || facPartes > 0) {
-      costoServicio = Math.round(facServ);
-      costoPartes = Math.round(facPartes) + costoExtraRepuestos;
+    let costoServicio, costoPartes, desgloseHTML;
+    if (mostrarCosto) {
+      if (facServ > 0 || facPartes > 0) {
+        costoServicio = Math.round(facServ);
+        costoPartes = Math.round(facPartes) + costoExtraRepuestos;
+      } else {
+        costoServicio = Math.round(costoBase * 2);
+        costoPartes = costoExtraRepuestos;
+      }
+      desgloseHTML = `<div style="text-align:center; font-size:9px; color:#567C8D; margin-top:4px;">Servicio: ₲${formatNumber(costoServicio)}${costoPartes > 0 ? ` — Partes/Repuestos: ₲${formatNumber(costoPartes)}` : ''}</div>`;
     } else {
-      costoServicio = Math.round(costoBase * 2);
-      costoPartes = costoExtraRepuestos;
+      desgloseHTML = '';
     }
-    const desgloseHTML = `<div style="text-align:center; font-size:9px; color:#567C8D; margin-top:4px;">Servicio: ₲${formatNumber(costoServicio)}${costoPartes > 0 ? ` — Partes/Repuestos: ₲${formatNumber(costoPartes)}` : ''}</div>`;
 
     const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
       ? `<div class="section repuestos">
@@ -667,8 +674,7 @@ export default function ServicioTecnico() {
         </div>
         ${repuestosHTML}
         ${recomendacionesHTML}
-        <div class="costo-box">Costo del Servicio: ${costoTexto}</div>
-        ${desgloseHTML}
+        ${mostrarCosto ? `<div class="costo-box">Costo del Servicio: ${costoTexto}</div>${desgloseHTML}` : ''}
         ${observacionesHTML}
         <div class="footer">
           <p><strong>Ares Paraguay SRL</strong> — Servicio Técnico</p>
