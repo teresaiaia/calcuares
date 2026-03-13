@@ -160,7 +160,6 @@ export default function ServicioTecnico() {
   // Catálogo de repuestos
   const [catalogoRepuestos, setCatalogoRepuestos] = useState([]);
   const [tipoCambioUSD, setTipoCambioUSD] = useState(0);
-  const [costoRepuestosInforme, setCostoRepuestosInforme] = useState(0);
 
   const formInit = {
     nro_reporte: '',
@@ -221,6 +220,21 @@ export default function ServicioTecnico() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calcular costo de repuestos extrayendo ₲ de los textos del catálogo
+  const calcularCostoRepuestos = (repuestosArr) => {
+    if (!repuestosArr || repuestosArr.length === 0) return 0;
+    let total = 0;
+    repuestosArr.forEach(texto => {
+      // Buscar patrón (₲xxx.xxx) o (₲xxx)
+      const match = texto.match(/\(₲([\d.]+)\)/);
+      if (match) {
+        const valor = parseInt(match[1].replace(/\./g, '')) || 0;
+        total += valor;
+      }
+    });
+    return total;
   };
 
   // Calcular si está en garantía
@@ -361,7 +375,6 @@ export default function ServicioTecnico() {
         const saved = JSON.parse(servicio.informe_formateado);
         setInformeEditado(saved);
         setInformeTexto(servicio.informe_texto || '');
-        setCostoRepuestosInforme(saved.costoRepuestos || 0);
         setInformePaso(2);
       } catch {
         setInformeTexto(servicio.informe_texto || '');
@@ -464,7 +477,7 @@ export default function ServicioTecnico() {
     if (!informeEditado) return;
     setGenerandoInforme(true);
     try {
-      const datosGuardar = {...informeEditado, costoRepuestos: costoRepuestosInforme};
+      const datosGuardar = {...informeEditado, costoRepuestos: calcularCostoRepuestos(informeEditado.repuestos)};
       const { error } = await supabase
         .from('servicio_tecnico')
         .update({
@@ -489,7 +502,7 @@ export default function ServicioTecnico() {
     if (!informeEditado) return;
     setGenerandoInforme(true);
     try {
-      const datosGuardar = {...informeEditado, costoRepuestos: costoRepuestosInforme};
+      const datosGuardar = {...informeEditado, costoRepuestos: calcularCostoRepuestos(informeEditado.repuestos)};
       const { error } = await supabase
         .from('servicio_tecnico')
         .update({
@@ -500,7 +513,7 @@ export default function ServicioTecnico() {
         .eq('id', informeServicio.id);
 
       if (error) throw error;
-      generarPDFInforme(informeEditado, informeServicio, costoRepuestosInforme);
+      generarPDFInforme(informeEditado, informeServicio, calcularCostoRepuestos(informeEditado.repuestos));
       setShowInformeModal(false);
       await fetchServicios();
     } catch (error) {
@@ -1590,7 +1603,6 @@ export default function ServicioTecnico() {
                               const precioGs = Math.round(rep.precio_usd * tipoCambioUSD);
                               const texto = `${rep.nombre} — USD ${rep.precio_usd} (₲${formatNumber(precioGs)})`;
                               setInformeEditado({...informeEditado, repuestos: [...informeEditado.repuestos, texto]});
-                              setCostoRepuestosInforme(prev => prev + precioGs);
                             }
                             e.target.value = '';
                           }}
@@ -1626,9 +1638,9 @@ export default function ServicioTecnico() {
                       style={{ background: 'none', border: '1px dashed #fed7aa', color: '#c2410c', padding: '4px 10px', borderRadius: '4px', fontSize: '0.78rem', cursor: 'pointer', marginTop: '4px' }}>
                       <Plus size={12} /> Agregar repuesto manual
                     </button>
-                    {costoRepuestosInforme > 0 && (
+                    {calcularCostoRepuestos(informeEditado.repuestos) > 0 && (
                       <div style={{ marginTop: '8px', padding: '6px 10px', background: '#fef2f2', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, color: '#c2410c' }}>
-                        Costo repuestos agregados: ₲{formatNumber(costoRepuestosInforme)}
+                        Costo repuestos agregados: ₲{formatNumber(calcularCostoRepuestos(informeEditado.repuestos))}
                       </div>
                     )}
                   </div>
@@ -1667,14 +1679,15 @@ export default function ServicioTecnico() {
                         const fp = parseFloat(informeServicio?.monto_facturado_partes) || 0;
                         const cb = parseFloat(informeServicio?.costo_servicio) || 0;
                         const baseTotal = (fs > 0 || fp > 0) ? Math.round(fs + fp) : Math.round(cb * 2);
-                        const total = baseTotal + costoRepuestosInforme;
+                        const repCosto = calcularCostoRepuestos(informeEditado.repuestos);
+                        const total = baseTotal + repCosto;
                         const origen = (fs > 0 || fp > 0) 
                           ? `₲FAC Serv: ₲${formatNumber(fs)} + ₲FAC Partes: ₲${formatNumber(fp)}`
                           : `costo base: ₲${formatNumber(cb)} × 2`;
                         return <>
                           ₲{formatNumber(total)} - IVA incluido
                           <span style={{ fontWeight: 400, fontSize: '0.78rem', color: '#94a3b8', marginLeft: '10px' }}>
-                            ({origen}{costoRepuestosInforme > 0 ? ` + repuestos: ₲${formatNumber(costoRepuestosInforme)}` : ''})
+                            ({origen}{repCosto > 0 ? ` + repuestos: ₲${formatNumber(repCosto)}` : ''})
                           </span>
                         </>;
                       })()}
