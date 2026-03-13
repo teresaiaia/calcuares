@@ -531,35 +531,40 @@ export default function ServicioTecnico() {
       ? (enGar ? 'Garantía vigente' : 'Garantía expirada')
       : '';
 
-    // Costo para el informe: si hay montos facturados, usar ₲FAC SERV + ₲FAC PARTES; sino doble de mano de obra
-    const facServ = parseFloat(servicio.monto_facturado_servicio) || 0;
+    // Costo para el informe
+    const facServ = parseFloat(servicio.monto_facturado_servicio);
     const facPartes = parseFloat(servicio.monto_facturado_partes) || 0;
     const costoBase = parseFloat(servicio.costo_servicio) || 0;
-    let costoInforme;
-    if (facServ > 0 || facPartes > 0) {
-      costoInforme = Math.round(facServ + facPartes);
-    } else {
-      costoInforme = Math.round(costoBase * 2);
-    }
-    costoInforme += costoExtraRepuestos;
 
-    // Si el costo base es 0 y no hay facturación ni repuestos, no mostrar costo
-    const mostrarCosto = costoBase > 0 || facServ > 0 || facPartes > 0 || costoExtraRepuestos > 0;
+    // Si ₲FAC Servicio es exactamente 0 (cargado explícitamente), no mostrar costo
+    const facServExplicito = servicio.monto_facturado_servicio !== null && servicio.monto_facturado_servicio !== '' && !isNaN(facServ);
+    const sinCostoParaCliente = facServExplicito && facServ === 0;
+
+    let costoInforme;
+    if (!sinCostoParaCliente) {
+      if (facServ > 0 || facPartes > 0) {
+        costoInforme = Math.round((facServ || 0) + facPartes);
+      } else {
+        costoInforme = Math.round(costoBase * 2);
+      }
+      costoInforme += costoExtraRepuestos;
+    }
+
+    const mostrarCosto = !sinCostoParaCliente && (costoBase > 0 || (facServ || 0) > 0 || facPartes > 0 || costoExtraRepuestos > 0);
     const costoTexto = mostrarCosto ? `₲${formatNumber(costoInforme)} - IVA incluido` : '';
 
     // Desglose para el PDF
-    let costoServicio, costoPartes, desgloseHTML;
+    let desgloseHTML = '';
     if (mostrarCosto) {
-      if (facServ > 0 || facPartes > 0) {
-        costoServicio = Math.round(facServ);
-        costoPartes = Math.round(facPartes) + costoExtraRepuestos;
+      let costoServicio, costoPartes2;
+      if ((facServ || 0) > 0 || facPartes > 0) {
+        costoServicio = Math.round(facServ || 0);
+        costoPartes2 = Math.round(facPartes) + costoExtraRepuestos;
       } else {
         costoServicio = Math.round(costoBase * 2);
-        costoPartes = costoExtraRepuestos;
+        costoPartes2 = costoExtraRepuestos;
       }
-      desgloseHTML = `<div style="text-align:center; font-size:9px; color:#567C8D; margin-top:4px;">Servicio: ₲${formatNumber(costoServicio)}${costoPartes > 0 ? ` — Partes/Repuestos: ₲${formatNumber(costoPartes)}` : ''}</div>`;
-    } else {
-      desgloseHTML = '';
+      desgloseHTML = `<div style="text-align:center; font-size:9px; color:#567C8D; margin-top:4px;">Servicio: ₲${formatNumber(costoServicio)}${costoPartes2 > 0 ? ` — Partes/Repuestos: ₲${formatNumber(costoPartes2)}` : ''}</div>`;
     }
 
     const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
