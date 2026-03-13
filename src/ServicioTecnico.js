@@ -532,33 +532,35 @@ export default function ServicioTecnico() {
       : '';
 
     // Costo para el informe
-    const facServ = parseFloat(servicio.monto_facturado_servicio);
+    const facServ = parseFloat(servicio.monto_facturado_servicio) || 0;
     const facPartes = parseFloat(servicio.monto_facturado_partes) || 0;
     const costoBase = parseFloat(servicio.costo_servicio) || 0;
 
-    // Si ₲FAC Servicio es exactamente 0 (cargado explícitamente), no mostrar costo
-    const facServExplicito = servicio.monto_facturado_servicio !== null && servicio.monto_facturado_servicio !== '' && !isNaN(facServ);
-    const sinCostoParaCliente = facServExplicito && facServ === 0;
+    // Sin costo para el cliente: solo si FAC Servicio fue cargado como 0, FAC Partes es 0, 
+    // no hay repuestos del catálogo, y hay un costo base (o sea, se hizo un trabajo pero se exonera)
+    const facServRaw = servicio.monto_facturado_servicio;
+    const facServEsCero = facServRaw !== null && facServRaw !== '' && facServRaw !== undefined && parseFloat(facServRaw) === 0;
+    const sinCostoParaCliente = facServEsCero && facPartes === 0 && costoExtraRepuestos === 0 && costoBase > 0;
 
-    let costoInforme;
+    let costoInforme = 0;
     if (!sinCostoParaCliente) {
       if (facServ > 0 || facPartes > 0) {
-        costoInforme = Math.round((facServ || 0) + facPartes);
+        costoInforme = Math.round(facServ + facPartes);
       } else {
         costoInforme = Math.round(costoBase * 2);
       }
       costoInforme += costoExtraRepuestos;
     }
 
-    const mostrarCosto = !sinCostoParaCliente && (costoBase > 0 || (facServ || 0) > 0 || facPartes > 0 || costoExtraRepuestos > 0);
+    const mostrarCosto = !sinCostoParaCliente && costoInforme > 0;
     const costoTexto = mostrarCosto ? `₲${formatNumber(costoInforme)} - IVA incluido` : '';
 
     // Desglose para el PDF
     let desgloseHTML = '';
     if (mostrarCosto) {
       let costoServicio, costoPartes2;
-      if ((facServ || 0) > 0 || facPartes > 0) {
-        costoServicio = Math.round(facServ || 0);
+      if (facServ > 0 || facPartes > 0) {
+        costoServicio = Math.round(facServ);
         costoPartes2 = Math.round(facPartes) + costoExtraRepuestos;
       } else {
         costoServicio = Math.round(costoBase * 2);
