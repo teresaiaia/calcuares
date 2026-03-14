@@ -272,9 +272,16 @@ export default function ServicioTecnico() {
     try {
       const parseMonto = (val) => {
         if (!val && val !== 0) return 0;
-        // Quitar puntos de miles y espacios, dejar solo dígitos
         const limpio = String(val).replace(/\./g, '').replace(/\s/g, '').replace(/,/g, '');
         return Math.round(parseFloat(limpio) || 0);
+      };
+
+      // Para FAC: si el campo está vacío, guardar null (no 0)
+      const parseMontoFac = (val) => {
+        if (val === '' || val === null || val === undefined) return null;
+        const limpio = String(val).replace(/\./g, '').replace(/\s/g, '').replace(/,/g, '');
+        const num = Math.round(parseFloat(limpio) || 0);
+        return num;
       };
 
       const payload = {
@@ -287,8 +294,8 @@ export default function ServicioTecnico() {
         caso: formData.caso.trim() || null,
         costo_servicio: parseMonto(formData.costo_servicio),
         fecha_fin_garantia: formData.fecha_fin_garantia || null,
-        monto_facturado_servicio: parseMonto(formData.monto_facturado_servicio),
-        monto_facturado_partes: parseMonto(formData.monto_facturado_partes),
+        monto_facturado_servicio: parseMontoFac(formData.monto_facturado_servicio),
+        monto_facturado_partes: parseMontoFac(formData.monto_facturado_partes),
         nro_factura: formData.nro_factura.trim() || null,
         fecha_factura: formData.fecha_factura || null,
         estado_cobro: formData.estado_cobro,
@@ -536,11 +543,10 @@ export default function ServicioTecnico() {
     const facPartes = parseFloat(servicio.monto_facturado_partes) || 0;
     const costoBase = parseFloat(servicio.costo_servicio) || 0;
 
-    // Sin costo para el cliente: solo si FAC Servicio fue cargado como 0, FAC Partes es 0, 
-    // no hay repuestos del catálogo, y hay un costo base (o sea, se hizo un trabajo pero se exonera)
+    // Sin costo para el cliente: solo si FAC Servicio fue cargado explícitamente como 0 (no null/vacío)
     const facServRaw = servicio.monto_facturado_servicio;
-    const facServEsCero = facServRaw !== null && facServRaw !== '' && facServRaw !== undefined && parseFloat(facServRaw) === 0;
-    const sinCostoParaCliente = facServEsCero && facPartes === 0 && costoExtraRepuestos === 0 && costoBase > 0;
+    const facServEsCeroExplicito = facServRaw !== null && facServRaw !== undefined && parseFloat(facServRaw) === 0;
+    const sinCostoParaCliente = facServEsCeroExplicito && facPartes === 0 && costoExtraRepuestos === 0 && costoBase > 0;
 
     let costoInforme = 0;
     if (!sinCostoParaCliente) {
