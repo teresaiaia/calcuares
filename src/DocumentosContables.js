@@ -158,7 +158,7 @@ export default function DocumentosContables() {
     nro_factura: '', nro_os: '',
     fecha: new Date().toISOString().split('T')[0],
     cliente: '', modalidad: 'Contado', moneda: '₲',
-    concepto: '', rubro: '', monto: '', estado: 'Pagado', observaciones: '',
+    concepto: '', rubro: '', monto: '', estado: '', observaciones: '',
     // recibos
     nro_recibo: '', tipo: 'RO', detalle: '',
     vinculos: [], // [{tipo_documento, documento_id, nro_doc, monto_aplicado}]
@@ -282,9 +282,8 @@ export default function DocumentosContables() {
   const handleNew = () => {
     setEditingItem(null);
     const init = { ...formInit };
-    // Setear estado por defecto según tab
     if (activeTab === 'facturas' || activeTab === 'ordenes_servicio') init.estado = 'Pagado';
-    if (activeTab === 'recibos') init.tipo = activeTab === 'recibos' ? 'RO' : 'RNO';
+    if (activeTab === 'recibos') init.tipo = 'RO';
     setFormData(init);
     setShowModal(true);
   };
@@ -299,6 +298,10 @@ export default function DocumentosContables() {
     const base = {
       ...formInit,
       ...item,
+      // Asegurar que estado y modalidad del item siempre prevalezcan
+      estado: item.estado || formInit.estado,
+      modalidad: item.modalidad || formInit.modalidad,
+      monto: item.monto ?? '',
       vinculos: [],
     };
     if (activeTab === 'recibos') {
