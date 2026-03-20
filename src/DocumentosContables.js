@@ -9,6 +9,14 @@ import './DocumentosContables.css';
 // ============================================
 // CONSTANTES
 // ============================================
+const RUBROS = [
+  'Aldenor', 'Anulada', 'Aqua', 'Ares', 'Body Health', 'Candela',
+  'Centenario', 'Classys', 'Cocoon', 'Daeyang', 'Dermlite', 'Ecleris',
+  'Endymed', 'Forma-Tk', 'Fotona', 'Hydra', 'Insumos', 'Intermedic',
+  'Laseroptek', 'Lumenis', 'Mascaras', 'MtoS', 'ServTec', 'Sothys',
+  'Venus', 'Viora'
+];
+
 const MONEDAS = ['₲', 'USD'];
 const MODALIDADES = ['Contado', 'Crédito', 'Anulada'];
 const TIPOS_RECIBO = ['RO', 'RNO'];
@@ -103,7 +111,6 @@ export default function DocumentosContables() {
   const [ordenesServicio, setOrdenesServicio] = useState([]);
   const [recibos, setRecibos] = useState([]);
   const [remisiones, setRemisiones] = useState([]);
-  const [proveedores, setProveedores] = useState([]);
   const [reciboDocumentos, setReciboDocumentos] = useState([]);
 
   // Filtros compartidos
@@ -153,7 +160,7 @@ export default function DocumentosContables() {
   // ---- FETCH ----
   useEffect(() => {
     fetchAll();
-    fetchProveedores();
+
   }, []);
 
   const fetchAll = async () => {
@@ -175,16 +182,6 @@ export default function DocumentosContables() {
       console.error(e);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchProveedores = async () => {
-    try {
-      const { data } = await supabase.from('proveedores').select('nombre').order('nombre');
-      const nombres = (data || []).map(p => p.nombre);
-      setProveedores(['ServTec', ...nombres]);
-    } catch (e) {
-      console.error(e);
     }
   };
 
@@ -926,7 +923,7 @@ export default function DocumentosContables() {
               <select value={formData.rubro} onChange={e => setFormData({ ...formData, rubro: e.target.value })}>
                 <option value="">— Sin rubro —</option>
                 <option value="Anulada">Anulada</option>
-                {proveedores.map(p => <option key={p} value={p}>{p}</option>)}
+                {RUBROS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
 
