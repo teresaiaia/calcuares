@@ -956,7 +956,6 @@ export default function ServicioTecnico() {
     setShowExportMenu(false);
     const ventana = window.open('', '_blank');
     const rows = serviciosFiltrados.map(s => {
-      const enGar = estaEnGarantia(s.fecha_fin_garantia, s.fecha);
       return `<tr>
         <td>${s.nro_reporte}</td>
         <td>${s.nro_rt || ''}</td>
@@ -965,9 +964,6 @@ export default function ServicioTecnico() {
         <td>${s.modelo || ''}</td>
         <td>${s.serial_number || ''}</td>
         <td class="caso">${s.caso || ''}</td>
-        <td class="num">${s.costo_servicio ? '₲' + formatNumber(s.costo_servicio) : ''}</td>
-        <td>${formatDate(s.fecha_fin_garantia)}</td>
-        <td class="center">${enGar === true ? 'Sí' : enGar === false ? 'No' : '-'}</td>
         <td class="num">${s.monto_facturado_servicio ? '₲' + formatNumber(s.monto_facturado_servicio) : ''}</td>
         <td class="num">${s.monto_facturado_partes ? '₲' + formatNumber(s.monto_facturado_partes) : ''}</td>
         <td>${s.nro_factura || ''}</td>
@@ -1011,7 +1007,7 @@ export default function ServicioTecnico() {
       <table>
         <thead><tr>
           <th>REPO</th><th>RPT</th><th>FECHA</th><th>CLIENTE</th><th>MOD</th><th>S/N</th><th>CASO</th>
-          <th>COSTO</th><th>FIN GTÍA</th><th>GTÍA</th><th>₲FAC SERV</th><th>₲FAC PARTES</th>
+          <th>₲FAC SERV</th><th>₲FAC PARTES</th>
           <th>N° FAC</th><th>FECHA FAC</th><th>ESTADO</th>
         </tr></thead>
         <tbody>${rows}</tbody>
