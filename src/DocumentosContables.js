@@ -527,15 +527,16 @@ export default function DocumentosContables() {
           };
           if (!record.nro_os || !record.cliente) continue;
         } else if (activeTab === 'recibos') {
-          // NRO_RECIBO | TIPO | FECHA | CLIENTE | MONEDA | MONTO | DETALLE
+          // NRO_RECIBO | TIPO | FECHA | CLIENTE | MONEDA | MONTO | DETALLE | FACT N°
           record = {
             nro_recibo: String(r[0] || '').trim(),
             tipo: String(r[1] || 'RO').trim(),
             fecha: parseExcelDate(r[2]),
             cliente: String(r[3] || '').trim(),
             moneda: String(r[4] || '₲').trim(),
-            monto: parseMonto(r[5]),
+            monto: parseMonto(r[5], String(r[4] || '').trim()),
             detalle: String(r[6] || '').trim() || null,
+            _fact_nro: String(r[7] || '').trim() || null, // campo auxiliar para vínculo
           };
           if (!record.nro_recibo || !record.cliente) continue;
         } else if (activeTab === 'remisiones') {
@@ -586,21 +587,56 @@ export default function DocumentosContables() {
     const existingMap = {};
     dataActiva.forEach(d => { existingMap[d[nroField]] = d.id; });
 
+    // Mapa de facturas y OS por número para vincular recibos
+    const facturasMap = {};
+    facturas.forEach(f => { facturasMap[f.nro_factura] = f.id; });
+    const osMap = {};
+    ordenesServicio.forEach(o => { osMap[o.nro_os] = o.id; });
+
     let inserted = 0, updated = 0, skipped = 0, errors = 0;
     const errorDetails = [];
 
     for (const record of importData) {
       const isDupe = existingMap[record[nroField]];
+      // Extraer campo auxiliar antes de insertar
+      const factNro = record._fact_nro || null;
+      const { _fact_nro, ...recordLimpio } = record;
+
       try {
+        let reciboId = null;
         if (isDupe) {
           if (duplicateAction === 'skip') { skipped++; continue; }
-          const { error } = await supabase.from(table).update(record).eq('id', isDupe);
+          const { error } = await supabase.from(table).update(recordLimpio).eq('id', isDupe);
           if (error) throw error;
+          reciboId = isDupe;
           updated++;
         } else {
-          const { error } = await supabase.from(table).insert([record]);
+          const { data, error } = await supabase.from(table).insert([recordLimpio]).select().single();
           if (error) throw error;
+          reciboId = data.id;
           inserted++;
+        }
+
+        // Crear vínculo automático si hay FACT N°
+        if (reciboId && factNro && activeTab === 'recibos') {
+          // Buscar si es factura o OS
+          const factId = facturasMap[factNro];
+          const osId = osMap[factNro];
+          if (factId) {
+            await supabase.from('recibo_documentos').insert([{
+              recibo_id: reciboId,
+              tipo_documento: 'factura',
+              documento_id: factId,
+              monto_aplicado: recordLimpio.monto || 0,
+            }]);
+          } else if (osId) {
+            await supabase.from('recibo_documentos').insert([{
+              recibo_id: reciboId,
+              tipo_documento: 'orden_servicio',
+              documento_id: osId,
+              monto_aplicado: recordLimpio.monto || 0,
+            }]);
+          }
         }
       } catch (err) {
         errors++;
@@ -1350,7 +1386,7 @@ export default function DocumentosContables() {
                     <strong>Orden de columnas ({tabLabels[activeTab]}):</strong>{' '}
                     {activeTab === 'facturas' && 'N° FAC | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS'}
                     {activeTab === 'ordenes_servicio' && 'N° OS | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS'}
-                    {activeTab === 'recibos' && 'N° RECIBO | TIPO | FECHA | CLIENTE | MONEDA | MONTO | DETALLE'}
+                    {activeTab === 'recibos' && 'N° RECIBO | TIPO | FECHA | CLIENTE | MONEDA | MONTO | DETALLE | FACT N°'}
                     {activeTab === 'remisiones' && 'N° REMISION | FECHA | CLIENTE | CONCEPTO | OBS'}
                   </div>
                 </>
