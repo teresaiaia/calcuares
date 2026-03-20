@@ -16,7 +16,7 @@ const TIPOS_RECIBO = ['RO', 'RNO'];
 const ESTADOS_FAC_OS = (modalidad) => {
   if (modalidad === 'Anulada') return ['Anulada'];
   if (modalidad === 'Contado') return ['Pagado', 'Anulada'];
-  return ['Pendiente', 'Parcialmente cobrado', 'Cobrado', 'Anulada'];
+  return ['Pendiente', 'Parcialmente cobrado', 'Pagado', 'Anulada'];
 };
 
 // ============================================
@@ -42,7 +42,7 @@ const parseMonto = (val) => {
 const estadoBadgeClass = (estado) => {
   if (!estado) return '';
   const e = estado.toLowerCase();
-  if (e.includes('pagado') || e === 'cobrado') return 'pagado';
+  if (e.includes('pagado')) return 'pagado';
   if (e.includes('pendiente')) return 'pendiente';
   if (e.includes('parcial')) return 'parcial';
   if (e.includes('anulad')) return 'anulado';
