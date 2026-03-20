@@ -1308,6 +1308,55 @@ export default function DocumentosContables() {
                   </div>
                 ))}
               </div>
+
+              {/* Recibos vinculados — solo para facturas y OS */}
+              {(activeTab === 'facturas' || activeTab === 'ordenes_servicio') && (() => {
+                const recibosVinculados = reciboDocumentos
+                  .filter(rd => rd.documento_id === viewItem.id && rd.tipo_documento === (activeTab === 'facturas' ? 'factura' : 'orden_servicio'))
+                  .map(rd => {
+                    const recibo = recibos.find(r => r.id === rd.recibo_id);
+                    return recibo ? { ...recibo, monto_aplicado: rd.monto_aplicado } : null;
+                  })
+                  .filter(Boolean);
+
+                if (recibosVinculados.length === 0) return null;
+
+                const totalCobrado = recibosVinculados.reduce((acc, r) => acc + (parseFloat(r.monto_aplicado) || parseFloat(r.monto) || 0), 0);
+
+                return (
+                  <div style={{ marginTop: '1.2rem', borderTop: '2px solid #e8eef3', paddingTop: '1rem' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#567C8D', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.6rem' }}>
+                      Recibos asociados ({recibosVinculados.length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {recibosVinculados.map((r, i) => (
+                        <div key={i} style={{
+                          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto',
+                          gap: '0.5rem', alignItems: 'center',
+                          background: '#f5f8fb', borderRadius: '7px',
+                          padding: '0.45rem 0.75rem', border: '1px solid #e0e8f0',
+                          fontSize: '0.83rem', color: '#2F4156'
+                        }}>
+                          <span style={{ fontWeight: 700 }}>{r.tipo === 'RO' ? '🟣' : '🔴'} {r.nro_recibo}</span>
+                          <span>{formatDate(r.fecha)}</span>
+                          <span style={{ fontWeight: 600, textAlign: 'right' }}>
+                            {r.moneda === 'USD' ? 'US$ ' : '₲'}{formatNumber(r.monto_aplicado || r.monto, r.moneda)}
+                          </span>
+                          <span className={`dc-badge ${r.tipo === 'RO' ? 'ro' : 'rno'}`}>{r.tipo}</span>
+                        </div>
+                      ))}
+                      <div style={{
+                        display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
+                        gap: '0.5rem', padding: '0.4rem 0.75rem',
+                        fontSize: '0.83rem', fontWeight: 700, color: '#2F4156'
+                      }}>
+                        <span style={{ color: '#567C8D', fontWeight: 400 }}>Total cobrado:</span>
+                        {recibosVinculados[0]?.moneda === 'USD' ? 'US$ ' : '₲'}{formatNumber(totalCobrado, recibosVinculados[0]?.moneda)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <div className="dc-modal-footer">
               <button className="dc-btn-save" onClick={() => setShowViewModal(false)}>Cerrar</button>
