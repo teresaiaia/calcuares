@@ -533,19 +533,47 @@ export default function ServicioTecnico() {
   // Generar PDF del informe estructurado
   const generarPDFInforme = (datos, servicio, costoExtraRepuestos = 0) => {
     const ventana = window.open('', '_blank');
+    const enGar = estaEnGarantia(servicio.fecha_fin_garantia, servicio.fecha);
+    const garantiaTexto = servicio.fecha_fin_garantia 
+      ? (enGar ? 'Garantía vigente' : 'Garantía expirada')
+      : '';
 
-    // Datos de facturación visibles al cliente
-    const facServ = servicio.monto_facturado_servicio;
-    const facPartes = servicio.monto_facturado_partes;
-    const facServVal = parseFloat(facServ) || 0;
-    const facPartesVal = parseFloat(facPartes) || 0;
+    // Costo para el informe
+    const facServ = parseFloat(servicio.monto_facturado_servicio) || 0;
+    const facPartes = parseFloat(servicio.monto_facturado_partes) || 0;
+    const costoBase = parseFloat(servicio.costo_servicio) || 0;
 
-    const facServHTML = (facServ !== null && facServ !== undefined)
-      ? `₲${formatNumber(facServVal)}`
-      : '-';
-    const facPartesHTML = (facPartes !== null && facPartes !== undefined)
-      ? `₲${formatNumber(facPartesVal)}`
-      : '-';
+    // Sin costo para el cliente: solo si FAC Servicio fue cargado explícitamente como 0 (no null/vacío)
+    const facServRaw = servicio.monto_facturado_servicio;
+    const facServEsCeroExplicito = facServRaw !== null && facServRaw !== undefined && parseFloat(facServRaw) === 0;
+    const sinCostoParaCliente = facServEsCeroExplicito && facPartes === 0 && costoExtraRepuestos === 0 && costoBase > 0;
+
+    let costoInforme = 0;
+    if (!sinCostoParaCliente) {
+      if (facServ > 0 || facPartes > 0) {
+        costoInforme = Math.round(facServ + facPartes);
+      } else {
+        costoInforme = Math.round(costoBase * 2);
+      }
+      costoInforme += costoExtraRepuestos;
+    }
+
+    const mostrarCosto = !sinCostoParaCliente && costoInforme > 0;
+    const costoTexto = mostrarCosto ? `₲${formatNumber(costoInforme)} - IVA incluido` : '';
+
+    // Desglose para el PDF
+    let desgloseHTML = '';
+    if (mostrarCosto) {
+      let costoServicio, costoPartes2;
+      if (facServ > 0 || facPartes > 0) {
+        costoServicio = Math.round(facServ);
+        costoPartes2 = Math.round(facPartes) + costoExtraRepuestos;
+      } else {
+        costoServicio = Math.round(costoBase * 2);
+        costoPartes2 = costoExtraRepuestos;
+      }
+      desgloseHTML = `<div style="text-align:center; font-size:9px; color:#567C8D; margin-top:4px;">Servicio: ₲${formatNumber(costoServicio)}${costoPartes2 > 0 ? ` — Partes/Repuestos: ₲${formatNumber(costoPartes2)}` : ''}</div>`;
+    }
 
     const repuestosHTML = datos.repuestos && datos.repuestos.length > 0 
       ? `<div class="section repuestos">
@@ -620,19 +648,12 @@ export default function ServicioTecnico() {
         .observaciones { background: rgba(240,249,255,0.9); border: 1px solid #bae6fd; border-radius: 6px; padding: 12px; }
         .observaciones h3 { color: #0369a1; border-bottom-color: #bae6fd; }
         .observaciones p { font-size: 11.5px; }
-        .facturacion-box { 
-          background: rgba(248,249,250,0.95);
-          border: 1px solid #c0cdd8;
-          border-left: 3px solid #1a3352;
-          border-radius: 6px;
-          padding: 10px 14px;
-          margin: 16px 0;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 4px 16px;
-          font-size: 11.5px;
+        .costo-box { 
+          text-align: center; padding: 10px; 
+          background: rgba(26,51,82,0.95); color: white; 
+          border-radius: 6px; font-size: 16px; font-weight: 700; 
+          margin: 16px 0; letter-spacing: 0.5px;
         }
-        .facturacion-box .label { font-weight: 700; color: #1a3352; }
         .footer { 
           text-align: center; border-top: 2px solid #1a3352; 
           padding-top: 10px; margin-top: 20px; 
@@ -658,6 +679,7 @@ export default function ServicioTecnico() {
           <div class="info-item"><span class="label">Cliente:</span> ${servicio.cliente}</div>
           <div class="info-item"><span class="label">Modelo:</span> ${servicio.modelo || 'N/A'}</div>
           <div class="info-item"><span class="label">S/N:</span> ${servicio.serial_number || 'N/A'}</div>
+          <div class="info-item"><span class="label">Garantía:</span> ${garantiaTexto}</div>
         </div>
         <div class="section descripcion">
           <h3>Descripción del Servicio Realizado</h3>
@@ -665,14 +687,8 @@ export default function ServicioTecnico() {
         </div>
         ${repuestosHTML}
         ${recomendacionesHTML}
+        ${mostrarCosto ? `<div class="costo-box">Costo del Servicio: ${costoTexto}</div>${desgloseHTML}` : ''}
         ${observacionesHTML}
-        <div class="facturacion-box">
-          <div class="info-item"><span class="label">Servicio cobrado:</span> ${facServHTML}</div>
-          <div class="info-item"><span class="label">Partes cobradas:</span> ${facPartesHTML}</div>
-          <div class="info-item"><span class="label">N° Factura:</span> ${servicio.nro_factura || '-'}</div>
-          <div class="info-item"><span class="label">Fecha Factura:</span> ${formatDate(servicio.fecha_factura) || '-'}</div>
-          <div class="info-item" style="grid-column: 1 / -1;"><span class="label">Estado:</span> ${servicio.estado_cobro || '-'}</div>
-        </div>
         <div class="footer">
           <p><strong>Ares Paraguay SRL</strong> — Servicio Técnico</p>
           <p style="font-size:9px; color:#567C8D; font-style:italic; margin-top:3px;">Criterio. Respeto. Experiencia. Acompañamiento.</p>
