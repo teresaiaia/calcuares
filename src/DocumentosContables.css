@@ -1,0 +1,606 @@
+/* ============================================
+   DocumentosContables.css
+   Ares Paraguay SRL — Módulo Contable
+   Estilo consistente con ServicioTecnico.css
+   ============================================ */
+
+.dc-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #2F4156;
+}
+
+/* ---- HEADER ---- */
+.dc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.dc-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2F4156;
+  margin: 0;
+}
+
+.dc-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ---- TABS ---- */
+.dc-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.25rem;
+  background: #e8eef3;
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.dc-tab {
+  padding: 0.45rem 1.1rem;
+  border: none;
+  background: transparent;
+  color: #567C8D;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.dc-tab:hover {
+  background: rgba(255,255,255,0.6);
+  color: #2F4156;
+}
+
+.dc-tab.active {
+  background: #2F4156;
+  color: white;
+  box-shadow: 0 2px 8px rgba(47,65,86,0.18);
+}
+
+/* ---- FILTROS ---- */
+.dc-filters {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.dc-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: white;
+  border: 2px solid #C8D9E6;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  min-width: 220px;
+  transition: border-color 0.2s;
+}
+
+.dc-search-box:focus-within {
+  border-color: #567C8D;
+}
+
+.dc-search-box input {
+  border: none;
+  outline: none;
+  font-size: 0.83rem;
+  color: #2F4156;
+  background: transparent;
+  width: 100%;
+}
+
+.dc-filter-select {
+  border: 2px solid #C8D9E6;
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.82rem;
+  color: #2F4156;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dc-filter-select:focus {
+  border-color: #567C8D;
+}
+
+.dc-filter-date {
+  border: 2px solid #C8D9E6;
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.82rem;
+  color: #2F4156;
+  background: white;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dc-filter-date:focus {
+  border-color: #567C8D;
+}
+
+/* ---- BOTONES ---- */
+.dc-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #2F4156;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+  white-space: nowrap;
+}
+
+.dc-btn-primary:hover {
+  background: #3d5470;
+}
+
+.dc-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: white;
+  color: #2F4156;
+  border: 2px solid #C8D9E6;
+  border-radius: 8px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.dc-btn-secondary:hover {
+  border-color: #567C8D;
+  background: #f0f5f8;
+}
+
+.dc-btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 6px;
+  color: #567C8D;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.dc-btn-icon:hover {
+  background: #e8eef3;
+  color: #2F4156;
+}
+
+.dc-btn-icon.danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.dc-btn-cancel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.dc-btn-cancel:hover {
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.dc-btn-save {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #2F4156;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 1.2rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.dc-btn-save:hover {
+  background: #3d5470;
+}
+
+.dc-btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Export dropdown */
+.dc-export-wrapper {
+  position: relative;
+}
+
+.dc-export-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: white;
+  border: 2px solid #C8D9E6;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(47,65,86,0.13);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.dc-export-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  font-size: 0.83rem;
+  color: #2F4156;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.dc-export-menu button:hover {
+  background: #f0f5f8;
+}
+
+/* ---- TABLA ---- */
+.dc-table-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #dde6ee;
+  background: white;
+}
+
+.dc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.dc-table thead th {
+  background: #2F4156;
+  color: white;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dc-table thead th:hover {
+  background: #3d5470;
+}
+
+.dc-table thead th.no-sort {
+  cursor: default;
+}
+
+.dc-table thead th.no-sort:hover {
+  background: #2F4156;
+}
+
+.dc-table tbody tr {
+  border-bottom: 1px solid #eef1f4;
+  transition: background 0.12s;
+}
+
+.dc-table tbody tr:hover {
+  background: #f5f8fb;
+}
+
+.dc-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.dc-table td {
+  padding: 0.5rem 0.75rem;
+  color: #2F4156;
+  vertical-align: middle;
+}
+
+.dc-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.dc-table td.center {
+  text-align: center;
+}
+
+.dc-table td.muted {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.dc-table-actions {
+  display: flex;
+  gap: 0.2rem;
+  justify-content: center;
+}
+
+/* ---- BADGES DE ESTADO ---- */
+.dc-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dc-badge.pagado    { background: #dcfce7; color: #166534; }
+.dc-badge.pendiente { background: #fef9c3; color: #854d0e; }
+.dc-badge.credito   { background: #dbeafe; color: #1e40af; }
+.dc-badge.parcial   { background: #ffedd5; color: #9a3412; }
+.dc-badge.anulado   { background: #f3f4f6; color: #6b7280; }
+.dc-badge.contado   { background: #dcfce7; color: #166534; }
+.dc-badge.ro        { background: #ede9fe; color: #5b21b6; }
+.dc-badge.rno       { background: #fce7f3; color: #9d174d; }
+
+/* ---- BADGE MONEDA ---- */
+.dc-badge-moneda {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #e8eef3;
+  color: #567C8D;
+}
+
+/* ---- MODAL ---- */
+.dc-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30,42,56,0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.dc-modal {
+  background: white;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(30,42,56,0.25);
+}
+
+.dc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.4rem 0.9rem;
+  border-bottom: 2px solid #e8eef3;
+}
+
+.dc-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2F4156;
+  margin: 0;
+}
+
+.dc-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0.2rem;
+  border-radius: 6px;
+  display: flex;
+  transition: color 0.15s;
+}
+
+.dc-modal-close:hover {
+  color: #2F4156;
+}
+
+.dc-modal-body {
+  padding: 1.2rem 1.4rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dc-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.9rem 1.4rem;
+  border-top: 2px solid #e8eef3;
+}
+
+/* ---- FORM GRID ---- */
+.dc-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.dc-form-grid.full {
+  grid-template-columns: 1fr;
+}
+
+.dc-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dc-form-group.span2 {
+  grid-column: 1 / -1;
+}
+
+.dc-form-group label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #567C8D;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dc-form-group input,
+.dc-form-group select,
+.dc-form-group textarea {
+  border: 2px solid #C8D9E6;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  color: #2F4156;
+  outline: none;
+  transition: border-color 0.2s;
+  background: white;
+  font-family: inherit;
+}
+
+.dc-form-group input:focus,
+.dc-form-group select:focus,
+.dc-form-group textarea:focus {
+  border-color: #567C8D;
+}
+
+.dc-form-group textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* ---- VINCULACIÓN DE RECIBOS ---- */
+.dc-vinculo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dc-vinculo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f5f8fb;
+  border: 1px solid #dde6ee;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+.dc-vinculo-item select {
+  flex: 1;
+  border: 2px solid #C8D9E6;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  color: #2F4156;
+  outline: none;
+}
+
+.dc-vinculo-item input {
+  width: 130px;
+  border: 2px solid #C8D9E6;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+  color: #2F4156;
+  outline: none;
+}
+
+/* ---- EMPTY STATE ---- */
+.dc-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+}
+
+.dc-empty p {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+/* ---- TOTALES ---- */
+.dc-totales {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.dc-total-card {
+  background: white;
+  border: 1px solid #dde6ee;
+  border-radius: 9px;
+  padding: 0.55rem 1rem;
+  font-size: 0.78rem;
+  color: #567C8D;
+  font-weight: 600;
+}
+
+.dc-total-card span {
+  color: #2F4156;
+  font-size: 0.88rem;
+  margin-left: 0.3rem;
+}
+
+/* ---- SPIN ---- */
+.dc-spin {
+  animation: dc-spin 1s linear infinite;
+}
+
+@keyframes dc-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ---- IMPORT MODAL ---- */
+.dc-import-preview {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
