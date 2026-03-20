@@ -30,8 +30,11 @@ const ESTADOS_FAC_OS = (modalidad) => {
 // ============================================
 // HELPERS
 // ============================================
-const formatNumber = (num) => {
+const formatNumber = (num, moneda) => {
   if (!num && num !== 0) return '';
+  if (moneda === 'USD') {
+    return Number(num).toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
   return Math.round(Number(num)).toLocaleString('es-PY', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
@@ -41,10 +44,11 @@ const formatDate = (dateStr) => {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 };
 
-const parseMonto = (val) => {
+const parseMonto = (val, moneda) => {
   if (val === '' || val === null || val === undefined) return 0;
   const limpio = String(val).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.]/g, '');
-  return parseFloat(limpio) || 0;
+  const num = parseFloat(limpio) || 0;
+  return moneda === 'USD' ? Math.round(num * 100) / 100 : Math.round(num);
 };
 
 const estadoBadgeClass = (estado) => {
@@ -317,7 +321,7 @@ export default function DocumentosContables() {
           moneda: formData.moneda,
           concepto: formData.concepto?.trim() || null,
           rubro: formData.rubro || null,
-          monto: parseMonto(formData.monto),
+          monto: parseMonto(formData.monto, formData.moneda),
           estado: formData.modalidad === 'Contado' ? 'Pagado' : formData.estado,
           observaciones: formData.observaciones?.trim() || null,
         };
@@ -339,7 +343,7 @@ export default function DocumentosContables() {
           moneda: formData.moneda,
           concepto: formData.concepto?.trim() || null,
           rubro: formData.rubro || null,
-          monto: parseMonto(formData.monto),
+          monto: parseMonto(formData.monto, formData.moneda),
           estado: formData.modalidad === 'Contado' ? 'Pagado' : formData.estado,
           observaciones: formData.observaciones?.trim() || null,
         };
@@ -359,7 +363,7 @@ export default function DocumentosContables() {
           fecha: formData.fecha,
           cliente: formData.cliente.trim(),
           moneda: formData.moneda,
-          monto: parseMonto(formData.monto),
+          monto: parseMonto(formData.monto, formData.moneda),
           detalle: formData.detalle?.trim() || null,
         };
         let reciboId = editingItem?.id;
@@ -632,27 +636,27 @@ export default function DocumentosContables() {
   // ---- EXPORT PDF ----
   const handleExportPDF = () => {
     setShowExportMenu(false);
-    const totHTML = `<span><strong>Registros:</strong> ${datosFiltrados.length}</span>${activeTab !== 'remisiones' ? `<span><strong>Total:</strong> ${datosFiltrados[0]?.moneda || '₲'}${formatNumber(totalMonto)}</span>` : ''}`;
+    const totHTML = `<span><strong>Registros:</strong> ${datosFiltrados.length}</span>${activeTab !== 'remisiones' ? `<span><strong>Total:</strong> ${datosFiltrados[0]?.moneda || '₲'}${formatNumber(totalMonto, datosFiltrados[0]?.moneda)}</span>` : ''}`;
 
     if (activeTab === 'facturas') {
       exportarPDF('Facturas', ['N° FAC', 'FECHA', 'CLIENTE', 'MODALIDAD', 'MONEDA', 'MONTO', 'RUBRO', 'ESTADO'],
         datosFiltrados.map(f => [
           { val: f.nro_factura }, { val: formatDate(f.fecha) }, { val: f.cliente },
-          { val: f.modalidad }, { val: f.moneda }, { val: f.monto ? formatNumber(f.monto) : '', cls: 'num' },
+          { val: f.modalidad }, { val: f.moneda }, { val: f.monto ? formatNumber(f.monto, f.moneda) : '', cls: 'num' },
           { val: f.rubro || '' }, { val: f.estado || '', cls: 'center' }
         ]), totHTML);
     } else if (activeTab === 'ordenes_servicio') {
       exportarPDF('Órdenes de Servicio', ['N° OS', 'FECHA', 'CLIENTE', 'MODALIDAD', 'MONEDA', 'MONTO', 'RUBRO', 'ESTADO'],
         datosFiltrados.map(o => [
           { val: o.nro_os }, { val: formatDate(o.fecha) }, { val: o.cliente },
-          { val: o.modalidad }, { val: o.moneda }, { val: o.monto ? formatNumber(o.monto) : '', cls: 'num' },
+          { val: o.modalidad }, { val: o.moneda }, { val: o.monto ? formatNumber(o.monto, o.moneda) : '', cls: 'num' },
           { val: o.rubro || '' }, { val: o.estado || '', cls: 'center' }
         ]), totHTML);
     } else if (activeTab === 'recibos') {
       exportarPDF('Recibos', ['N° RECIBO', 'TIPO', 'FECHA', 'CLIENTE', 'MONEDA', 'MONTO', 'DETALLE'],
         datosFiltrados.map(r => [
           { val: r.nro_recibo }, { val: r.tipo, cls: 'center' }, { val: formatDate(r.fecha) },
-          { val: r.cliente }, { val: r.moneda }, { val: r.monto ? formatNumber(r.monto) : '', cls: 'num' },
+          { val: r.cliente }, { val: r.moneda }, { val: r.monto ? formatNumber(r.monto, r.moneda) : '', cls: 'num' },
           { val: r.detalle || '' }
         ]), totHTML);
     } else if (activeTab === 'remisiones') {
@@ -713,7 +717,7 @@ export default function DocumentosContables() {
               <td>{f.cliente}</td>
               <td><span className={`dc-badge ${f.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{f.modalidad}</span></td>
               <td>{f.modalidad !== 'Anulada' ? <span className="dc-badge-moneda">{f.moneda}</span> : <span className="muted">—</span>}</td>
-              <td className="num">{f.monto ? (f.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(f.monto) : ''}</td>
+              <td className="num">{f.monto ? (f.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(f.monto, f.moneda) : ''}</td>
               <td>{f.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
               <td>
@@ -752,7 +756,7 @@ export default function DocumentosContables() {
               <td>{o.cliente}</td>
               <td><span className={`dc-badge ${o.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{o.modalidad}</span></td>
               <td>{o.modalidad !== 'Anulada' ? <span className="dc-badge-moneda">{o.moneda}</span> : <span className="muted">—</span>}</td>
-              <td className="num">{o.monto ? (o.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(o.monto) : ''}</td>
+              <td className="num">{o.monto ? (o.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(o.monto, o.moneda) : ''}</td>
               <td>{o.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(o.estado)}`}>{o.estado}</span></td>
               <td>
@@ -802,7 +806,7 @@ export default function DocumentosContables() {
                 <td>{formatDate(r.fecha)}</td>
                 <td>{r.cliente}</td>
                 <td><span className="dc-badge-moneda">{r.moneda}</span></td>
-                <td className="num">{r.monto ? (r.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(r.monto) : ''}</td>
+                <td className="num">{r.monto ? (r.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(r.monto, r.moneda) : ''}</td>
                 <td style={{ fontSize: '0.75rem', color: '#567C8D' }}>{aplicaTexto || <span className="muted">-</span>}</td>
                 <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.detalle || <span className="muted">-</span>}</td>
                 <td>
@@ -1157,7 +1161,7 @@ export default function DocumentosContables() {
       {activeTab !== 'remisiones' && datosFiltrados.length > 0 && (
         <div className="dc-totales">
           <div className="dc-total-card">Registros: <span>{datosFiltrados.length}</span></div>
-          <div className="dc-total-card">Total: <span>{datosFiltrados[0]?.moneda === 'USD' ? 'US$ ' : '₲'}{formatNumber(totalMonto)}</span></div>
+          <div className="dc-total-card">Total: <span>{datosFiltrados[0]?.moneda === 'USD' ? 'US$ ' : '₲'}{formatNumber(totalMonto, datosFiltrados[0]?.moneda)}</span></div>
         </div>
       )}
 
@@ -1193,7 +1197,7 @@ export default function DocumentosContables() {
                   viewItem.moneda && { label: 'Moneda', value: viewItem.moneda },
                   viewItem.monto !== undefined && viewItem.monto !== null && {
                     label: 'Monto',
-                    value: (viewItem.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(viewItem.monto)
+                    value: (viewItem.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(viewItem.monto, viewItem.moneda)
                   },
                   viewItem.estado && { label: 'Estado', value: viewItem.estado },
                   viewItem.rubro && { label: 'Rubro', value: viewItem.rubro },
@@ -1275,7 +1279,7 @@ export default function DocumentosContables() {
                               <td style={{ padding: '4px 8px', fontWeight: 700 }}>{nro}</td>
                               <td style={{ padding: '4px 8px' }}>{r.fecha || '-'}</td>
                               <td style={{ padding: '4px 8px' }}>{r.cliente}</td>
-                              {activeTab !== 'remisiones' && <td style={{ padding: '4px 8px', textAlign: 'right' }}>{r.monto ? formatNumber(r.monto) : '-'}</td>}
+                              {activeTab !== 'remisiones' && <td style={{ padding: '4px 8px', textAlign: 'right' }}>{r.monto ? formatNumber(r.monto, r.moneda) : '-'}</td>}
                               <td style={{ padding: '4px 8px' }}>{isDupe ? <span style={{ color: '#d97706', fontWeight: 700 }}>⚠ DUP</span> : '✓ Nuevo'}</td>
                             </tr>
                           );
