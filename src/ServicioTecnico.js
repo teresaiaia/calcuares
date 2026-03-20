@@ -995,7 +995,7 @@ export default function ServicioTecnico() {
       </style>
     </head><body>
       <div class="header">
-        <h1>ARES MEDICAL EQUIPMENT</h1>
+        <h1>Ares Paraguay SRL</h1>
         <p>Reporte de Servicio Técnico</p>
       </div>
       <div class="stats">
@@ -1012,7 +1012,7 @@ export default function ServicioTecnico() {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="footer">Generado el ${new Date().toLocaleDateString('es-AR')} — ARES MEDICAL EQUIPMENT</div>
+      <div class="footer">Generado el ${new Date().toLocaleDateString('es-AR')} — Ares Paraguay SRL</div>
     </body></html>`);
     ventana.document.close();
     setTimeout(() => ventana.print(), 500);
