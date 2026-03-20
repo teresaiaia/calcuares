@@ -12,7 +12,6 @@ import './DocumentosContables.css';
 const MONEDAS = ['₲', 'USD'];
 const MODALIDADES = ['Contado', 'Crédito'];
 const TIPOS_RECIBO = ['RO', 'RNO'];
-const TIPOS_VINCULO = ['factura', 'orden_servicio'];
 
 const ESTADOS_FAC_OS = (modalidad) => {
   if (modalidad === 'Contado') return ['Pagado', 'Anulado'];
@@ -232,7 +231,7 @@ export default function DocumentosContables() {
     });
 
     return data;
-  }, [dataActiva, searchTerm, filterEstado, filterMoneda, filterFechaDesde, filterFechaHasta, sortField, sortDir]);
+  }, [dataActiva, activeTab, searchTerm, filterEstado, filterMoneda, filterFechaDesde, filterFechaHasta, sortField, sortDir]);
 
   const totalMonto = useMemo(() => {
     return datosFiltrados.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0);
