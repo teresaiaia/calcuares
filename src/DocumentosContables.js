@@ -725,7 +725,7 @@ export default function DocumentosContables() {
               <td style={{ fontWeight: 700 }}>{f.nro_factura}</td>
               <td>{formatDate(f.fecha)}</td>
               <td>{f.cliente}</td>
-              <td><span className={`dc-badge ${f.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{f.modalidad}</span></td>
+              <td>{f.modalidad !== 'Anulada' ? <span className={`dc-badge ${f.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{f.modalidad}</span> : <span className="muted">—</span>}</td>
               <td>{f.modalidad !== 'Anulada' ? <span className="dc-badge-moneda">{f.moneda}</span> : <span className="muted">—</span>}</td>
               <td className="num">{f.monto ? (f.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(f.monto, f.moneda) : ''}</td>
               <td>{f.rubro || <span className="muted">-</span>}</td>
@@ -764,7 +764,7 @@ export default function DocumentosContables() {
               <td style={{ fontWeight: 700 }}>{o.nro_os}</td>
               <td>{formatDate(o.fecha)}</td>
               <td>{o.cliente}</td>
-              <td><span className={`dc-badge ${o.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{o.modalidad}</span></td>
+              <td>{o.modalidad !== 'Anulada' ? <span className={`dc-badge ${o.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{o.modalidad}</span> : <span className="muted">—</span>}</td>
               <td>{o.modalidad !== 'Anulada' ? <span className="dc-badge-moneda">{o.moneda}</span> : <span className="muted">—</span>}</td>
               <td className="num">{o.monto ? (o.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(o.monto, o.moneda) : ''}</td>
               <td>{o.rubro || <span className="muted">-</span>}</td>
@@ -1203,8 +1203,8 @@ export default function DocumentosContables() {
                   activeTab === 'remisiones' && { label: 'N° Remisión', value: viewItem.nro_remision },
                   { label: 'Fecha', value: formatDate(viewItem.fecha) },
                   { label: 'Cliente', value: viewItem.cliente, span: true },
-                  viewItem.modalidad && { label: 'Modalidad', value: viewItem.modalidad },
-                  viewItem.moneda && { label: 'Moneda', value: viewItem.moneda },
+                  viewItem.modalidad && viewItem.modalidad !== 'Anulada' && { label: 'Modalidad', value: viewItem.modalidad },
+                  viewItem.moneda && viewItem.modalidad !== 'Anulada' && { label: 'Moneda', value: viewItem.moneda },
                   viewItem.monto !== undefined && viewItem.monto !== null && {
                     label: 'Monto',
                     value: (viewItem.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(viewItem.monto, viewItem.moneda)
