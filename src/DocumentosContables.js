@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import {
   Search, Plus, Edit2, Trash2, X, Save, Download,
-  RefreshCw, ChevronUp, ChevronDown, Upload, FileText, Link
+  RefreshCw, ChevronUp, ChevronDown, Upload, FileText, Link, Eye
 } from 'lucide-react';
 import './DocumentosContables.css';
 
@@ -116,6 +116,8 @@ export default function DocumentosContables() {
 
   // Modales
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -257,6 +259,11 @@ export default function DocumentosContables() {
     if (activeTab === 'recibos') init.tipo = activeTab === 'recibos' ? 'RO' : 'RNO';
     setFormData(init);
     setShowModal(true);
+  };
+
+  const handleView = (item) => {
+    setViewItem(item);
+    setShowViewModal(true);
   };
 
   const handleEdit = (item) => {
@@ -713,7 +720,8 @@ export default function DocumentosContables() {
               <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
               <td>
                 <div className="dc-table-actions">
-                  <button className="dc-btn-icon" onClick={() => handleEdit(f)}><Edit2 size={14} /></button>
+                  <button className="dc-btn-icon" title="Ver" onClick={() => handleView(f)}><Eye size={14} /></button>
+                  <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(f)}><Edit2 size={14} /></button>
                   <button className="dc-btn-icon danger" onClick={() => handleDelete(f.id)}><Trash2 size={14} /></button>
                 </div>
               </td>
@@ -751,7 +759,8 @@ export default function DocumentosContables() {
               <td><span className={`dc-badge ${estadoBadgeClass(o.estado)}`}>{o.estado}</span></td>
               <td>
                 <div className="dc-table-actions">
-                  <button className="dc-btn-icon" onClick={() => handleEdit(o)}><Edit2 size={14} /></button>
+                  <button className="dc-btn-icon" title="Ver" onClick={() => handleView(o)}><Eye size={14} /></button>
+                  <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(o)}><Edit2 size={14} /></button>
                   <button className="dc-btn-icon danger" onClick={() => handleDelete(o.id)}><Trash2 size={14} /></button>
                 </div>
               </td>
@@ -800,7 +809,8 @@ export default function DocumentosContables() {
                 <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.detalle || <span className="muted">-</span>}</td>
                 <td>
                   <div className="dc-table-actions">
-                    <button className="dc-btn-icon" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
+                    <button className="dc-btn-icon" title="Ver" onClick={() => handleView(r)}><Eye size={14} /></button>
+                    <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
                     <button className="dc-btn-icon danger" onClick={() => handleDelete(r.id)}><Trash2 size={14} /></button>
                   </div>
                 </td>
@@ -842,7 +852,8 @@ export default function DocumentosContables() {
                 <td style={{ fontSize: '0.75rem', color: '#567C8D' }}>{vinculoTexto}</td>
                 <td>
                   <div className="dc-table-actions">
-                    <button className="dc-btn-icon" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
+                    <button className="dc-btn-icon" title="Ver" onClick={() => handleView(r)}><Eye size={14} /></button>
+                    <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
                     <button className="dc-btn-icon danger" onClick={() => handleDelete(r.id)}><Trash2 size={14} /></button>
                   </div>
                 </td>
@@ -1153,6 +1164,63 @@ export default function DocumentosContables() {
       <div className="dc-table-wrapper">
         {renderTabla()}
       </div>
+
+      {/* Modal de vista (solo lectura) */}
+      {showViewModal && viewItem && (
+        <div className="dc-modal-overlay" onClick={() => setShowViewModal(false)}>
+          <div className="dc-modal" onClick={e => e.stopPropagation()}>
+            <div className="dc-modal-header">
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Eye size={16} style={{ color: '#567C8D' }} />
+                {activeTab === 'facturas' ? `Factura ${viewItem.nro_factura}`
+                  : activeTab === 'ordenes_servicio' ? `OS ${viewItem.nro_os}`
+                  : activeTab === 'recibos' ? `Recibo ${viewItem.nro_recibo}`
+                  : `Remisión ${viewItem.nro_remision}`}
+              </h3>
+              <button className="dc-modal-close" onClick={() => setShowViewModal(false)}><X size={18} /></button>
+            </div>
+            <div className="dc-modal-body">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 1.5rem' }}>
+                {[
+                  activeTab === 'facturas' && { label: 'N° Factura', value: viewItem.nro_factura },
+                  activeTab === 'ordenes_servicio' && { label: 'N° OS', value: viewItem.nro_os },
+                  activeTab === 'recibos' && { label: 'N° Recibo', value: viewItem.nro_recibo },
+                  activeTab === 'remisiones' && { label: 'N° Remisión', value: viewItem.nro_remision },
+                  { label: 'Fecha', value: formatDate(viewItem.fecha) },
+                  { label: 'Cliente', value: viewItem.cliente, span: true },
+                  viewItem.modalidad && { label: 'Modalidad', value: viewItem.modalidad },
+                  viewItem.moneda && { label: 'Moneda', value: viewItem.moneda },
+                  viewItem.monto !== undefined && viewItem.monto !== null && {
+                    label: 'Monto',
+                    value: (viewItem.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(viewItem.monto)
+                  },
+                  viewItem.estado && { label: 'Estado', value: viewItem.estado },
+                  viewItem.rubro && { label: 'Rubro', value: viewItem.rubro },
+                  viewItem.tipo && { label: 'Tipo', value: viewItem.tipo },
+                  viewItem.concepto && { label: 'Concepto', value: viewItem.concepto, span: true },
+                  viewItem.detalle && { label: 'Detalle', value: viewItem.detalle, span: true },
+                  viewItem.tipo_vinculo && { label: 'Vínculo', value: viewItem.tipo_vinculo === 'factura'
+                    ? `Factura: ${facturas.find(f => f.id === viewItem.vinculo_id)?.nro_factura || '-'}`
+                    : `OS: ${ordenesServicio.find(o => o.id === viewItem.vinculo_id)?.nro_os || '-'}` },
+                  viewItem.observaciones && { label: 'Observaciones', value: viewItem.observaciones, span: true },
+                ].filter(Boolean).map((field, i) => (
+                  <div key={i} style={{ gridColumn: field.span ? '1 / -1' : 'auto' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#567C8D', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>
+                      {field.label}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: '#2F4156', background: '#f5f8fb', borderRadius: '7px', padding: '0.45rem 0.75rem', border: '1px solid #e0e8f0' }}>
+                      {field.value || <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>—</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="dc-modal-footer">
+              <button className="dc-btn-save" onClick={() => setShowViewModal(false)}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal nuevo/editar */}
       {showModal && (
