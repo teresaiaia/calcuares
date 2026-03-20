@@ -12,17 +12,18 @@ import './DocumentosContables.css';
 const RUBROS = [
   'Aldenor', 'Anulada', 'Aqua', 'Ares', 'Body Health', 'Candela',
   'Centenario', 'Classys', 'Cocoon', 'Daeyang', 'Dermlite', 'Ecleris',
-  'Endymed', 'Forma-Tk', 'Fotona', 'Hydra', 'Insumos', 'Intermedic',
+  'Endymed', 'Fine', 'Forma-Tk', 'Fotona', 'Hydra', 'Insumos', 'Intermedic',
   'Laseroptek', 'Lumenis', 'Mascaras', 'MtoS', 'ServTec', 'Sothys',
   'Venus', 'Viora'
 ];
 
 const MONEDAS = ['₲', 'USD'];
-const MODALIDADES = ['Contado', 'Crédito', 'Anulada'];
+const MODALIDADES = ['Contado', 'Crédito', 'Anulada', 'Bonificación'];
 const TIPOS_RECIBO = ['RO', 'RNO'];
 
 const ESTADOS_FAC_OS = (modalidad) => {
   if (modalidad === 'Anulada') return ['Anulada'];
+  if (modalidad === 'Bonificación') return ['Bonificación'];
   if (modalidad === 'Contado') return ['Pagado', 'Anulada'];
   return ['Pendiente', 'Parcialmente cobrado', 'Pagado', 'Anulada'];
 };
@@ -59,6 +60,7 @@ const estadoBadgeClass = (estado) => {
   if (e.includes('parcial')) return 'parcial';
   if (e.includes('anulad')) return 'anulado';
   if (e.includes('contado')) return 'contado';
+  if (e.includes('bonificaci')) return 'bonificacion';
   return '';
 };
 
@@ -775,8 +777,8 @@ export default function DocumentosContables() {
               <td style={{ fontWeight: 700 }}>{f.nro_factura}</td>
               <td>{formatDate(f.fecha)}</td>
               <td>{f.cliente}</td>
-              <td>{(f.modalidad === 'Anulada' || f.estado === 'Anulada') ? <span className="muted">—</span> : <span className={`dc-badge ${f.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{f.modalidad}</span>}</td>
-              <td>{(f.modalidad === 'Anulada' || f.estado === 'Anulada') ? <span className="muted">—</span> : <span className="dc-badge-moneda">{f.moneda}</span>}</td>
+              <td>{(f.modalidad === 'Anulada' || f.estado === 'Anulada') ? <span className="muted">—</span> : <span className={`dc-badge ${f.modalidad === 'Contado' ? 'contado' : f.modalidad === 'Bonificación' ? 'bonificacion' : 'credito'}`}>{f.modalidad}</span>}</td>
+              <td>{(f.modalidad === 'Anulada' || f.estado === 'Anulada' || f.modalidad === 'Bonificación') ? <span className="muted">—</span> : <span className="dc-badge-moneda">{f.moneda}</span>}</td>
               <td className="num">{f.monto ? (f.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(f.monto, f.moneda) : ''}</td>
               <td>{f.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
@@ -814,8 +816,8 @@ export default function DocumentosContables() {
               <td style={{ fontWeight: 700 }}>{o.nro_os}</td>
               <td>{formatDate(o.fecha)}</td>
               <td>{o.cliente}</td>
-              <td>{(o.modalidad === 'Anulada' || o.estado === 'Anulada') ? <span className="muted">—</span> : <span className={`dc-badge ${o.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{o.modalidad}</span>}</td>
-              <td>{(o.modalidad === 'Anulada' || o.estado === 'Anulada') ? <span className="muted">—</span> : <span className="dc-badge-moneda">{o.moneda}</span>}</td>
+              <td>{(o.modalidad === 'Anulada' || o.estado === 'Anulada') ? <span className="muted">—</span> : <span className={`dc-badge ${o.modalidad === 'Contado' ? 'contado' : o.modalidad === 'Bonificación' ? 'bonificacion' : 'credito'}`}>{o.modalidad}</span>}</td>
+              <td>{(o.modalidad === 'Anulada' || o.estado === 'Anulada' || o.modalidad === 'Bonificación') ? <span className="muted">—</span> : <span className="dc-badge-moneda">{o.moneda}</span>}</td>
               <td className="num">{o.monto ? (o.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(o.monto, o.moneda) : ''}</td>
               <td>{o.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(o.estado)}`}>{o.estado}</span></td>
@@ -962,7 +964,12 @@ export default function DocumentosContables() {
               <label>Modalidad</label>
               <select value={formData.modalidad} onChange={e => {
                 const mod = e.target.value;
-                setFormData({ ...formData, modalidad: mod, estado: mod === 'Contado' ? 'Pagado' : mod === 'Anulada' ? 'Anulada' : 'Pendiente' });
+                setFormData({
+                  ...formData,
+                  modalidad: mod,
+                  estado: mod === 'Contado' ? 'Pagado' : mod === 'Anulada' ? 'Anulada' : mod === 'Bonificación' ? 'Bonificación' : 'Pendiente',
+                  monto: mod === 'Bonificación' ? '0' : formData.monto,
+                });
               }}>
                 {MODALIDADES.map(m => <option key={m}>{m}</option>)}
               </select>
