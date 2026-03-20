@@ -211,17 +211,18 @@ export default function DocumentosContables() {
     if (searchTerm) {
       const exactMatch = searchTerm.match(/^"(.+)"$/);
       if (exactMatch) {
-        // Búsqueda exacta: el valor de algún campo debe ser exactamente igual
+        // Búsqueda exacta con comillas: algún campo debe ser exactamente igual
         const exact = exactMatch[1].toLowerCase();
         data = data.filter(item =>
           Object.values(item).some(v => v && String(v).toLowerCase() === exact)
         );
       } else {
-        // Búsqueda parcial: el texto aparece en cualquier parte
-        const s = searchTerm.toLowerCase();
-        data = data.filter(item =>
-          Object.values(item).some(v => v && String(v).toLowerCase().includes(s))
-        );
+        // Búsqueda multi-palabra: el registro debe contener TODAS las palabras
+        const palabras = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
+        data = data.filter(item => {
+          const texto = Object.values(item).filter(Boolean).map(v => String(v).toLowerCase()).join(' ');
+          return palabras.every(p => texto.includes(p));
+        });
       }
     }
     if (filterEstado !== 'todos' && activeTab !== 'remisiones') {
@@ -1152,7 +1153,7 @@ export default function DocumentosContables() {
       <div className="dc-filters">
         <div className="dc-search-box">
           <Search size={14} style={{ color: '#9ca3af', flexShrink: 0 }} />
-          <input placeholder='Buscar... o "exacto"' value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <input placeholder='Buscar... varias palabras o "exacto"' value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </div>
 
         {activeTab !== 'remisiones' && (
