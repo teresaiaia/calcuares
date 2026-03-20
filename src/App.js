@@ -8,6 +8,7 @@ import OperacionesComerciales from './OperacionesComerciales';
 import SeguimientoComercial from './SeguimientoComercial';
 import Articulos from './Articulos';
 import ServicioTecnico from './ServicioTecnico';
+import DocumentosContables from './DocumentosContables';
 import CalendarioMantenimiento from './CalendarioMantenimiento';
 import TicketsErrores from './TicketsErrores';
 import CatalogoRepuestos from './CatalogoRepuestos';
@@ -1487,7 +1488,8 @@ export default function Calcuares() {
                 { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
                 { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> },
                 { key: 'articulos', label: 'Artículos', icon: <Package size={16} /> },
-                { key: 'servicio_tecnico', label: 'Serv. Técnico', icon: null }
+                { key: 'servicio_tecnico', label: 'Serv. Técnico', icon: null },
+                { key: 'documentos', label: 'DC', icon: null, discrete: true }
               ].map(tab => (
                 <button
                   key={tab.key}
@@ -1555,6 +1557,8 @@ export default function Calcuares() {
             <OperacionesComerciales />
           ) : activeModule === 'seguimiento' ? (
             <SeguimientoComercial isAdmin={true} />
+          ) : activeModule === 'documentos' ? (
+            <DocumentosContables />
           ) : activeModule === 'servicio_tecnico' ? (
             <>
               <div style={{ 
