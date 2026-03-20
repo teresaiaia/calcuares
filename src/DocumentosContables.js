@@ -144,6 +144,10 @@ export default function DocumentosContables() {
 
   // Export menu
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [tipoCambio, setTipoCambio] = useState(() => {
+    const saved = localStorage.getItem('dc_tipoCambio');
+    return saved ? parseFloat(saved) : 7800;
+  });
   const exportMenuRef = useRef(null);
 
   // Form
@@ -247,9 +251,18 @@ export default function DocumentosContables() {
     return data;
   }, [dataActiva, activeTab, searchTerm, filterEstado, filterMoneda, filterFechaDesde, filterFechaHasta, sortField, sortDir]);
 
-  const totalMonto = useMemo(() => {
-    return datosFiltrados.reduce((acc, item) => acc + (parseFloat(item.monto) || 0), 0);
-  }, [datosFiltrados]);
+  const totales = useMemo(() => {
+    let guaranies = 0;
+    let dolares = 0;
+    datosFiltrados.forEach(item => {
+      const monto = parseFloat(item.monto) || 0;
+      if (item.moneda === 'USD') dolares += monto;
+      else if (item.moneda === '₲') guaranies += monto;
+    });
+    const tc = parseFloat(tipoCambio) || 1;
+    const totalUSD = dolares + (guaranies / tc);
+    return { guaranies, dolares, totalUSD };
+  }, [datosFiltrados, tipoCambio]);
 
   // ---- SORT TOGGLE ----
   const handleSort = (field) => {
@@ -646,7 +659,7 @@ export default function DocumentosContables() {
   // ---- EXPORT PDF ----
   const handleExportPDF = () => {
     setShowExportMenu(false);
-    const totHTML = `<span><strong>Registros:</strong> ${datosFiltrados.length}</span>${activeTab !== 'remisiones' ? `<span><strong>Total:</strong> ${datosFiltrados[0]?.moneda || '₲'}${formatNumber(totalMonto, datosFiltrados[0]?.moneda)}</span>` : ''}`;
+    const totHTML = `<span><strong>Registros:</strong> ${datosFiltrados.length}</span>${totales.guaranies > 0 ? `<span><strong>₲:</strong> ₲${formatNumber(totales.guaranies)}</span>` : ''}${totales.dolares > 0 ? `<span><strong>USD:</strong> US$ ${formatNumber(totales.dolares, 'USD')}</span>` : ''}<span><strong>Total USD:</strong> US$ ${formatNumber(totales.totalUSD, 'USD')}</span>`;
 
     if (activeTab === 'facturas') {
       exportarPDF('Facturas', ['N° FAC', 'FECHA', 'CLIENTE', 'MODALIDAD', 'MONEDA', 'MONTO', 'RUBRO', 'ESTADO'],
@@ -1167,11 +1180,33 @@ export default function DocumentosContables() {
         )}
       </div>
 
-      {/* Totales */}
+      {/* Tipo de cambio + Totales */}
       {activeTab !== 'remisiones' && datosFiltrados.length > 0 && (
-        <div className="dc-totales">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {/* Tipo de cambio */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #dde6ee', borderRadius: '9px', padding: '0.45rem 0.85rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#567C8D' }}>TC ₲/US$</span>
+            <input
+              type="number"
+              value={tipoCambio}
+              onChange={e => {
+                setTipoCambio(e.target.value);
+                localStorage.setItem('dc_tipoCambio', e.target.value);
+              }}
+              style={{ width: '90px', border: '1px solid #C8D9E6', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.85rem', color: '#2F4156', outline: 'none', fontWeight: 600 }}
+            />
+          </div>
+          {/* Totales */}
           <div className="dc-total-card">Registros: <span>{datosFiltrados.length}</span></div>
-          <div className="dc-total-card">Total: <span>{datosFiltrados[0]?.moneda === 'USD' ? 'US$ ' : '₲'}{formatNumber(totalMonto, datosFiltrados[0]?.moneda)}</span></div>
+          {totales.guaranies > 0 && (
+            <div className="dc-total-card">₲: <span>₲{formatNumber(totales.guaranies)}</span></div>
+          )}
+          {totales.dolares > 0 && (
+            <div className="dc-total-card">USD: <span>US$ {formatNumber(totales.dolares, 'USD')}</span></div>
+          )}
+          <div className="dc-total-card" style={{ borderLeft: '3px solid #567C8D', fontWeight: 700 }}>
+            Total USD: <span>US$ {formatNumber(totales.totalUSD, 'USD')}</span>
+          </div>
         </div>
       )}
 
