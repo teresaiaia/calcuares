@@ -715,7 +715,7 @@ export default function DocumentosContables() {
               <td>{formatDate(f.fecha)}</td>
               <td>{f.cliente}</td>
               <td><span className={`dc-badge ${f.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{f.modalidad}</span></td>
-              <td><span className="dc-badge-moneda">{f.moneda}</span></td>
+              <td>{f.modalidad !== 'Anulada' ? <span className="dc-badge-moneda">{f.moneda}</span> : <span className="muted">—</span>}</td>
               <td className="num">{f.monto ? (f.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(f.monto) : ''}</td>
               <td>{f.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
@@ -754,7 +754,7 @@ export default function DocumentosContables() {
               <td>{formatDate(o.fecha)}</td>
               <td>{o.cliente}</td>
               <td><span className={`dc-badge ${o.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{o.modalidad}</span></td>
-              <td><span className="dc-badge-moneda">{o.moneda}</span></td>
+              <td>{o.modalidad !== 'Anulada' ? <span className="dc-badge-moneda">{o.moneda}</span> : <span className="muted">—</span>}</td>
               <td className="num">{o.monto ? (o.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(o.monto) : ''}</td>
               <td>{o.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(o.estado)}`}>{o.estado}</span></td>
@@ -907,12 +907,14 @@ export default function DocumentosContables() {
               </select>
             </div>
 
+            {formData.modalidad !== 'Anulada' && (
             <div className="dc-form-group">
               <label>Moneda</label>
               <select value={formData.moneda} onChange={e => setFormData({ ...formData, moneda: e.target.value })}>
                 {MONEDAS.map(m => <option key={m}>{m}</option>)}
               </select>
             </div>
+            )}
 
             <div className="dc-form-group span2">
               <label>Concepto</label>
