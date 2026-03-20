@@ -203,12 +203,22 @@ export default function DocumentosContables() {
   // ---- FILTRADO ----
   const datosFiltrados = useMemo(() => {
     let data = [...dataActiva];
-    const s = searchTerm.toLowerCase();
 
-    if (s) {
-      data = data.filter(item =>
-        Object.values(item).some(v => v && String(v).toLowerCase().includes(s))
-      );
+    if (searchTerm) {
+      const exactMatch = searchTerm.match(/^"(.+)"$/);
+      if (exactMatch) {
+        // Búsqueda exacta: el valor de algún campo debe ser exactamente igual
+        const exact = exactMatch[1].toLowerCase();
+        data = data.filter(item =>
+          Object.values(item).some(v => v && String(v).toLowerCase() === exact)
+        );
+      } else {
+        // Búsqueda parcial: el texto aparece en cualquier parte
+        const s = searchTerm.toLowerCase();
+        data = data.filter(item =>
+          Object.values(item).some(v => v && String(v).toLowerCase().includes(s))
+        );
+      }
     }
     if (filterEstado !== 'todos' && activeTab !== 'remisiones') {
       data = data.filter(item => item.estado === filterEstado || item.tipo === filterEstado);
@@ -1129,7 +1139,7 @@ export default function DocumentosContables() {
       <div className="dc-filters">
         <div className="dc-search-box">
           <Search size={14} style={{ color: '#9ca3af', flexShrink: 0 }} />
-          <input placeholder="Buscar..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <input placeholder='Buscar... o "exacto"' value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
         </div>
 
         {activeTab !== 'remisiones' && (
