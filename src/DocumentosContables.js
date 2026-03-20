@@ -10,12 +10,13 @@ import './DocumentosContables.css';
 // CONSTANTES
 // ============================================
 const MONEDAS = ['₲', 'USD'];
-const MODALIDADES = ['Contado', 'Crédito'];
+const MODALIDADES = ['Contado', 'Crédito', 'Anulada'];
 const TIPOS_RECIBO = ['RO', 'RNO'];
 
 const ESTADOS_FAC_OS = (modalidad) => {
-  if (modalidad === 'Contado') return ['Pagado', 'Anulado'];
-  return ['Pendiente', 'Parcialmente cobrado', 'Cobrado', 'Anulado'];
+  if (modalidad === 'Anulada') return ['Anulada'];
+  if (modalidad === 'Contado') return ['Pagado', 'Anulada'];
+  return ['Pendiente', 'Parcialmente cobrado', 'Cobrado', 'Anulada'];
 };
 
 // ============================================
@@ -41,10 +42,10 @@ const parseMonto = (val) => {
 const estadoBadgeClass = (estado) => {
   if (!estado) return '';
   const e = estado.toLowerCase();
-  if (e.includes('pagado') || e.includes('cobrado')) return 'pagado';
+  if (e.includes('pagado') || e === 'cobrado') return 'pagado';
   if (e.includes('pendiente')) return 'pendiente';
   if (e.includes('parcial')) return 'parcial';
-  if (e.includes('anulado')) return 'anulado';
+  if (e.includes('anulad')) return 'anulado';
   if (e.includes('contado')) return 'contado';
   return '';
 };
@@ -900,7 +901,7 @@ export default function DocumentosContables() {
               <label>Modalidad</label>
               <select value={formData.modalidad} onChange={e => {
                 const mod = e.target.value;
-                setFormData({ ...formData, modalidad: mod, estado: mod === 'Contado' ? 'Pagado' : 'Pendiente' });
+                setFormData({ ...formData, modalidad: mod, estado: mod === 'Contado' ? 'Pagado' : mod === 'Anulada' ? 'Anulada' : 'Pendiente' });
               }}>
                 {MODALIDADES.map(m => <option key={m}>{m}</option>)}
               </select>
@@ -922,6 +923,7 @@ export default function DocumentosContables() {
               <label>Rubro</label>
               <select value={formData.rubro} onChange={e => setFormData({ ...formData, rubro: e.target.value })}>
                 <option value="">— Sin rubro —</option>
+                <option value="Anulada">Anulada</option>
                 {proveedores.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
@@ -931,11 +933,11 @@ export default function DocumentosContables() {
               <input value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} placeholder="0" />
             </div>
 
-            {formData.modalidad === 'Crédito' && (
+            {(formData.modalidad === 'Crédito' || formData.modalidad === 'Anulada') && (
               <div className="dc-form-group">
                 <label>Estado</label>
                 <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
-                  {ESTADOS_FAC_OS('Crédito').map(s => <option key={s}>{s}</option>)}
+                  {ESTADOS_FAC_OS(formData.modalidad).map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
             )}
@@ -1133,7 +1135,7 @@ export default function DocumentosContables() {
               <option value="todos">Todos los estados</option>
               {activeTab === 'recibos'
                 ? TIPOS_RECIBO.map(t => <option key={t}>{t}</option>)
-                : [...ESTADOS_FAC_OS('Contado'), ...ESTADOS_FAC_OS('Crédito')].filter((v, i, a) => a.indexOf(v) === i).map(s => <option key={s}>{s}</option>)
+                : [...ESTADOS_FAC_OS('Contado'), ...ESTADOS_FAC_OS('Crédito'), 'Anulada'].filter((v, i, a) => a.indexOf(v) === i).map(s => <option key={s}>{s}</option>)
               }
             </select>
             <select className="dc-filter-select" value={filterMoneda} onChange={e => setFilterMoneda(e.target.value)}>
