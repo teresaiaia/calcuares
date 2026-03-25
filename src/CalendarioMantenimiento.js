@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from './supabaseClient';
-import { Plus, Save, X, Trash2, Edit2, Search, RefreshCw, Check, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Plus, Save, X, Trash2, Edit2, Search, RefreshCw, Check, ChevronDown, ChevronUp, AlertTriangle, Clock } from 'lucide-react';
 
 const PERIODICIDADES = [
   { key: 'mensual', label: 'Mensual', meses: 1 },
@@ -13,8 +13,8 @@ const PERIODICIDADES = [
 
 const CalendarioMantenimiento = () => {
   const [mantenimientos, setMantenimientos] = useState([]);
-  const [equipos, setEquipos] = useState([]); // equipos únicos de servicio_tecnico
-  const [ticketsActivos, setTicketsActivos] = useState([]); // tickets no facturados
+  const [equipos, setEquipos] = useState([]);
+  const [ticketsActivos, setTicketsActivos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -22,6 +22,12 @@ const CalendarioMantenimiento = () => {
   const [sortField, setSortField] = useState('proximo1');
   const [sortDir, setSortDir] = useState('asc');
   const [saving, setSaving] = useState(false);
+
+  // Historial de contactos
+  const [contactos, setContactos] = useState([]);
+  const [loadingContactos, setLoadingContactos] = useState(false);
+  const [nuevoContacto, setNuevoContacto] = useState({ fecha: new Date().toISOString().split('T')[0], nota: '' });
+  const [savingContacto, setSavingContacto] = useState(false);
 
   const [formData, setFormData] = useState({
     cliente: '',
@@ -32,7 +38,6 @@ const CalendarioMantenimiento = () => {
     notas: ''
   });
 
-  // Cargar datos
   useEffect(() => {
     fetchMantenimientos();
     fetchEquipos();
@@ -62,13 +67,10 @@ const CalendarioMantenimiento = () => {
         .select('cliente, modelo, serial_number')
         .order('cliente');
       if (error) throw error;
-      // Equipos únicos por serial_number + cliente
       const uniqueMap = new Map();
       (data || []).forEach(e => {
         const key = `${e.cliente}|${e.modelo}|${e.serial_number}`;
-        if (!uniqueMap.has(key) && e.serial_number) {
-          uniqueMap.set(key, e);
-        }
+        if (!uniqueMap.has(key) && e.serial_number) uniqueMap.set(key, e);
       });
       setEquipos(Array.from(uniqueMap.values()));
     } catch (err) {
@@ -89,20 +91,74 @@ const CalendarioMantenimiento = () => {
     }
   };
 
-  // Verificar si un equipo tiene ticket activo
-  const tieneTicketActivo = (cliente, serialNumber) => {
-    if (!serialNumber) return false;
-    return ticketsActivos.some(t => 
-      t.serial_number === serialNumber && t.cliente === cliente
-    );
+  const fetchContactos = async (mantenimientoId) => {
+    setLoadingContactos(true);
+    try {
+      const { data, error } = await supabase
+        .from('mantenimiento_contactos')
+        .select('*')
+        .eq('mantenimiento_id', mantenimientoId)
+        .order('fecha', { ascending: false });
+      if (error) throw error;
+      setContactos(data || []);
+    } catch (err) {
+      console.error('Error cargando contactos:', err);
+    } finally {
+      setLoadingContactos(false);
+    }
   };
 
-  // Calcular próximos servicios
+  const handleAddContacto = async () => {
+    if (!nuevoContacto.nota.trim()) {
+      alert('Escribí un comentario para el contacto');
+      return;
+    }
+    if (!nuevoContacto.fecha) {
+      alert('Seleccioná una fecha');
+      return;
+    }
+    setSavingContacto(true);
+    try {
+      const { error } = await supabase
+        .from('mantenimiento_contactos')
+        .insert([{
+          mantenimiento_id: editingItem.id,
+          fecha: nuevoContacto.fecha,
+          nota: nuevoContacto.nota.trim()
+        }]);
+      if (error) throw error;
+      setNuevoContacto({ fecha: new Date().toISOString().split('T')[0], nota: '' });
+      await fetchContactos(editingItem.id);
+    } catch (err) {
+      alert('Error al guardar contacto: ' + err.message);
+    } finally {
+      setSavingContacto(false);
+    }
+  };
+
+  const handleDeleteContacto = async (contactoId) => {
+    if (!window.confirm('¿Eliminar este contacto del historial?')) return;
+    try {
+      const { error } = await supabase
+        .from('mantenimiento_contactos')
+        .delete()
+        .eq('id', contactoId);
+      if (error) throw error;
+      await fetchContactos(editingItem.id);
+    } catch (err) {
+      alert('Error al eliminar: ' + err.message);
+    }
+  };
+
+  const tieneTicketActivo = (cliente, serialNumber) => {
+    if (!serialNumber) return false;
+    return ticketsActivos.some(t => t.serial_number === serialNumber && t.cliente === cliente);
+  };
+
   const calcularProximos = (ultimoServicio, periodicidad) => {
     if (!ultimoServicio) return [null, null, null];
     const periodo = PERIODICIDADES.find(p => p.key === periodicidad);
     if (!periodo) return [null, null, null];
-
     const proximos = [];
     for (let i = 1; i <= 3; i++) {
       const fecha = new Date(ultimoServicio);
@@ -112,7 +168,6 @@ const CalendarioMantenimiento = () => {
     return proximos;
   };
 
-  // Estado de fecha: vencido, próximo (dentro de 15 días), ok
   const estadoFecha = (fechaStr) => {
     if (!fechaStr) return 'sin-fecha';
     const hoy = new Date();
@@ -130,7 +185,6 @@ const CalendarioMantenimiento = () => {
     return d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  // Datos enriquecidos con próximos servicios
   const datosEnriquecidos = useMemo(() => {
     return mantenimientos.map(m => {
       const [p1, p2, p3] = calcularProximos(m.ultimo_servicio, m.periodicidad);
@@ -138,10 +192,8 @@ const CalendarioMantenimiento = () => {
     });
   }, [mantenimientos]);
 
-  // Filtrar y ordenar
   const datosFiltrados = useMemo(() => {
     let filtered = [...datosEnriquecidos];
-
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(m =>
@@ -150,27 +202,19 @@ const CalendarioMantenimiento = () => {
         (m.serial_number || '').toLowerCase().includes(term)
       );
     }
-
     filtered.sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
-      valA = (valA || '').toString().toLowerCase();
-      valB = (valB || '').toString().toLowerCase();
+      let valA = (a[sortField] || '').toString().toLowerCase();
+      let valB = (b[sortField] || '').toString().toLowerCase();
       if (valA < valB) return sortDir === 'asc' ? -1 : 1;
       if (valA > valB) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
-
     return filtered;
   }, [datosEnriquecidos, searchTerm, sortField, sortDir]);
 
   const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
+    if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
   };
 
   const SortIcon = ({ field }) => {
@@ -178,35 +222,24 @@ const CalendarioMantenimiento = () => {
     return sortDir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />;
   };
 
-  // Seleccionar equipo del dropdown
   const handleSelectEquipo = (equipoStr) => {
     if (!equipoStr) return;
     const equipo = equipos.find(e => `${e.cliente} — ${e.modelo} — ${e.serial_number}` === equipoStr);
-    if (equipo) {
-      setFormData({
-        ...formData,
-        cliente: equipo.cliente,
-        modelo: equipo.modelo,
-        serial_number: equipo.serial_number
-      });
-    }
+    if (equipo) setFormData({ ...formData, cliente: equipo.cliente, modelo: equipo.modelo, serial_number: equipo.serial_number });
   };
 
   const handleNew = () => {
     setEditingItem(null);
-    setFormData({
-      cliente: '',
-      modelo: '',
-      serial_number: '',
-      periodicidad: 'semestral',
-      ultimo_servicio: '',
-      notas: ''
-    });
+    setContactos([]);
+    setNuevoContacto({ fecha: new Date().toISOString().split('T')[0], nota: '' });
+    setFormData({ cliente: '', modelo: '', serial_number: '', periodicidad: 'semestral', ultimo_servicio: '', notas: '' });
     setShowModal(true);
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
+    setContactos([]);
+    setNuevoContacto({ fecha: new Date().toISOString().split('T')[0], nota: '' });
     setFormData({
       cliente: item.cliente || '',
       modelo: item.modelo || '',
@@ -216,6 +249,7 @@ const CalendarioMantenimiento = () => {
       notas: item.notas || ''
     });
     setShowModal(true);
+    fetchContactos(item.id);
   };
 
   const handleSave = async () => {
@@ -233,20 +267,13 @@ const CalendarioMantenimiento = () => {
         ultimo_servicio: formData.ultimo_servicio || null,
         notas: formData.notas.trim() || null
       };
-
       if (editingItem) {
-        const { error } = await supabase
-          .from('mantenimientos_preventivos')
-          .update(payload)
-          .eq('id', editingItem.id);
+        const { error } = await supabase.from('mantenimientos_preventivos').update(payload).eq('id', editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('mantenimientos_preventivos')
-          .insert([payload]);
+        const { error } = await supabase.from('mantenimientos_preventivos').insert([payload]);
         if (error) throw error;
       }
-
       setShowModal(false);
       await fetchMantenimientos();
     } catch (err) {
@@ -270,10 +297,7 @@ const CalendarioMantenimiento = () => {
   const handleAutorizar = async (id, numProximo, valor) => {
     const campo = `autorizado_${numProximo}`;
     try {
-      const { error } = await supabase
-        .from('mantenimientos_preventivos')
-        .update({ [campo]: valor })
-        .eq('id', id);
+      const { error } = await supabase.from('mantenimientos_preventivos').update({ [campo]: valor }).eq('id', id);
       if (error) throw error;
       await fetchMantenimientos();
     } catch (err) {
@@ -283,10 +307,7 @@ const CalendarioMantenimiento = () => {
 
   const handleToggleAtt = async (id, valorActual) => {
     try {
-      const { error } = await supabase
-        .from('mantenimientos_preventivos')
-        .update({ atencion: !valorActual })
-        .eq('id', id);
+      const { error } = await supabase.from('mantenimientos_preventivos').update({ atencion: !valorActual }).eq('id', id);
       if (error) throw error;
       await fetchMantenimientos();
     } catch (err) {
@@ -305,7 +326,6 @@ const CalendarioMantenimiento = () => {
     return 'cm-fecha-ok';
   };
 
-  // Estadísticas
   const stats = useMemo(() => {
     let vencidos = 0, proximos = 0, alDia = 0;
     datosEnriquecidos.forEach(m => {
@@ -378,6 +398,28 @@ const CalendarioMantenimiento = () => {
         .cm-empty { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: #94a3b8; }
         @keyframes cm-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .cm-spin { animation: cm-spin 1s linear infinite; }
+
+        /* Historial de contactos */
+        .cm-historial-section { border-top: 2px solid #e2e8f0; margin-top: 0.5rem; padding-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .cm-historial-title { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 700; color: #2F4156; }
+        .cm-contacto-form { background: #f8fafc; border-radius: 10px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        .cm-contacto-form-row { display: flex; gap: 0.5rem; align-items: flex-end; }
+        .cm-contacto-form input[type="date"] { padding: 0.4rem 0.6rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.82rem; outline: none; transition: border-color 0.2s; flex-shrink: 0; }
+        .cm-contacto-form input[type="date"]:focus { border-color: #567C8D; }
+        .cm-contacto-form input[type="text"] { flex: 1; padding: 0.4rem 0.6rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.82rem; outline: none; transition: border-color 0.2s; }
+        .cm-contacto-form input[type="text"]:focus { border-color: #567C8D; }
+        .cm-btn-agregar { display: flex; align-items: center; gap: 0.25rem; padding: 0.4rem 0.75rem; background: #2F4156; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .cm-btn-agregar:hover { background: #3a5269; }
+        .cm-btn-agregar:disabled { opacity: 0.6; cursor: default; }
+        .cm-contactos-lista { display: flex; flex-direction: column; gap: 0; max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
+        .cm-contacto-item { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+        .cm-contacto-item:last-child { border-bottom: none; }
+        .cm-contacto-item:hover { background: #f8fafc; }
+        .cm-contacto-fecha { font-size: 0.72rem; color: #567C8D; font-weight: 700; white-space: nowrap; min-width: 70px; padding-top: 1px; }
+        .cm-contacto-nota { flex: 1; font-size: 0.8rem; color: #2F4156; }
+        .cm-contacto-del { padding: 2px; border: none; background: transparent; cursor: pointer; color: #cbd5e1; border-radius: 4px; transition: all 0.15s; flex-shrink: 0; }
+        .cm-contacto-del:hover { color: #dc2626; background: #fee2e2; }
+        .cm-contactos-vacio { padding: 1rem; text-align: center; color: #94a3b8; font-size: 0.78rem; }
       `}</style>
 
       {/* Stats */}
@@ -551,10 +593,7 @@ const CalendarioMantenimiento = () => {
               {!editingItem && (
                 <div className="cm-form-group">
                   <label>🔍 Seleccionar equipo existente</label>
-                  <select
-                    onChange={(e) => handleSelectEquipo(e.target.value)}
-                    defaultValue=""
-                  >
+                  <select onChange={(e) => handleSelectEquipo(e.target.value)} defaultValue="">
                     <option value="">-- Elegir equipo de la base de datos --</option>
                     {equipos.map((e, i) => (
                       <option key={i} value={`${e.cliente} — ${e.modelo} — ${e.serial_number}`}>
@@ -624,7 +663,70 @@ const CalendarioMantenimiento = () => {
                   onChange={(e) => setFormData({...formData, notas: e.target.value})}
                   rows={2} placeholder="Observaciones opcionales..." />
               </div>
+
+              {/* ── Historial de contactos (solo al editar) ── */}
+              {editingItem && (
+                <div className="cm-historial-section">
+                  <div className="cm-historial-title">
+                    <Clock size={15} /> Historial de Contactos
+                  </div>
+
+                  {/* Formulario nuevo contacto */}
+                  <div className="cm-contacto-form">
+                    <div className="cm-contacto-form-row">
+                      <input
+                        type="date"
+                        value={nuevoContacto.fecha}
+                        onChange={(e) => setNuevoContacto({ ...nuevoContacto, fecha: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        placeholder="¿Qué se habló? / Comentario..."
+                        value={nuevoContacto.nota}
+                        onChange={(e) => setNuevoContacto({ ...nuevoContacto, nota: e.target.value })}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddContacto(); }}
+                      />
+                      <button
+                        className="cm-btn-agregar"
+                        onClick={handleAddContacto}
+                        disabled={savingContacto}
+                      >
+                        {savingContacto
+                          ? <RefreshCw size={13} className="cm-spin" />
+                          : <><Plus size={13} /> Agregar</>
+                        }
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lista de contactos */}
+                  <div className="cm-contactos-lista">
+                    {loadingContactos ? (
+                      <div className="cm-contactos-vacio">
+                        <RefreshCw size={14} className="cm-spin" style={{ display: 'inline' }} /> Cargando...
+                      </div>
+                    ) : contactos.length === 0 ? (
+                      <div className="cm-contactos-vacio">Sin registros de contacto</div>
+                    ) : (
+                      contactos.map(c => (
+                        <div key={c.id} className="cm-contacto-item">
+                          <span className="cm-contacto-fecha">{formatDate(c.fecha)}</span>
+                          <span className="cm-contacto-nota">{c.nota}</span>
+                          <button
+                            className="cm-contacto-del"
+                            onClick={() => handleDeleteContacto(c.id)}
+                            title="Eliminar este contacto"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+
             <div className="cm-modal-footer">
               <button onClick={() => setShowModal(false)} className="cm-btn-cancel">
                 <X size={16} /> Cancelar
