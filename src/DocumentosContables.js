@@ -117,6 +117,7 @@ export default function DocumentosContables() {
   const [ordenesServicio, setOrdenesServicio] = useState([]);
   const [recibos, setRecibos] = useState([]);
   const [remisiones, setRemisiones] = useState([]);
+  const [rubros, setRubros] = useState([]);
   const [reciboDocumentos, setReciboDocumentos] = useState([]);
 
   // Filtros compartidos
@@ -163,7 +164,7 @@ export default function DocumentosContables() {
     nro_recibo: '', tipo: 'RO', detalle: '',
     vinculos: [], // [{tipo_documento, documento_id, nro_doc, monto_aplicado}]
     // remisiones
-    nro_remision: '', tipo_vinculo: '', vinculo_id: ''
+    rem: '', factura: '', os: '', usd: '', gs: '', rubro_id: '', detalle: ''
   };
   const [formData, setFormData] = useState(formInit);
 
@@ -176,18 +177,20 @@ export default function DocumentosContables() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [fRes, osRes, rRes, remRes, rdRes] = await Promise.all([
+      const [fRes, osRes, rRes, remRes, rdRes, rubRes] = await Promise.all([
         supabase.from('facturas').select('*').order('fecha', { ascending: false }),
         supabase.from('ordenes_servicio').select('*').order('fecha', { ascending: false }),
         supabase.from('recibos').select('*').order('fecha', { ascending: false }),
-        supabase.from('remisiones').select('*').order('fecha', { ascending: false }),
+        supabase.from('remisiones').select('*, rubros(nombre)').order('fecha', { ascending: false }),
         supabase.from('recibo_documentos').select('*'),
+        supabase.from('rubros').select('*').order('nombre'),
       ]);
       setFacturas(fRes.data || []);
       setOrdenesServicio(osRes.data || []);
       setRecibos(rRes.data || []);
       setRemisiones(remRes.data || []);
       setReciboDocumentos(rdRes.data || []);
+      setRubros(rubRes.data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -317,6 +320,9 @@ export default function DocumentosContables() {
         }));
       base.vinculos = vins;
     }
+    if (base.rubro_id !== undefined && base.rubro_id !== null) {
+      base.rubro_id = base.rubro_id.toString();
+    }
     setFormData(base);
     setShowModal(true);
   };
@@ -422,25 +428,26 @@ export default function DocumentosContables() {
         }
 
       } else if (activeTab === 'remisiones') {
-        if (!formData.nro_remision?.trim() || !formData.cliente?.trim()) {
-          alert('N° de Remisión y Cliente son obligatorios');
+        if (!formData.rem?.toString().trim() || !formData.cliente?.trim()) {
+          alert('N° REM y Cliente son obligatorios');
           return;
         }
         const payload = {
-          nro_remision: formData.nro_remision.trim(),
+          rem: parseInt(formData.rem),
           fecha: formData.fecha,
           cliente: formData.cliente.trim(),
-          concepto: formData.concepto?.trim() || null,
-          tipo_vinculo: formData.tipo_vinculo || null,
-          vinculo_id: formData.vinculo_id ? parseInt(formData.vinculo_id) : null,
-          observaciones: formData.observaciones?.trim() || null,
+          factura: formData.factura?.trim() || null,
+          os: formData.os?.trim() || null,
+          usd: formData.usd ? parseMonto(formData.usd, 'USD') : null,
+          gs: formData.gs ? parseMonto(formData.gs, 'Ғ') : null,
+          rubro_id: formData.rubro_id ? parseInt(formData.rubro_id) : null,
+          detalle: formData.detalle?.trim() || null,
         };
         const { error } = editingItem
           ? await supabase.from('remisiones').update(payload).eq('id', editingItem.id)
           : await supabase.from('remisiones').insert([payload]);
         if (error) throw error;
-      }
-
+      
       setShowModal(false);
       setEditingItem(null);
       setFormData(formInit);
@@ -889,47 +896,47 @@ export default function DocumentosContables() {
     );
 
     if (activeTab === 'remisiones') return (
-      <table className="dc-table">
-        <thead>
-          <tr>
-            <th onClick={() => handleSort('nro_remision')}>N° REMISION <SortIcon field="nro_remision" /></th>
-            <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
-            <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
-            <th className="no-sort">CONCEPTO</th>
-            <th className="no-sort">VÍNCULO</th>
-            <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
+    <table className="dc-table">
+      <thead>
+        <tr>
+          <th onClick={() => handleSort('rem')}>N° REM <SortIcon field="rem" /></th>
+          <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
+          <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
+          <th onClick={() => handleSort('factura')}>FACTURA <SortIcon field="factura" /></th>
+          <th onClick={() => handleSort('os')}>OS <SortIcon field="os" /></th>
+          <th onClick={() => handleSort('usd')}>USD <SortIcon field="usd" /></th>
+          <th onClick={() => handleSort('gs')}>GS <SortIcon field="gs" /></th>
+          <th onClick={() => handleSort('rubros')}>RUBRO <SortIcon field="rubros" /></th>
+          <th onClick={() => handleSort('detalle')}>DETALLE <SortIcon field="detalle" /></th>
+          <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        {datosFiltrados.map(r => (
+          <tr key={r.id}>
+            <td style={{ fontWeight: 700 }}>REM {r.rem}</td>
+            <td>{formatDate(r.fecha)}</td>
+            <td>{r.cliente}</td>
+            <td>{r.factura || <span className="muted">—</span>}</td>
+            <td>{r.os || <span className="muted">—</span>}</td>
+            <td className="num">{r.usd ? 'US$ ' + formatNumber(r.usd, 'USD') : <span className="muted">—</span>}</td>
+            <td className="num">{r.gs ? 'Ғ ' + formatNumber(r.gs, 'Ғ') : <span className="muted">—</span>}</td>
+            <td>{r.rubros?.nombre || <span className="muted">—</span>}</td>
+            <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {r.detalle || <span className="muted">—</span>}
+            </td>
+            <td>
+              <div className="dc-table-actions">
+                <button className="dc-btn-icon" title="Ver" onClick={() => handleView(r)}><Eye size={14} /></button>
+                <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
+                <button className="dc-btn-icon danger" onClick={() => handleDelete(r.id)}><Trash2 size={14} /></button>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {datosFiltrados.map(r => {
-            let vinculoTexto = '-';
-            if (r.tipo_vinculo === 'factura' && r.vinculo_id) {
-              const f = facturas.find(f => f.id === r.vinculo_id);
-              vinculoTexto = f ? `FAC ${f.nro_factura}` : `FAC #${r.vinculo_id}`;
-            } else if (r.tipo_vinculo === 'orden_servicio' && r.vinculo_id) {
-              const o = ordenesServicio.find(o => o.id === r.vinculo_id);
-              vinculoTexto = o ? `OS ${o.nro_os}` : `OS #${r.vinculo_id}`;
-            }
-            return (
-              <tr key={r.id}>
-                <td style={{ fontWeight: 700 }}>{r.nro_remision}</td>
-                <td>{formatDate(r.fecha)}</td>
-                <td>{r.cliente}</td>
-                <td>{r.concepto || <span className="muted">-</span>}</td>
-                <td style={{ fontSize: '0.75rem', color: '#567C8D' }}>{vinculoTexto}</td>
-                <td>
-                  <div className="dc-table-actions">
-                    <button className="dc-btn-icon" title="Ver" onClick={() => handleView(r)}><Eye size={14} /></button>
-                    <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
-                    <button className="dc-btn-icon danger" onClick={() => handleDelete(r.id)}><Trash2 size={14} /></button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    );
+        ))}
+      </tbody>
+    </table>
+  );    );
   };
 
   // ============================================
@@ -1100,43 +1107,71 @@ export default function DocumentosContables() {
         )}
 
         {/* Campos específicos Remisiones */}
-        {activeTab === 'remisiones' && (
-          <>
-            <div className="dc-form-group span2">
-              <label>Concepto</label>
-              <input value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} placeholder="Descripción de la remisión" />
-            </div>
-
-            <div className="dc-form-group">
-              <label>Vínculo (opcional)</label>
-              <select value={formData.tipo_vinculo || ''} onChange={e => setFormData({ ...formData, tipo_vinculo: e.target.value, vinculo_id: '' })}>
-                <option value="">— Sin vínculo —</option>
-                <option value="factura">Factura</option>
-                <option value="orden_servicio">Orden de Servicio</option>
-              </select>
-            </div>
-
-            {formData.tipo_vinculo && (
-              <div className="dc-form-group">
-                <label>{formData.tipo_vinculo === 'factura' ? 'Factura' : 'OS'}</label>
-                <select value={formData.vinculo_id || ''} onChange={e => setFormData({ ...formData, vinculo_id: e.target.value })}>
-                  <option value="">— Seleccionar —</option>
-                  {(formData.tipo_vinculo === 'factura' ? facturas : ordenesServicio).map(d => (
-                    <option key={d.id} value={d.id}>
-                      {formData.tipo_vinculo === 'factura' ? d.nro_factura : d.nro_os} — {d.cliente}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="dc-form-group span2">
-              <label>Observaciones</label>
-              <textarea value={formData.observaciones} onChange={e => setFormData({ ...formData, observaciones: e.target.value })} placeholder="Opcional" />
-            </div>
-          </>
-        )}
-      </div>
+      {activeTab === 'remisiones' && (
+        <>
+          <div className="dc-form-group">
+            <label>N° REM *</label>
+            <input
+              type="number"
+              value={formData.rem || ''}
+              onChange={e => setFormData({ ...formData, rem: e.target.value })}
+              placeholder="Ej: 1121"
+            />
+          </div>
+          <div className="dc-form-group">
+            <label>N° Factura</label>
+            <input
+              value={formData.factura || ''}
+              onChange={e => setFormData({ ...formData, factura: e.target.value })}
+              placeholder="Opcional"
+            />
+          </div>
+          <div className="dc-form-group">
+            <label>N° OS</label>
+            <input
+              value={formData.os || ''}
+              onChange={e => setFormData({ ...formData, os: e.target.value })}
+              placeholder="Opcional"
+            />
+          </div>
+          <div className="dc-form-group">
+            <label>Rubro</label>
+            <select
+              value={formData.rubro_id || ''}
+              onChange={e => setFormData({ ...formData, rubro_id: e.target.value })}
+            >
+              <option value="">— Sin rubro —</option>
+              {rubros.map(r => (
+                <option key={r.id} value={r.id}>{r.nombre}</option>
+              ))}
+            </select>
+          </div>
+          <div className="dc-form-group">
+            <label>Monto USD</label>
+            <input
+              value={formData.usd || ''}
+              onChange={e => setFormData({ ...formData, usd: e.target.value })}
+              placeholder="0.00"
+            />
+          </div>
+          <div className="dc-form-group">
+            <label>Monto Ғ</label>
+            <input
+              value={formData.gs || ''}
+              onChange={e => setFormData({ ...formData, gs: e.target.value })}
+              placeholder="0"
+            />
+          </div>
+          <div className="dc-form-group span2">
+            <label>Detalle</label>
+            <textarea
+              value={formData.detalle || ''}
+              onChange={e => setFormData({ ...formData, detalle: e.target.value })}
+              placeholder="Descripción opcional"
+            />
+          </div>
+        </>
+      )}      </div>
     );
   };
 
@@ -1446,7 +1481,7 @@ export default function DocumentosContables() {
                     {activeTab === 'facturas' && 'N° FAC | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS'}
                     {activeTab === 'ordenes_servicio' && 'N° OS | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS'}
                     {activeTab === 'recibos' && 'N° RECIBO | TIPO | FECHA | CLIENTE | MONEDA | MONTO | DETALLE | FACT N°'}
-                    {activeTab === 'remisiones' && 'N° REMISION | FECHA | CLIENTE | CONCEPTO | OBS'}
+                    {activeTab === 'remisiones' && 'REM | FECHA | CLIENTE | FACTURA | OS | USD | GS | RUBRO_ID | DETALLE'}
                   </div>
                 </>
               )}
