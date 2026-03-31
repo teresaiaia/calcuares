@@ -164,7 +164,7 @@ export default function DocumentosContables() {
     nro_recibo: '', tipo: 'RO', detalle: '',
     vinculos: [], // [{tipo_documento, documento_id, nro_doc, monto_aplicado}]
     // remisiones
-    rem: '', factura: '', os: '', usd: '', gs: '', rubro_id: '', detalle: ''
+    rem: '', factura: '', os: '', usd: '', gs: '', rubro_id: ''
   };
   const [formData, setFormData] = useState(formInit);
 
