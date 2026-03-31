@@ -937,7 +937,7 @@ export default function DocumentosContables() {
         ))}
       </tbody>
     </table>
-  );    );
+  );
   };
 
   // ============================================
