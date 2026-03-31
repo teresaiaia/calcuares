@@ -447,6 +447,7 @@ export default function DocumentosContables() {
           ? await supabase.from('remisiones').update(payload).eq('id', editingItem.id)
           : await supabase.from('remisiones').insert([payload]);
         if (error) throw error;
+      }
       
       setShowModal(false);
       setEditingItem(null);
