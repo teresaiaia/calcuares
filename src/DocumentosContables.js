@@ -162,16 +162,16 @@ export default function DocumentosContables() {
     concepto: '', rubro: '', monto: '', estado: '', observaciones: '',
     // recibos
     nro_recibo: '', tipo: 'RO', detalle: '',
-    vinculos: [], // [{tipo_documento, documento_id, nro_doc, monto_aplicado}]
+    vinculos: [],
     // remisiones
     rem: '', factura: '', os: '', usd: '', gs: '', rubro_id: ''
   };
+
   const [formData, setFormData] = useState(formInit);
 
   // ---- FETCH ----
   useEffect(() => {
     fetchAll();
-
   }, []);
 
   const fetchAll = async () => {
@@ -216,13 +216,11 @@ export default function DocumentosContables() {
     if (searchTerm) {
       const exactMatch = searchTerm.match(/^"(.+)"$/);
       if (exactMatch) {
-        // Búsqueda exacta con comillas: algún campo debe ser exactamente igual
         const exact = exactMatch[1].toLowerCase();
         data = data.filter(item =>
           Object.values(item).some(v => v && String(v).toLowerCase() === exact)
         );
       } else {
-        // Búsqueda multi-palabra: el registro debe contener TODAS las palabras
         const palabras = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
         data = data.filter(item => {
           const texto = Object.values(item).filter(Boolean).map(v => String(v).toLowerCase()).join(' ');
@@ -230,6 +228,7 @@ export default function DocumentosContables() {
         });
       }
     }
+
     if (filterEstado !== 'todos' && activeTab !== 'remisiones') {
       data = data.filter(item => item.estado === filterEstado || item.tipo === filterEstado);
     }
@@ -243,7 +242,6 @@ export default function DocumentosContables() {
       data = data.filter(item => item.fecha <= filterFechaHasta);
     }
 
-    // Sort
     data.sort((a, b) => {
       let va = a[sortField] ?? '';
       let vb = b[sortField] ?? '';
@@ -301,7 +299,6 @@ export default function DocumentosContables() {
     const base = {
       ...formInit,
       ...item,
-      // Asegurar que estado y modalidad del item siempre prevalezcan
       estado: item.estado || formInit.estado,
       modalidad: item.modalidad || formInit.modalidad,
       monto: item.monto ?? '',
@@ -411,7 +408,6 @@ export default function DocumentosContables() {
           if (error) throw error;
           reciboId = data.id;
         }
-        // Guardar vínculos
         if (formData.vinculos?.length > 0) {
           const vinculosPayload = formData.vinculos
             .filter(v => v.documento_id)
@@ -448,7 +444,7 @@ export default function DocumentosContables() {
           : await supabase.from('remisiones').insert([payload]);
         if (error) throw error;
       }
-      
+
       setShowModal(false);
       setEditingItem(null);
       setFormData(formInit);
@@ -507,10 +503,10 @@ export default function DocumentosContables() {
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
         if (!r || !r[0]) continue;
-
         let record = {};
+
         if (activeTab === 'facturas') {
-          // REPO: NRO_FAC | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS
+          // NRO_FAC | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS
           record = {
             nro_factura: String(r[0] || '').trim(),
             fecha: parseExcelDate(r[1]),
@@ -524,6 +520,7 @@ export default function DocumentosContables() {
             observaciones: String(r[9] || '').trim() || null,
           };
           if (!record.nro_factura || !record.cliente) continue;
+
         } else if (activeTab === 'ordenes_servicio') {
           // NRO_OS | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS
           record = {
@@ -539,6 +536,7 @@ export default function DocumentosContables() {
             observaciones: String(r[9] || '').trim() || null,
           };
           if (!record.nro_os || !record.cliente) continue;
+
         } else if (activeTab === 'recibos') {
           // NRO_RECIBO | TIPO | FECHA | CLIENTE | MONEDA | MONTO | DETALLE | FACT N°
           record = {
@@ -549,22 +547,33 @@ export default function DocumentosContables() {
             moneda: String(r[4] || '₲').trim(),
             monto: parseMonto(r[5], String(r[4] || '').trim()),
             detalle: String(r[6] || '').trim() || null,
-            _fact_nro: String(r[7] || '').trim() || null, // campo auxiliar para vínculo
+            _fact_nro: String(r[7] || '').trim() || null,
           };
           if (!record.nro_recibo || !record.cliente) continue;
+
         } else if (activeTab === 'remisiones') {
-          // NRO_REM | FECHA | CLIENTE | CONCEPTO | OBS
+          // REM | FECHA | CLIENTE | FACTURA | OS | USD | GS | RUBRO_ID | DETALLE
+          const remVal = String(r[0] || '').trim();
+          const clienteVal = String(r[2] || '').trim();
+          if (!remVal || !clienteVal) continue;
+
+          // Buscar rubro_id por nombre en la tabla rubros cargada
+          const rubroNombre = String(r[7] || '').trim();
+          const rubroMatch = rubros.find(rb => rb.nombre.toLowerCase() === rubroNombre.toLowerCase());
+
           record = {
-            nro_remision: String(r[0] || '').trim(),
+            rem: parseInt(remVal),
             fecha: parseExcelDate(r[1]),
-            cliente: String(r[2] || '').trim(),
-            concepto: String(r[3] || '').trim() || null,
-            observaciones: String(r[4] || '').trim() || null,
-            tipo_vinculo: null,
-            vinculo_id: null,
+            cliente: clienteVal,
+            factura: String(r[3] || '').trim() || null,
+            os: String(r[4] || '').trim() || null,
+            usd: r[5] !== undefined && r[5] !== null && r[5] !== '' ? parseMonto(r[5], 'USD') : null,
+            gs: r[6] !== undefined && r[6] !== null && r[6] !== '' ? parseMonto(r[6], '₲') : null,
+            rubro_id: rubroMatch ? rubroMatch.id : null,
+            detalle: String(r[8] || '').trim() || null,
           };
-          if (!record.nro_remision || !record.cliente) continue;
         }
+
         parsed.push(record);
       }
 
@@ -574,9 +583,10 @@ export default function DocumentosContables() {
       const nroField = activeTab === 'facturas' ? 'nro_factura'
         : activeTab === 'ordenes_servicio' ? 'nro_os'
         : activeTab === 'recibos' ? 'nro_recibo'
-        : 'nro_remision';
-      const existingSet = new Set(dataActiva.map(d => d[nroField]));
-      const dupes = parsed.filter(p => existingSet.has(p[nroField]));
+        : 'rem';
+
+      const existingSet = new Set(dataActiva.map(d => String(d[nroField])));
+      const dupes = parsed.filter(p => existingSet.has(String(p[nroField])));
 
       setImportData(parsed);
       setImportDuplicates(dupes);
@@ -595,12 +605,11 @@ export default function DocumentosContables() {
     const nroField = activeTab === 'facturas' ? 'nro_factura'
       : activeTab === 'ordenes_servicio' ? 'nro_os'
       : activeTab === 'recibos' ? 'nro_recibo'
-      : 'nro_remision';
+      : 'rem';
 
     const existingMap = {};
-    dataActiva.forEach(d => { existingMap[d[nroField]] = d.id; });
+    dataActiva.forEach(d => { existingMap[String(d[nroField])] = d.id; });
 
-    // Mapa de facturas y OS por número para vincular recibos
     const facturasMap = {};
     facturas.forEach(f => { facturasMap[f.nro_factura] = f.id; });
     const osMap = {};
@@ -610,8 +619,7 @@ export default function DocumentosContables() {
     const errorDetails = [];
 
     for (const record of importData) {
-      const isDupe = existingMap[record[nroField]];
-      // Extraer campo auxiliar antes de insertar
+      const isDupe = existingMap[String(record[nroField])];
       const factNro = record._fact_nro || null;
       const { _fact_nro, ...recordLimpio } = record;
 
@@ -630,9 +638,7 @@ export default function DocumentosContables() {
           inserted++;
         }
 
-        // Crear vínculo automático si hay FACT N°
         if (reciboId && factNro && activeTab === 'recibos') {
-          // Buscar si es factura o OS
           const factId = facturasMap[factNro];
           const osId = osMap[factNro];
           if (factId) {
@@ -668,7 +674,6 @@ export default function DocumentosContables() {
     try {
       const XLSX = await import('xlsx');
       let exportData = [];
-
       if (activeTab === 'facturas') {
         exportData = datosFiltrados.map(f => ({
           'N° FAC': f.nro_factura, 'FECHA': f.fecha, 'CLIENTE': f.cliente,
@@ -691,12 +696,13 @@ export default function DocumentosContables() {
         }));
       } else if (activeTab === 'remisiones') {
         exportData = datosFiltrados.map(r => ({
-          'N° REMISION': r.nro_remision, 'FECHA': r.fecha, 'CLIENTE': r.cliente,
-          'CONCEPTO': r.concepto || '', 'TIPO VINCULO': r.tipo_vinculo || '',
-          'OBS': r.observaciones || ''
+          'REM': r.rem, 'FECHA': r.fecha, 'CLIENTE': r.cliente,
+          'FACTURA': r.factura || '', 'OS': r.os || '',
+          'USD': r.usd || '', 'GS': r.gs || '',
+          'RUBRO': r.rubros?.nombre || '',
+          'DETALLE': r.detalle || ''
         }));
       }
-
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, activeTab);
@@ -733,10 +739,14 @@ export default function DocumentosContables() {
           { val: r.detalle || '' }
         ]), totHTML);
     } else if (activeTab === 'remisiones') {
-      exportarPDF('Remisiones', ['N° REMISION', 'FECHA', 'CLIENTE', 'CONCEPTO', 'VÍNCULO'],
+      exportarPDF('Remisiones', ['N° REM', 'FECHA', 'CLIENTE', 'FACTURA', 'OS', 'USD', 'GS', 'RUBRO', 'DETALLE'],
         datosFiltrados.map(r => [
-          { val: r.nro_remision }, { val: formatDate(r.fecha) }, { val: r.cliente },
-          { val: r.concepto || '' }, { val: r.tipo_vinculo || '-', cls: 'center' }
+          { val: r.rem }, { val: formatDate(r.fecha) }, { val: r.cliente },
+          { val: r.factura || '—' }, { val: r.os || '—' },
+          { val: r.usd ? formatNumber(r.usd, 'USD') : '—', cls: 'num' },
+          { val: r.gs ? formatNumber(r.gs) : '—', cls: 'num' },
+          { val: r.rubros?.nombre || '—' },
+          { val: r.detalle || '' }
         ]), totHTML);
     }
   };
@@ -769,19 +779,17 @@ export default function DocumentosContables() {
 
     if (activeTab === 'facturas') return (
       <table className="dc-table">
-        <thead>
-          <tr>
-            <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
-            <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
-            <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
-            <th onClick={() => handleSort('modalidad')}>MODALIDAD <SortIcon field="modalidad" /></th>
-            <th className="no-sort">MONEDA</th>
-            <th onClick={() => handleSort('monto')}>MONTO <SortIcon field="monto" /></th>
-            <th onClick={() => handleSort('rubro')}>RUBRO <SortIcon field="rubro" /></th>
-            <th onClick={() => handleSort('estado')}>ESTADO <SortIcon field="estado" /></th>
-            <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
+          <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
+          <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
+          <th onClick={() => handleSort('modalidad')}>MODALIDAD <SortIcon field="modalidad" /></th>
+          <th className="no-sort">MONEDA</th>
+          <th onClick={() => handleSort('monto')}>MONTO <SortIcon field="monto" /></th>
+          <th onClick={() => handleSort('rubro')}>RUBRO <SortIcon field="rubro" /></th>
+          <th onClick={() => handleSort('estado')}>ESTADO <SortIcon field="estado" /></th>
+          <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
+        </tr></thead>
         <tbody>
           {datosFiltrados.map(f => (
             <tr key={f.id}>
@@ -793,13 +801,11 @@ export default function DocumentosContables() {
               <td className="num">{f.monto ? (f.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(f.monto, f.moneda) : ''}</td>
               <td>{f.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
-              <td>
-                <div className="dc-table-actions">
-                  <button className="dc-btn-icon" title="Ver" onClick={() => handleView(f)}><Eye size={14} /></button>
-                  <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(f)}><Edit2 size={14} /></button>
-                  <button className="dc-btn-icon danger" onClick={() => handleDelete(f.id)}><Trash2 size={14} /></button>
-                </div>
-              </td>
+              <td><div className="dc-table-actions">
+                <button className="dc-btn-icon" title="Ver" onClick={() => handleView(f)}><Eye size={14} /></button>
+                <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(f)}><Edit2 size={14} /></button>
+                <button className="dc-btn-icon danger" onClick={() => handleDelete(f.id)}><Trash2 size={14} /></button>
+              </div></td>
             </tr>
           ))}
         </tbody>
@@ -808,19 +814,17 @@ export default function DocumentosContables() {
 
     if (activeTab === 'ordenes_servicio') return (
       <table className="dc-table">
-        <thead>
-          <tr>
-            <th onClick={() => handleSort('nro_os')}>N° OS <SortIcon field="nro_os" /></th>
-            <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
-            <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
-            <th onClick={() => handleSort('modalidad')}>MODALIDAD <SortIcon field="modalidad" /></th>
-            <th className="no-sort">MONEDA</th>
-            <th onClick={() => handleSort('monto')}>MONTO <SortIcon field="monto" /></th>
-            <th onClick={() => handleSort('rubro')}>RUBRO <SortIcon field="rubro" /></th>
-            <th onClick={() => handleSort('estado')}>ESTADO <SortIcon field="estado" /></th>
-            <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th onClick={() => handleSort('nro_os')}>N° OS <SortIcon field="nro_os" /></th>
+          <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
+          <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
+          <th onClick={() => handleSort('modalidad')}>MODALIDAD <SortIcon field="modalidad" /></th>
+          <th className="no-sort">MONEDA</th>
+          <th onClick={() => handleSort('monto')}>MONTO <SortIcon field="monto" /></th>
+          <th onClick={() => handleSort('rubro')}>RUBRO <SortIcon field="rubro" /></th>
+          <th onClick={() => handleSort('estado')}>ESTADO <SortIcon field="estado" /></th>
+          <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
+        </tr></thead>
         <tbody>
           {datosFiltrados.map(o => (
             <tr key={o.id}>
@@ -832,13 +836,11 @@ export default function DocumentosContables() {
               <td className="num">{o.monto ? (o.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(o.monto, o.moneda) : ''}</td>
               <td>{o.rubro || <span className="muted">-</span>}</td>
               <td><span className={`dc-badge ${estadoBadgeClass(o.estado)}`}>{o.estado}</span></td>
-              <td>
-                <div className="dc-table-actions">
-                  <button className="dc-btn-icon" title="Ver" onClick={() => handleView(o)}><Eye size={14} /></button>
-                  <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(o)}><Edit2 size={14} /></button>
-                  <button className="dc-btn-icon danger" onClick={() => handleDelete(o.id)}><Trash2 size={14} /></button>
-                </div>
-              </td>
+              <td><div className="dc-table-actions">
+                <button className="dc-btn-icon" title="Ver" onClick={() => handleView(o)}><Eye size={14} /></button>
+                <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(o)}><Edit2 size={14} /></button>
+                <button className="dc-btn-icon danger" onClick={() => handleDelete(o.id)}><Trash2 size={14} /></button>
+              </div></td>
             </tr>
           ))}
         </tbody>
@@ -847,19 +849,17 @@ export default function DocumentosContables() {
 
     if (activeTab === 'recibos') return (
       <table className="dc-table">
-        <thead>
-          <tr>
-            <th onClick={() => handleSort('nro_recibo')}>N° RECIBO <SortIcon field="nro_recibo" /></th>
-            <th onClick={() => handleSort('tipo')}>TIPO <SortIcon field="tipo" /></th>
-            <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
-            <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
-            <th className="no-sort">MONEDA</th>
-            <th onClick={() => handleSort('monto')}>MONTO <SortIcon field="monto" /></th>
-            <th className="no-sort">APLICA A</th>
-            <th className="no-sort">DETALLE</th>
-            <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th onClick={() => handleSort('nro_recibo')}>N° RECIBO <SortIcon field="nro_recibo" /></th>
+          <th onClick={() => handleSort('tipo')}>TIPO <SortIcon field="tipo" /></th>
+          <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
+          <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
+          <th className="no-sort">MONEDA</th>
+          <th onClick={() => handleSort('monto')}>MONTO <SortIcon field="monto" /></th>
+          <th className="no-sort">APLICA A</th>
+          <th className="no-sort">DETALLE</th>
+          <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
+        </tr></thead>
         <tbody>
           {datosFiltrados.map(r => {
             const vins = reciboDocumentos.filter(rd => rd.recibo_id === r.id);
@@ -882,13 +882,11 @@ export default function DocumentosContables() {
                 <td className="num">{r.monto ? (r.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(r.monto, r.moneda) : ''}</td>
                 <td style={{ fontSize: '0.75rem', color: '#567C8D' }}>{aplicaTexto || <span className="muted">-</span>}</td>
                 <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.detalle || <span className="muted">-</span>}</td>
-                <td>
-                  <div className="dc-table-actions">
-                    <button className="dc-btn-icon" title="Ver" onClick={() => handleView(r)}><Eye size={14} /></button>
-                    <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
-                    <button className="dc-btn-icon danger" onClick={() => handleDelete(r.id)}><Trash2 size={14} /></button>
-                  </div>
-                </td>
+                <td><div className="dc-table-actions">
+                  <button className="dc-btn-icon" title="Ver" onClick={() => handleView(r)}><Eye size={14} /></button>
+                  <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
+                  <button className="dc-btn-icon danger" onClick={() => handleDelete(r.id)}><Trash2 size={14} /></button>
+                </div></td>
               </tr>
             );
           })}
@@ -897,9 +895,8 @@ export default function DocumentosContables() {
     );
 
     if (activeTab === 'remisiones') return (
-    <table className="dc-table">
-      <thead>
-        <tr>
+      <table className="dc-table">
+        <thead><tr>
           <th onClick={() => handleSort('rem')}>N° REM <SortIcon field="rem" /></th>
           <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
@@ -910,34 +907,31 @@ export default function DocumentosContables() {
           <th onClick={() => handleSort('rubros')}>RUBRO <SortIcon field="rubros" /></th>
           <th onClick={() => handleSort('detalle')}>DETALLE <SortIcon field="detalle" /></th>
           <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
-        </tr>
-      </thead>
-      <tbody>
-        {datosFiltrados.map(r => (
-          <tr key={r.id}>
-            <td style={{ fontWeight: 700 }}>REM {r.rem}</td>
-            <td>{formatDate(r.fecha)}</td>
-            <td>{r.cliente}</td>
-            <td>{r.factura || <span className="muted">—</span>}</td>
-            <td>{r.os || <span className="muted">—</span>}</td>
-            <td className="num">{r.usd ? 'US$ ' + formatNumber(r.usd, 'USD') : <span className="muted">—</span>}</td>
-            <td className="num">{r.gs ? 'Ғ ' + formatNumber(r.gs, 'Ғ') : <span className="muted">—</span>}</td>
-            <td>{r.rubros?.nombre || <span className="muted">—</span>}</td>
-            <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {r.detalle || <span className="muted">—</span>}
-            </td>
-            <td>
-              <div className="dc-table-actions">
+        </tr></thead>
+        <tbody>
+          {datosFiltrados.map(r => (
+            <tr key={r.id}>
+              <td style={{ fontWeight: 700 }}>REM {r.rem}</td>
+              <td>{formatDate(r.fecha)}</td>
+              <td>{r.cliente}</td>
+              <td>{r.factura || <span className="muted">—</span>}</td>
+              <td>{r.os || <span className="muted">—</span>}</td>
+              <td className="num">{r.usd ? 'US$ ' + formatNumber(r.usd, 'USD') : <span className="muted">—</span>}</td>
+              <td className="num">{r.gs ? 'Ғ ' + formatNumber(r.gs, 'Ғ') : <span className="muted">—</span>}</td>
+              <td>{r.rubros?.nombre || <span className="muted">—</span>}</td>
+              <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {r.detalle || <span className="muted">—</span>}
+              </td>
+              <td><div className="dc-table-actions">
                 <button className="dc-btn-icon" title="Ver" onClick={() => handleView(r)}><Eye size={14} /></button>
                 <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(r)}><Edit2 size={14} /></button>
                 <button className="dc-btn-icon danger" onClick={() => handleDelete(r.id)}><Trash2 size={14} /></button>
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+              </div></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
   };
 
   // ============================================
@@ -945,8 +939,14 @@ export default function DocumentosContables() {
   // ============================================
   const renderForm = () => {
     const isFacturaOS = activeTab === 'facturas' || activeTab === 'ordenes_servicio';
-    const nroLabel = activeTab === 'facturas' ? 'N° Factura' : activeTab === 'ordenes_servicio' ? 'N° OS' : activeTab === 'recibos' ? 'N° Recibo' : 'N° Remisión';
-    const nroField = activeTab === 'facturas' ? 'nro_factura' : activeTab === 'ordenes_servicio' ? 'nro_os' : activeTab === 'recibos' ? 'nro_recibo' : 'nro_remision';
+    const nroLabel = activeTab === 'facturas' ? 'N° Factura'
+      : activeTab === 'ordenes_servicio' ? 'N° OS'
+      : activeTab === 'recibos' ? 'N° Recibo'
+      : 'N° REM';
+    const nroField = activeTab === 'facturas' ? 'nro_factura'
+      : activeTab === 'ordenes_servicio' ? 'nro_os'
+      : activeTab === 'recibos' ? 'nro_recibo'
+      : 'rem';
 
     return (
       <div className="dc-form-grid">
@@ -969,551 +969,462 @@ export default function DocumentosContables() {
         </div>
 
         {/* Campos específicos Factura / OS */}
-        {isFacturaOS && (
-          <>
-            <div className="dc-form-group">
-              <label>Modalidad</label>
-              <select value={formData.modalidad} onChange={e => {
-                const mod = e.target.value;
-                setFormData({
-                  ...formData,
-                  modalidad: mod,
-                  estado: mod === 'Contado' ? 'Pagado' : mod === 'Anulada' ? 'Anulada' : mod === 'Bonificación' ? 'Bonificación' : 'Pendiente',
-                  monto: mod === 'Bonificación' ? '0' : formData.monto,
-                });
-              }}>
-                {MODALIDADES.map(m => <option key={m}>{m}</option>)}
-              </select>
-            </div>
-
-            {formData.modalidad !== 'Anulada' && (
-            <div className="dc-form-group">
-              <label>Moneda</label>
-              <select value={formData.moneda} onChange={e => setFormData({ ...formData, moneda: e.target.value })}>
-                {MONEDAS.map(m => <option key={m}>{m}</option>)}
-              </select>
-            </div>
-            )}
-
-            <div className="dc-form-group span2">
-              <label>Concepto</label>
-              <input value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} placeholder="Descripción del documento" />
-            </div>
-
-            <div className="dc-form-group">
-              <label>Rubro</label>
-              <select value={formData.rubro} onChange={e => setFormData({ ...formData, rubro: e.target.value })}>
-                <option value="">— Sin rubro —</option>
-                <option value="Anulada">Anulada</option>
-                {RUBROS.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-
-            <div className="dc-form-group">
-              <label>Monto</label>
-              <input value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} placeholder="0" />
-            </div>
-
-            {(formData.modalidad === 'Crédito' || formData.modalidad === 'Anulada') && (
-              <div className="dc-form-group">
-                <label>Estado</label>
-                <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
-                  {ESTADOS_FAC_OS(formData.modalidad).map(s => <option key={s}>{s}</option>)}
-                </select>
-              </div>
-            )}
-
-            <div className="dc-form-group span2">
-              <label>Observaciones</label>
-              <textarea value={formData.observaciones} onChange={e => setFormData({ ...formData, observaciones: e.target.value })} placeholder="Opcional" />
-            </div>
-          </>
-        )}
-
-        {/* Campos específicos Recibos */}
-        {activeTab === 'recibos' && (
-          <>
-            <div className="dc-form-group">
-              <label>Tipo</label>
-              <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
-                {TIPOS_RECIBO.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-
-            <div className="dc-form-group">
-              <label>Moneda</label>
-              <select value={formData.moneda} onChange={e => setFormData({ ...formData, moneda: e.target.value })}>
-                {MONEDAS.map(m => <option key={m}>{m}</option>)}
-              </select>
-            </div>
-
-            <div className="dc-form-group span2">
-              <label>Monto</label>
-              <input value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} placeholder="0" />
-            </div>
-
-            <div className="dc-form-group span2">
-              <label>Detalle / Observaciones</label>
-              <textarea value={formData.detalle} onChange={e => setFormData({ ...formData, detalle: e.target.value })} placeholder="Opcional" />
-            </div>
-
-            {/* Vínculos */}
-            <div className="dc-form-group span2">
-              <label>Aplica a (Facturas / OS)</label>
-              <div className="dc-vinculo-list">
-                {(formData.vinculos || []).map((v, i) => (
-                  <div key={i} className="dc-vinculo-item">
-                    <select value={v.tipo_documento} onChange={e => {
-                      const vins = [...formData.vinculos];
-                      vins[i] = { ...vins[i], tipo_documento: e.target.value, documento_id: '' };
-                      setFormData({ ...formData, vinculos: vins });
-                    }}>
-                      <option value="factura">Factura</option>
-                      <option value="orden_servicio">OS</option>
-                    </select>
-                    <select value={v.documento_id || ''} onChange={e => {
-                      const vins = [...formData.vinculos];
-                      vins[i] = { ...vins[i], documento_id: e.target.value };
-                      setFormData({ ...formData, vinculos: vins });
-                    }}>
-                      <option value="">— Seleccionar —</option>
-                      {(v.tipo_documento === 'factura' ? facturas : ordenesServicio).map(d => (
-                        <option key={d.id} value={d.id}>
-                          {v.tipo_documento === 'factura' ? d.nro_factura : d.nro_os} — {d.cliente}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      placeholder="Monto aplicado"
-                      value={v.monto_aplicado || ''}
-                      onChange={e => {
-                        const vins = [...formData.vinculos];
-                        vins[i] = { ...vins[i], monto_aplicado: e.target.value };
-                        setFormData({ ...formData, vinculos: vins });
-                      }}
-                    />
-                    <button className="dc-btn-icon danger" onClick={() => {
-                      const vins = formData.vinculos.filter((_, j) => j !== i);
-                      setFormData({ ...formData, vinculos: vins });
-                    }}><X size={13} /></button>
-                  </div>
-                ))}
-                <button className="dc-btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.8rem' }}
-                  onClick={() => setFormData({ ...formData, vinculos: [...(formData.vinculos || []), { tipo_documento: 'factura', documento_id: '', monto_aplicado: '' }] })}>
-                  <Link size={13} /> Agregar vínculo
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Campos específicos Remisiones */}
-      {activeTab === 'remisiones' && (
-        <>
+        {isFacturaOS && (<>
           <div className="dc-form-group">
-            <label>N° REM *</label>
-            <input
-              type="number"
-              value={formData.rem || ''}
-              onChange={e => setFormData({ ...formData, rem: e.target.value })}
-              placeholder="Ej: 1121"
-            />
-          </div>
-          <div className="dc-form-group">
-            <label>N° Factura</label>
-            <input
-              value={formData.factura || ''}
-              onChange={e => setFormData({ ...formData, factura: e.target.value })}
-              placeholder="Opcional"
-            />
-          </div>
-          <div className="dc-form-group">
-            <label>N° OS</label>
-            <input
-              value={formData.os || ''}
-              onChange={e => setFormData({ ...formData, os: e.target.value })}
-              placeholder="Opcional"
-            />
-          </div>
-          <div className="dc-form-group">
-            <label>Rubro</label>
-            <select
-              value={formData.rubro_id || ''}
-              onChange={e => setFormData({ ...formData, rubro_id: e.target.value })}
-            >
-              <option value="">— Sin rubro —</option>
-              {rubros.map(r => (
-                <option key={r.id} value={r.id}>{r.nombre}</option>
-              ))}
+            <label>Modalidad</label>
+            <select value={formData.modalidad} onChange={e => {
+              const mod = e.target.value;
+              setFormData({
+                ...formData,
+                modalidad: mod,
+                estado: mod === 'Contado' ? 'Pagado' : mod === 'Anulada' ? 'Anulada' : mod === 'Bonificación' ? 'Bonificación' : 'Pendiente',
+                monto: mod === 'Bonificación' ? '0' : formData.monto,
+              });
+            }}>
+              {MODALIDADES.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
-          <div className="dc-form-group">
-            <label>Monto USD</label>
-            <input
-              value={formData.usd || ''}
-              onChange={e => setFormData({ ...formData, usd: e.target.value })}
-              placeholder="0.00"
-            />
+
+          {formData.modalidad !== 'Anulada' && (
+            <div className="dc-form-group">
+              <label>Moneda</label>
+              <select value={formData.moneda} onChange={e => setFormData({ ...formData, moneda: e.target.value })}>
+                {MONEDAS.map(m => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className="dc-form-group span2">
+            <label>Concepto</label>
+            <input value={formData.concepto} onChange={e => setFormData({ ...formData, concepto: e.target.value })} placeholder="Descripción del documento" />
           </div>
+
           <div className="dc-form-group">
-            <label>Monto Ғ</label>
-            <input
-              value={formData.gs || ''}
-              onChange={e => setFormData({ ...formData, gs: e.target.value })}
-              placeholder="0"
-            />
+            <label>Rubro</label>
+            <select value={formData.rubro} onChange={e => setFormData({ ...formData, rubro: e.target.value })}>
+              <option value="">— Sin rubro —</option>
+              {RUBROS.map(r => <option key={r}>{r}</option>)}
+            </select>
           </div>
+
+          {formData.modalidad !== 'Anulada' && formData.modalidad !== 'Bonificación' && (
+            <div className="dc-form-group">
+              <label>Monto</label>
+              <input value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} placeholder="0" />
+            </div>
+          )}
+
+          {formData.modalidad !== 'Contado' && formData.modalidad !== 'Bonificación' && (
+            <div className="dc-form-group">
+              <label>Estado</label>
+              <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
+                {ESTADOS_FAC_OS(formData.modalidad).map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className="dc-form-group span2">
+            <label>Observaciones</label>
+            <input value={formData.observaciones || ''} onChange={e => setFormData({ ...formData, observaciones: e.target.value })} placeholder="Notas adicionales" />
+          </div>
+        </>)}
+
+        {/* Campos específicos Recibos */}
+        {activeTab === 'recibos' && (<>
+          <div className="dc-form-group">
+            <label>Tipo</label>
+            <select value={formData.tipo} onChange={e => setFormData({ ...formData, tipo: e.target.value })}>
+              {TIPOS_RECIBO.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+
+          <div className="dc-form-group">
+            <label>Moneda</label>
+            <select value={formData.moneda} onChange={e => setFormData({ ...formData, moneda: e.target.value })}>
+              {MONEDAS.map(m => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+
+          <div className="dc-form-group">
+            <label>Monto</label>
+            <input value={formData.monto} onChange={e => setFormData({ ...formData, monto: e.target.value })} placeholder="0" />
+          </div>
+
+          <div className="dc-form-group span2">
+            <label>Detalle</label>
+            <input value={formData.detalle || ''} onChange={e => setFormData({ ...formData, detalle: e.target.value })} placeholder="Descripción del recibo" />
+          </div>
+
+          {/* Vínculos */}
+          <div className="dc-form-group span2">
+            <label>Aplica a (Facturas / OS)</label>
+            {formData.vinculos.map((v, idx) => (
+              <div key={idx} className="dc-vinculo-row">
+                <select value={v.tipo_documento} onChange={e => {
+                  const vins = [...formData.vinculos];
+                  vins[idx] = { ...vins[idx], tipo_documento: e.target.value, documento_id: '', nro_doc: '' };
+                  setFormData({ ...formData, vinculos: vins });
+                }}>
+                  <option value="factura">Factura</option>
+                  <option value="orden_servicio">Orden de Servicio</option>
+                </select>
+                <select value={v.documento_id} onChange={e => {
+                  const vins = [...formData.vinculos];
+                  const selId = parseInt(e.target.value);
+                  const nroDoc = v.tipo_documento === 'factura'
+                    ? (facturas.find(f => f.id === selId)?.nro_factura || '')
+                    : (ordenesServicio.find(o => o.id === selId)?.nro_os || '');
+                  vins[idx] = { ...vins[idx], documento_id: selId, nro_doc: nroDoc };
+                  setFormData({ ...formData, vinculos: vins });
+                }}>
+                  <option value="">— Seleccionar —</option>
+                  {(v.tipo_documento === 'factura' ? facturas : ordenesServicio).map(doc => (
+                    <option key={doc.id} value={doc.id}>
+                      {v.tipo_documento === 'factura' ? doc.nro_factura : doc.nro_os} — {doc.cliente}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  placeholder="Monto aplicado"
+                  value={v.monto_aplicado || ''}
+                  onChange={e => {
+                    const vins = [...formData.vinculos];
+                    vins[idx] = { ...vins[idx], monto_aplicado: e.target.value };
+                    setFormData({ ...formData, vinculos: vins });
+                  }}
+                />
+                <button className="dc-btn-icon danger" onClick={() => {
+                  const vins = formData.vinculos.filter((_, i) => i !== idx);
+                  setFormData({ ...formData, vinculos: vins });
+                }}><X size={13} /></button>
+              </div>
+            ))}
+            <button className="dc-btn-add-vinculo" onClick={() => {
+              setFormData({ ...formData, vinculos: [...formData.vinculos, { tipo_documento: 'factura', documento_id: '', nro_doc: '', monto_aplicado: '' }] });
+            }}>
+              <Link size={13} /> Agregar vínculo
+            </button>
+          </div>
+        </>)}
+
+        {/* Campos específicos Remisiones */}
+        {activeTab === 'remisiones' && (<>
+          <div className="dc-form-group">
+            <label>Factura asociada</label>
+            <input value={formData.factura || ''} onChange={e => setFormData({ ...formData, factura: e.target.value })} placeholder="N° de factura (o S/F)" />
+          </div>
+
+          <div className="dc-form-group">
+            <label>OS asociada</label>
+            <input value={formData.os || ''} onChange={e => setFormData({ ...formData, os: e.target.value })} placeholder="N° de OS (o S/O)" />
+          </div>
+
+          <div className="dc-form-group">
+            <label>Valor USD</label>
+            <input value={formData.usd || ''} onChange={e => setFormData({ ...formData, usd: e.target.value })} placeholder="0.00" />
+          </div>
+
+          <div className="dc-form-group">
+            <label>Valor Gs</label>
+            <input value={formData.gs || ''} onChange={e => setFormData({ ...formData, gs: e.target.value })} placeholder="0" />
+          </div>
+
+          <div className="dc-form-group span2">
+            <label>Rubro</label>
+            <select value={formData.rubro_id || ''} onChange={e => setFormData({ ...formData, rubro_id: e.target.value })}>
+              <option value="">— Sin rubro —</option>
+              {rubros.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+            </select>
+          </div>
+
           <div className="dc-form-group span2">
             <label>Detalle</label>
             <textarea
               value={formData.detalle || ''}
               onChange={e => setFormData({ ...formData, detalle: e.target.value })}
-              placeholder="Descripción opcional"
+              placeholder="Descripción de los artículos remitidos"
+              rows={3}
+              style={{ resize: 'vertical' }}
             />
           </div>
-        </>
-      )}      </div>
+        </>)}
+      </div>
     );
   };
 
-  const tabLabels = {
-    facturas: 'Facturas',
-    ordenes_servicio: 'Órdenes de Servicio',
-    recibos: 'Recibos',
-    remisiones: 'Remisiones',
+  // ============================================
+  // RENDER VIEW MODAL
+  // ============================================
+  const renderViewModal = () => {
+    if (!viewItem) return null;
+    const fields = Object.entries(viewItem).filter(([k]) => k !== 'id');
+    return (
+      <div className="dc-view-grid">
+        {fields.map(([key, val]) => {
+          if (key === 'rubros') return (
+            <div key={key} className="dc-view-field">
+              <span className="dc-view-label">RUBRO</span>
+              <span className="dc-view-value">{val?.nombre || '—'}</span>
+            </div>
+          );
+          let displayVal = val;
+          if (key === 'fecha') displayVal = formatDate(val);
+          else if ((key === 'monto' || key === 'usd' || key === 'gs') && val) displayVal = formatNumber(val, key === 'usd' ? 'USD' : '₲');
+          else if (val === null || val === undefined || val === '') displayVal = '—';
+          return (
+            <div key={key} className="dc-view-field">
+              <span className="dc-view-label">{key.toUpperCase().replace(/_/g, ' ')}</span>
+              <span className="dc-view-value">{String(displayVal)}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
-  const modalTitle = editingItem
-    ? `Editar ${tabLabels[activeTab].slice(0, -1) || tabLabels[activeTab]}`
-    : `Nuevo/a ${tabLabels[activeTab].slice(0, -1) || tabLabels[activeTab]}`;
-
   // ============================================
-  // RENDER
+  // RENDER PRINCIPAL
   // ============================================
   return (
     <div className="dc-container">
-      {/* Header */}
-      <div className="dc-header">
-        <h2>📂 Documentos Contables</h2>
-        <div className="dc-header-actions">
-          <button className="dc-btn-secondary" onClick={() => fetchAll()}>
-            <RefreshCw size={14} className={loading ? 'dc-spin' : ''} /> Actualizar
-          </button>
-          <button className="dc-btn-secondary" onClick={() => importFileRef.current?.click()}>
-            <Upload size={14} /> Importar
-          </button>
-          <input ref={importFileRef} type="file" accept=".xlsx,.csv" style={{ display: 'none' }} onChange={handleImportFile} />
-
-          <div className="dc-export-wrapper" ref={exportMenuRef}>
-            <button className="dc-btn-secondary" onClick={() => setShowExportMenu(v => !v)}>
-              <Download size={14} /> Exportar <ChevronDown size={12} />
-            </button>
-            {showExportMenu && (
-              <div className="dc-export-menu">
-                <button onClick={handleExportExcel}><FileText size={14} /> Exportar a Excel</button>
-                <button onClick={handleExportPDF}><Download size={14} /> Exportar a PDF</button>
-              </div>
-            )}
-          </div>
-
-          <button className="dc-btn-primary" onClick={handleNew}>
-            <Plus size={14} /> Nuevo
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
+      {/* TABS */}
       <div className="dc-tabs">
-        {Object.entries(tabLabels).map(([key, label]) => (
-          <button key={key} className={`dc-tab${activeTab === key ? ' active' : ''}`} onClick={() => handleTabChange(key)}>
-            {label}
+        {[
+          { key: 'facturas', label: 'Facturas' },
+          { key: 'ordenes_servicio', label: 'Órd. Servicio' },
+          { key: 'recibos', label: 'Recibos' },
+          { key: 'remisiones', label: 'Remisiones' },
+        ].map(t => (
+          <button
+            key={t.key}
+            className={`dc-tab ${activeTab === t.key ? 'active' : ''}`}
+            onClick={() => handleTabChange(t.key)}
+          >
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* Filtros */}
-      <div className="dc-filters">
-        <div className="dc-search-box">
-          <Search size={14} style={{ color: '#9ca3af', flexShrink: 0 }} />
-          <input placeholder='Buscar... varias palabras o "exacto"' value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+      {/* TOOLBAR */}
+      <div className="dc-toolbar">
+        <div className="dc-search-wrap">
+          <Search size={15} className="dc-search-icon" />
+          <input
+            className="dc-search"
+            placeholder='Buscar... (use "comillas" para exacto)'
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
         </div>
 
-        {activeTab !== 'remisiones' && (
-          <>
-            <select className="dc-filter-select" value={filterEstado} onChange={e => setFilterEstado(e.target.value)}>
-              <option value="todos">Todos los estados</option>
-              {activeTab === 'recibos'
-                ? TIPOS_RECIBO.map(t => <option key={t}>{t}</option>)
-                : [...ESTADOS_FAC_OS('Contado'), ...ESTADOS_FAC_OS('Crédito'), 'Anulada'].filter((v, i, a) => a.indexOf(v) === i).map(s => <option key={s}>{s}</option>)
-              }
-            </select>
-            <select className="dc-filter-select" value={filterMoneda} onChange={e => setFilterMoneda(e.target.value)}>
-              <option value="todas">Todas las monedas</option>
-              {MONEDAS.map(m => <option key={m}>{m}</option>)}
-            </select>
-          </>
-        )}
+        <div className="dc-filters">
+          <input type="date" className="dc-filter-date" value={filterFechaDesde} onChange={e => setFilterFechaDesde(e.target.value)} title="Desde" />
+          <input type="date" className="dc-filter-date" value={filterFechaHasta} onChange={e => setFilterFechaHasta(e.target.value)} title="Hasta" />
 
-        <input type="date" className="dc-filter-date" value={filterFechaDesde} onChange={e => setFilterFechaDesde(e.target.value)} title="Desde" />
-        <input type="date" className="dc-filter-date" value={filterFechaHasta} onChange={e => setFilterFechaHasta(e.target.value)} title="Hasta" />
-        {(searchTerm || filterEstado !== 'todos' || filterMoneda !== 'todas' || filterFechaDesde || filterFechaHasta) && (
-          <button className="dc-btn-icon" onClick={() => { setSearchTerm(''); setFilterEstado('todos'); setFilterMoneda('todas'); setFilterFechaDesde(''); setFilterFechaHasta(''); }} title="Limpiar filtros">
-            <X size={14} />
-          </button>
-        )}
-      </div>
+          {activeTab !== 'remisiones' && (
+            <>
+              <select className="dc-filter-select" value={filterEstado} onChange={e => setFilterEstado(e.target.value)}>
+                <option value="todos">Todos los estados</option>
+                {activeTab === 'recibos'
+                  ? TIPOS_RECIBO.map(t => <option key={t} value={t}>{t}</option>)
+                  : ['Pagado', 'Pendiente', 'Parcialmente cobrado', 'Anulada'].map(s => <option key={s} value={s}>{s}</option>)
+                }
+              </select>
+              <select className="dc-filter-select" value={filterMoneda} onChange={e => setFilterMoneda(e.target.value)}>
+                <option value="todas">Todas las monedas</option>
+                {MONEDAS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </>
+          )}
+        </div>
 
-      {/* Tipo de cambio + Totales */}
-      {activeTab !== 'remisiones' && datosFiltrados.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div className="dc-actions">
           {/* Tipo de cambio */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', border: '1px solid #dde6ee', borderRadius: '9px', padding: '0.45rem 0.85rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#567C8D' }}>TC ₲/US$</span>
+          <div className="dc-tc-wrap" title="Tipo de cambio USD/₲">
+            <span className="dc-tc-label">TC:</span>
             <input
+              className="dc-tc-input"
               type="number"
               value={tipoCambio}
               onChange={e => {
                 setTipoCambio(e.target.value);
                 localStorage.setItem('dc_tipoCambio', e.target.value);
               }}
-              style={{ width: '90px', border: '1px solid #C8D9E6', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.85rem', color: '#2F4156', outline: 'none', fontWeight: 600 }}
             />
           </div>
-          {/* Totales */}
-          <div className="dc-total-card">Registros: <span>{datosFiltrados.length}</span></div>
-          {totales.guaranies > 0 && (
-            <div className="dc-total-card">₲: <span>₲{formatNumber(totales.guaranies)}</span></div>
-          )}
-          {totales.dolares > 0 && (
-            <div className="dc-total-card">USD: <span>US$ {formatNumber(totales.dolares, 'USD')}</span></div>
-          )}
-          <div className="dc-total-card" style={{ borderLeft: '3px solid #567C8D', fontWeight: 700 }}>
-            Total USD: <span>US$ {formatNumber(totales.totalUSD, 'USD')}</span>
+
+          {/* Import */}
+          <button className="dc-btn secondary" onClick={() => importFileRef.current?.click()}>
+            <Upload size={14} /> Importar
+          </button>
+          <input ref={importFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleImportFile} />
+
+          {/* Export */}
+          <div className="dc-export-wrap" ref={exportMenuRef}>
+            <button className="dc-btn secondary" onClick={() => setShowExportMenu(v => !v)}>
+              <Download size={14} /> Exportar
+            </button>
+            {showExportMenu && (
+              <div className="dc-export-menu">
+                <button onClick={handleExportExcel}>Excel (.xlsx)</button>
+                <button onClick={handleExportPDF}>PDF</button>
+              </div>
+            )}
           </div>
+
+          {/* Nuevo */}
+          <button className="dc-btn primary" onClick={handleNew}>
+            <Plus size={14} /> Nuevo
+          </button>
+
+          {/* Refresh */}
+          <button className="dc-btn-icon" onClick={fetchAll} title="Actualizar">
+            <RefreshCw size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* TOTALES */}
+      {activeTab !== 'remisiones' && (
+        <div className="dc-totales">
+          <span>Registros: <strong>{datosFiltrados.length}</strong></span>
+          {totales.guaranies > 0 && <span>₲ <strong>{formatNumber(totales.guaranies)}</strong></span>}
+          {totales.dolares > 0 && <span>USD <strong>{formatNumber(totales.dolares, 'USD')}</strong></span>}
+          <span>Total USD: <strong>{formatNumber(totales.totalUSD, 'USD')}</strong></span>
+        </div>
+      )}
+      {activeTab === 'remisiones' && (
+        <div className="dc-totales">
+          <span>Registros: <strong>{datosFiltrados.length}</strong></span>
         </div>
       )}
 
-      {/* Tabla */}
-      <div className="dc-table-wrapper">
+      {/* TABLA */}
+      <div className="dc-table-wrap">
         {renderTabla()}
       </div>
 
-      {/* Modal de vista (solo lectura) */}
-      {showViewModal && viewItem && (
-        <div className="dc-modal-overlay" onClick={() => setShowViewModal(false)}>
-          <div className="dc-modal" onClick={e => e.stopPropagation()}>
+      {/* MODAL NUEVO / EDITAR */}
+      {showModal && (
+        <div className="dc-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
+          <div className="dc-modal">
             <div className="dc-modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Eye size={16} style={{ color: '#567C8D' }} />
-                {activeTab === 'facturas' ? `Factura ${viewItem.nro_factura}`
-                  : activeTab === 'ordenes_servicio' ? `OS ${viewItem.nro_os}`
-                  : activeTab === 'recibos' ? `Recibo ${viewItem.nro_recibo}`
-                  : `Remisión ${viewItem.nro_remision}`}
-              </h3>
-              <button className="dc-modal-close" onClick={() => setShowViewModal(false)}><X size={18} /></button>
+              <h3>{editingItem ? 'Editar' : 'Nuevo'} {activeTab === 'facturas' ? 'Factura' : activeTab === 'ordenes_servicio' ? 'Orden de Servicio' : activeTab === 'recibos' ? 'Recibo' : 'Remisión'}</h3>
+              <button className="dc-btn-icon" onClick={() => setShowModal(false)}><X size={18} /></button>
             </div>
             <div className="dc-modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 1.5rem' }}>
-                {[
-                  activeTab === 'facturas' && { label: 'N° Factura', value: viewItem.nro_factura },
-                  activeTab === 'ordenes_servicio' && { label: 'N° OS', value: viewItem.nro_os },
-                  activeTab === 'recibos' && { label: 'N° Recibo', value: viewItem.nro_recibo },
-                  activeTab === 'remisiones' && { label: 'N° Remisión', value: viewItem.nro_remision },
-                  { label: 'Fecha', value: formatDate(viewItem.fecha) },
-                  { label: 'Cliente', value: viewItem.cliente, span: true },
-                  viewItem.modalidad && viewItem.modalidad !== 'Anulada' && { label: 'Modalidad', value: viewItem.modalidad },
-                  viewItem.moneda && viewItem.modalidad !== 'Anulada' && { label: 'Moneda', value: viewItem.moneda },
-                  viewItem.monto !== undefined && viewItem.monto !== null && {
-                    label: 'Monto',
-                    value: (viewItem.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(viewItem.monto, viewItem.moneda)
-                  },
-                  viewItem.estado && { label: 'Estado', value: viewItem.estado },
-                  viewItem.rubro && { label: 'Rubro', value: viewItem.rubro },
-                  viewItem.tipo && { label: 'Tipo', value: viewItem.tipo },
-                  viewItem.concepto && { label: 'Concepto', value: viewItem.concepto, span: true },
-                  viewItem.detalle && { label: 'Detalle', value: viewItem.detalle, span: true },
-                  viewItem.tipo_vinculo && { label: 'Vínculo', value: viewItem.tipo_vinculo === 'factura'
-                    ? `Factura: ${facturas.find(f => f.id === viewItem.vinculo_id)?.nro_factura || '-'}`
-                    : `OS: ${ordenesServicio.find(o => o.id === viewItem.vinculo_id)?.nro_os || '-'}` },
-                  viewItem.observaciones && { label: 'Observaciones', value: viewItem.observaciones, span: true },
-                ].filter(Boolean).map((field, i) => (
-                  <div key={i} style={{ gridColumn: field.span ? '1 / -1' : 'auto' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#567C8D', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>
-                      {field.label}
-                    </div>
-                    <div style={{ fontSize: '0.9rem', color: '#2F4156', background: '#f5f8fb', borderRadius: '7px', padding: '0.45rem 0.75rem', border: '1px solid #e0e8f0' }}>
-                      {field.value || <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>—</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recibos vinculados — solo para facturas y OS */}
-              {(activeTab === 'facturas' || activeTab === 'ordenes_servicio') && (() => {
-                const recibosVinculados = reciboDocumentos
-                  .filter(rd => rd.documento_id === viewItem.id && rd.tipo_documento === (activeTab === 'facturas' ? 'factura' : 'orden_servicio'))
-                  .map(rd => {
-                    const recibo = recibos.find(r => r.id === rd.recibo_id);
-                    return recibo ? { ...recibo, monto_aplicado: rd.monto_aplicado } : null;
-                  })
-                  .filter(Boolean);
-
-                if (recibosVinculados.length === 0) return null;
-
-                const totalCobrado = recibosVinculados.reduce((acc, r) => acc + (parseFloat(r.monto_aplicado) || parseFloat(r.monto) || 0), 0);
-
-                return (
-                  <div style={{ marginTop: '1.2rem', borderTop: '2px solid #e8eef3', paddingTop: '1rem' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#567C8D', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.6rem' }}>
-                      Recibos asociados ({recibosVinculados.length})
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      {recibosVinculados.map((r, i) => (
-                        <div key={i} style={{
-                          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto',
-                          gap: '0.5rem', alignItems: 'center',
-                          background: '#f5f8fb', borderRadius: '7px',
-                          padding: '0.45rem 0.75rem', border: '1px solid #e0e8f0',
-                          fontSize: '0.83rem', color: '#2F4156'
-                        }}>
-                          <span style={{ fontWeight: 700 }}>{r.tipo === 'RO' ? '🟣' : '🔴'} {r.nro_recibo}</span>
-                          <span>{formatDate(r.fecha)}</span>
-                          <span style={{ fontWeight: 600, textAlign: 'right' }}>
-                            {r.moneda === 'USD' ? 'US$ ' : '₲'}{formatNumber(r.monto_aplicado || r.monto, r.moneda)}
-                          </span>
-                          <span className={`dc-badge ${r.tipo === 'RO' ? 'ro' : 'rno'}`}>{r.tipo}</span>
-                        </div>
-                      ))}
-                      <div style={{
-                        display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
-                        gap: '0.5rem', padding: '0.4rem 0.75rem',
-                        fontSize: '0.83rem', fontWeight: 700, color: '#2F4156'
-                      }}>
-                        <span style={{ color: '#567C8D', fontWeight: 400 }}>Total cobrado:</span>
-                        {recibosVinculados[0]?.moneda === 'USD' ? 'US$ ' : '₲'}{formatNumber(totalCobrado, recibosVinculados[0]?.moneda)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              {renderForm()}
             </div>
             <div className="dc-modal-footer">
-              <button className="dc-btn-save" onClick={() => setShowViewModal(false)}>Cerrar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal nuevo/editar */}
-      {showModal && (
-        <div className="dc-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="dc-modal" onClick={e => e.stopPropagation()}>
-            <div className="dc-modal-header">
-              <h3>{modalTitle}</h3>
-              <button className="dc-modal-close" onClick={() => setShowModal(false)}><X size={18} /></button>
-            </div>
-            <div className="dc-modal-body">{renderForm()}</div>
-            <div className="dc-modal-footer">
-              <button className="dc-btn-cancel" onClick={() => setShowModal(false)}><X size={14} /> Cancelar</button>
-              <button className="dc-btn-save" onClick={handleSave} disabled={saving}>
-                {saving ? <RefreshCw size={14} className="dc-spin" /> : <Save size={14} />} Guardar
+              <button className="dc-btn secondary" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className="dc-btn primary" onClick={handleSave} disabled={saving}>
+                <Save size={14} /> {saving ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal importación */}
-      {showImportModal && (
-        <div className="dc-modal-overlay" onClick={() => { if (importStatus !== 'importing') { setShowImportModal(false); setImportStatus(''); } }}>
-          <div className="dc-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 680 }}>
+      {/* MODAL VER */}
+      {showViewModal && viewItem && (
+        <div className="dc-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowViewModal(false); }}>
+          <div className="dc-modal">
             <div className="dc-modal-header">
-              <h3>📥 Importar {tabLabels[activeTab]}</h3>
-              <button className="dc-modal-close" onClick={() => { setShowImportModal(false); setImportStatus(''); }}><X size={18} /></button>
+              <h3>Detalle</h3>
+              <button className="dc-btn-icon" onClick={() => setShowViewModal(false)}><X size={18} /></button>
+            </div>
+            <div className="dc-modal-body">
+              {renderViewModal()}
+            </div>
+            <div className="dc-modal-footer">
+              <button className="dc-btn secondary" onClick={() => setShowViewModal(false)}>Cerrar</button>
+              <button className="dc-btn primary" onClick={() => { setShowViewModal(false); handleEdit(viewItem); }}>
+                <Edit2 size={14} /> Editar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL IMPORT */}
+      {showImportModal && (
+        <div className="dc-modal-overlay">
+          <div className="dc-modal dc-modal-import">
+            <div className="dc-modal-header">
+              <h3>Importar {activeTab}</h3>
+              <button className="dc-btn-icon" onClick={() => setShowImportModal(false)}><X size={18} /></button>
             </div>
             <div className="dc-modal-body">
               {importStatus === 'preview' && (
                 <>
-                  <div style={{ background: '#f0f7ff', padding: '10px 14px', borderRadius: 8, marginBottom: 12, fontSize: '0.83rem' }}>
-                    <strong>📊 {importData.length} registros encontrados</strong>
-                    {importDuplicates.length > 0 && <span style={{ color: '#d97706', display: 'block', marginTop: 3 }}>⚠️ {importDuplicates.length} duplicados detectados</span>}
-                  </div>
+                  <p className="dc-import-summary">
+                    <strong>{importData.length}</strong> registros encontrados.
+                    {importDuplicates.length > 0 && <span className="dc-import-warn"> {importDuplicates.length} duplicados detectados.</span>}
+                  </p>
+
+                  {importDuplicates.length > 0 && (
+                    <div className="dc-import-dupes">
+                      <label>¿Qué hacer con los duplicados?</label>
+                      <select value={duplicateAction} onChange={e => setDuplicateAction(e.target.value)}>
+                        <option value="skip">Ignorar (mantener existente)</option>
+                        <option value="overwrite">Sobreescribir con nuevo</option>
+                      </select>
+                    </div>
+                  )}
+
                   <div className="dc-import-preview">
                     <table className="dc-table" style={{ fontSize: '0.75rem' }}>
                       <thead><tr>
-                        <th style={{ padding: '5px 8px' }}>N°</th>
-                        <th style={{ padding: '5px 8px' }}>FECHA</th>
-                        <th style={{ padding: '5px 8px' }}>CLIENTE</th>
-                        {activeTab !== 'remisiones' && <th style={{ padding: '5px 8px' }}>MONTO</th>}
-                        <th style={{ padding: '5px 8px' }}>ESTADO</th>
+                        {Object.keys(importData[0] || {}).filter(k => !k.startsWith('_')).map(k => <th key={k}>{k}</th>)}
                       </tr></thead>
                       <tbody>
-                        {importData.slice(0, 50).map((r, i) => {
-                          const nro = r.nro_factura || r.nro_os || r.nro_recibo || r.nro_remision;
-                          const isDupe = importDuplicates.some(d => (d.nro_factura || d.nro_os || d.nro_recibo || d.nro_remision) === nro);
-                          return (
-                            <tr key={i} style={{ background: isDupe ? '#fef3c7' : 'transparent' }}>
-                              <td style={{ padding: '4px 8px', fontWeight: 700 }}>{nro}</td>
-                              <td style={{ padding: '4px 8px' }}>{r.fecha || '-'}</td>
-                              <td style={{ padding: '4px 8px' }}>{r.cliente}</td>
-                              {activeTab !== 'remisiones' && <td style={{ padding: '4px 8px', textAlign: 'right' }}>{r.monto ? formatNumber(r.monto, r.moneda) : '-'}</td>}
-                              <td style={{ padding: '4px 8px' }}>{isDupe ? <span style={{ color: '#d97706', fontWeight: 700 }}>⚠ DUP</span> : '✓ Nuevo'}</td>
-                            </tr>
-                          );
-                        })}
+                        {importData.slice(0, 10).map((row, i) => (
+                          <tr key={i} className={importDuplicates.some(d => d === row) ? 'dc-import-dupe-row' : ''}>
+                            {Object.entries(row).filter(([k]) => !k.startsWith('_')).map(([k, v]) => (
+                              <td key={k}>{v !== null && v !== undefined ? String(v) : '—'}</td>
+                            ))}
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
-                  </div>
-                  {importDuplicates.length > 0 && (
-                    <div style={{ background: '#fffbeb', padding: '10px 14px', borderRadius: 8, marginBottom: 12 }}>
-                      <strong style={{ color: '#92400e', fontSize: '0.83rem' }}>¿Qué hacer con los duplicados?</strong>
-                      <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-                        {['skip', 'overwrite'].map(opt => (
-                          <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: '0.82rem' }}>
-                            <input type="radio" name="dupeAct" value={opt} checked={duplicateAction === opt} onChange={() => setDuplicateAction(opt)} />
-                            {opt === 'skip' ? 'Saltar duplicados' : 'Sobreescribir'}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div style={{ background: '#f8f8f8', padding: '8px 12px', borderRadius: 8, fontSize: '0.76rem', color: '#6b7280' }}>
-                    <strong>Orden de columnas ({tabLabels[activeTab]}):</strong>{' '}
-                    {activeTab === 'facturas' && 'N° FAC | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS'}
-                    {activeTab === 'ordenes_servicio' && 'N° OS | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS'}
-                    {activeTab === 'recibos' && 'N° RECIBO | TIPO | FECHA | CLIENTE | MONEDA | MONTO | DETALLE | FACT N°'}
-                    {activeTab === 'remisiones' && 'REM | FECHA | CLIENTE | FACTURA | OS | USD | GS | RUBRO_ID | DETALLE'}
+                    {importData.length > 10 && <p className="dc-import-more">... y {importData.length - 10} más</p>}
                   </div>
                 </>
               )}
+
               {importStatus === 'importing' && (
-                <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <RefreshCw size={30} className="dc-spin" style={{ color: '#567C8D', marginBottom: 12 }} />
-                  <p style={{ fontSize: '0.9rem' }}>Importando {importData.length} registros...</p>
+                <div className="dc-empty">
+                  <RefreshCw size={28} className="dc-spin" style={{ color: '#567C8D' }} />
+                  <p>Importando...</p>
                 </div>
               )}
+
               {importStatus === 'done' && importResults && (
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: 10 }}>{importResults.errors > 0 ? '⚠️' : '✅'}</div>
-                  <h3 style={{ marginBottom: 14, color: '#2F4156' }}>Importación completada</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, maxWidth: 260, margin: '0 auto', textAlign: 'left', fontSize: '0.85rem' }}>
-                    <span style={{ fontWeight: 700, color: '#16a34a' }}>✓ Insertados:</span><span>{importResults.inserted}</span>
-                    {importResults.updated > 0 && <><span style={{ fontWeight: 700, color: '#2563eb' }}>↻ Actualizados:</span><span>{importResults.updated}</span></>}
-                    {importResults.skipped > 0 && <><span style={{ fontWeight: 700, color: '#d97706' }}>⊘ Saltados:</span><span>{importResults.skipped}</span></>}
-                    {importResults.errors > 0 && <><span style={{ fontWeight: 700, color: '#dc2626' }}>✗ Errores:</span><span>{importResults.errors}</span></>}
-                  </div>
+                <div className="dc-import-results">
+                  <div className="dc-import-result-row ok">✅ Insertados: <strong>{importResults.inserted}</strong></div>
+                  {importResults.updated > 0 && <div className="dc-import-result-row ok">🔄 Actualizados: <strong>{importResults.updated}</strong></div>}
+                  {importResults.skipped > 0 && <div className="dc-import-result-row warn">⏭ Ignorados: <strong>{importResults.skipped}</strong></div>}
+                  {importResults.errors > 0 && (
+                    <>
+                      <div className="dc-import-result-row err">❌ Errores: <strong>{importResults.errors}</strong></div>
+                      <div className="dc-import-error-list">
+                        {importResults.errorDetails.map((e, i) => (
+                          <div key={i} className="dc-import-error-item">• {e.nro}: {e.motivo}</div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
             <div className="dc-modal-footer">
+              <button className="dc-btn secondary" onClick={() => setShowImportModal(false)}>
+                {importStatus === 'done' ? 'Cerrar' : 'Cancelar'}
+              </button>
               {importStatus === 'preview' && (
-                <>
-                  <button className="dc-btn-cancel" onClick={() => { setShowImportModal(false); setImportStatus(''); }}><X size={14} /> Cancelar</button>
-                  <button className="dc-btn-save" onClick={handleImportConfirm}><Upload size={14} /> Importar {importData.length} registros</button>
-                </>
-              )}
-              {importStatus === 'done' && (
-                <button className="dc-btn-save" onClick={() => { setShowImportModal(false); setImportStatus(''); }}>Cerrar</button>
+                <button className="dc-btn primary" onClick={handleImportConfirm}>
+                  <Upload size={14} /> Confirmar importación
+                </button>
               )}
             </div>
           </div>
