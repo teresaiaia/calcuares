@@ -632,6 +632,7 @@ export default function DocumentosContables() {
           reciboId = isDupe;
           updated++;
         } else {
+          console.log('INSERT remision:', JSON.stringify(recordLimpio));
           const { data, error } = await supabase.from(table).insert([recordLimpio]).select().single();
           if (error) throw error;
           reciboId = data.id;
