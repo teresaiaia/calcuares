@@ -557,9 +557,16 @@ export default function DocumentosContables() {
           const clienteVal = String(r[2] || '').trim();
           if (!remVal || !clienteVal) continue;
 
-          // Buscar rubro_id por nombre en la tabla rubros cargada
-          const rubroNombre = String(r[7] || '').trim();
-          const rubroMatch = rubros.find(rb => rb.nombre.toLowerCase() === rubroNombre.toLowerCase());
+          // Buscar rubro_id: acepta ID numérico directo o nombre de texto
+          const rubroVal = r[7];
+          let rubroId = null;
+          if (typeof rubroVal === 'number') {
+            rubroId = rubroVal;
+          } else {
+            const rubroNombre = String(rubroVal || '').trim();
+            const rubroMatch = rubros.find(rb => rb.nombre.toLowerCase() === rubroNombre.toLowerCase());
+            rubroId = rubroMatch ? rubroMatch.id : null;
+          }
 
           record = {
             rem: parseInt(remVal),
@@ -569,7 +576,7 @@ export default function DocumentosContables() {
             os: String(r[4] || '').trim() || null,
             usd: r[5] !== undefined && r[5] !== null && r[5] !== '' ? parseMonto(r[5], 'USD') : null,
             gs: r[6] !== undefined && r[6] !== null && r[6] !== '' ? parseMonto(r[6], '₲') : null,
-            rubro_id: rubroMatch ? rubroMatch.id : null,
+            rubro_id: rubroId,
             detalle: String(r[8] || '').trim() || null,
           };
         }
