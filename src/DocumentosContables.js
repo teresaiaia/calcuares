@@ -439,6 +439,8 @@ export default function DocumentosContables() {
           rubro_id: formData.rubro_id ? parseInt(formData.rubro_id) : null,
           detalle: formData.detalle?.trim() || null,
         };
+        console.log('editingItem:', JSON.stringify(editingItem));
+        console.log('payload:', JSON.stringify(payload));
         const { error } = editingItem
           ? await supabase.from('remisiones').update(payload).eq('id', editingItem.id)
           : await supabase.from('remisiones').insert([payload]);
