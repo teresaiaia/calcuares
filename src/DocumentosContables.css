@@ -10,6 +10,8 @@
   margin: 0 auto;
   font-family: 'Segoe UI', Arial, sans-serif;
   color: #2F4156;
+  background: white;
+  min-height: 100vh;
 }
 
 /* ---- HEADER ---- */
@@ -288,6 +290,13 @@
   background: white;
 }
 
+.dc-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #dde6ee;
+  background: white;
+}
+
 .dc-table {
   width: 100%;
   border-collapse: collapse;
@@ -322,6 +331,7 @@
 .dc-table tbody tr {
   border-bottom: 1px solid #eef1f4;
   transition: background 0.12s;
+  background: white;
 }
 
 .dc-table tbody tr:hover {
