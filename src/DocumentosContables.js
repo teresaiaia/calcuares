@@ -439,8 +439,6 @@ export default function DocumentosContables() {
           rubro_id: formData.rubro_id ? parseInt(formData.rubro_id) : null,
           detalle: formData.detalle?.trim() || null,
         };
-        console.log('editingItem:', JSON.stringify(editingItem));
-        console.log('payload:', JSON.stringify(payload));
         const { error } = editingItem
           ? await supabase.from('remisiones').update(payload).eq('id', editingItem.id)
           : await supabase.from('remisiones').insert([payload]);
@@ -1167,24 +1165,76 @@ export default function DocumentosContables() {
   // ============================================
   const renderViewModal = () => {
     if (!viewItem) return null;
-    const fields = Object.entries(viewItem).filter(([k]) => k !== 'id');
+
+    // Campos por tab con etiquetas legibles
+    const fieldDefs = {
+      facturas: [
+        { key: 'nro_factura', label: 'N° Factura' },
+        { key: 'fecha', label: 'Fecha' },
+        { key: 'cliente', label: 'Cliente' },
+        { key: 'modalidad', label: 'Modalidad' },
+        { key: 'moneda', label: 'Moneda' },
+        { key: 'monto', label: 'Monto' },
+        { key: 'rubro', label: 'Rubro' },
+        { key: 'estado', label: 'Estado' },
+        { key: 'concepto', label: 'Concepto' },
+        { key: 'observaciones', label: 'Observaciones' },
+      ],
+      ordenes_servicio: [
+        { key: 'nro_os', label: 'N° Orden' },
+        { key: 'fecha', label: 'Fecha' },
+        { key: 'cliente', label: 'Cliente' },
+        { key: 'modalidad', label: 'Modalidad' },
+        { key: 'moneda', label: 'Moneda' },
+        { key: 'monto', label: 'Monto' },
+        { key: 'rubro', label: 'Rubro' },
+        { key: 'estado', label: 'Estado' },
+        { key: 'concepto', label: 'Concepto' },
+        { key: 'observaciones', label: 'Observaciones' },
+      ],
+      recibos: [
+        { key: 'nro_recibo', label: 'N° Recibo' },
+        { key: 'fecha', label: 'Fecha' },
+        { key: 'cliente', label: 'Cliente' },
+        { key: 'tipo', label: 'Tipo' },
+        { key: 'moneda', label: 'Moneda' },
+        { key: 'monto', label: 'Monto' },
+        { key: 'concepto', label: 'Concepto' },
+        { key: 'observaciones', label: 'Observaciones' },
+      ],
+      remisiones: [
+        { key: 'rem', label: 'N° REM' },
+        { key: 'fecha', label: 'Fecha' },
+        { key: 'cliente', label: 'Cliente' },
+        { key: 'factura', label: 'Factura' },
+        { key: 'os', label: 'Orden de Servicio' },
+        { key: 'usd', label: 'USD' },
+        { key: 'gs', label: 'Guaraníes' },
+        { key: '_rubro', label: 'Rubro' },
+        { key: 'detalle', label: 'Detalle' },
+      ],
+    };
+
+    const fields = fieldDefs[activeTab] || [];
+
     return (
       <div className="dc-view-grid">
-        {fields.map(([key, val]) => {
-          if (key === 'rubros') return (
-            <div key={key} className="dc-view-field">
-              <span className="dc-view-label">RUBRO</span>
-              <span className="dc-view-value">{val?.nombre || '—'}</span>
-            </div>
-          );
-          let displayVal = val;
-          if (key === 'fecha') displayVal = formatDate(val);
-          else if ((key === 'monto' || key === 'usd' || key === 'gs') && val) displayVal = formatNumber(val, key === 'usd' ? 'USD' : '₲');
-          else if (val === null || val === undefined || val === '') displayVal = '—';
+        {fields.map(({ key, label }) => {
+          let displayVal;
+          if (key === '_rubro') {
+            displayVal = viewItem.rubros?.nombre || '—';
+          } else {
+            const val = viewItem[key];
+            if (key === 'fecha') displayVal = formatDate(val);
+            else if ((key === 'monto' || key === 'usd') && val) displayVal = formatNumber(val, 'USD');
+            else if (key === 'gs' && val) displayVal = formatNumber(val, '₲');
+            else if (val === null || val === undefined || val === '') displayVal = '—';
+            else displayVal = String(val);
+          }
           return (
             <div key={key} className="dc-view-field">
-              <span className="dc-view-label">{key.toUpperCase().replace(/_/g, ' ')}</span>
-              <span className="dc-view-value">{String(displayVal)}</span>
+              <span className="dc-view-label">{label}</span>
+              <span className="dc-view-value">{displayVal}</span>
             </div>
           );
         })}
