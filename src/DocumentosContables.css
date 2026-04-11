@@ -763,6 +763,38 @@
   background: #f0f5f8;
 }
 
+/* ---- VIEW MODAL ---- */
+.dc-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.dc-view-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.dc-view-field:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.dc-view-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #567C8D;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dc-view-value {
+  font-size: 0.88rem;
+  color: #2F4156;
+  font-weight: 500;
+  word-break: break-word;
+}
+
 /* ---- IMPORT MODAL ---- */
 .dc-import-preview {
   max-height: 280px;
