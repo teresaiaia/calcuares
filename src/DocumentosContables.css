@@ -604,10 +604,11 @@
   margin-bottom: 1rem;
   flex-wrap: wrap;
   row-gap: 0.5rem;
-  background: white;
-  border: 1px solid #dde6ee;
+  background: #ffffff;
+  border: 2px solid #C8D9E6;
   border-radius: 10px;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 1rem;
+  box-shadow: 0 2px 8px rgba(47,65,86,0.07);
 }
 
 .dc-search-wrap {
