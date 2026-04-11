@@ -604,17 +604,23 @@
   margin-bottom: 1rem;
   flex-wrap: wrap;
   row-gap: 0.5rem;
+  background: white;
+  border: 1px solid #dde6ee;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
 }
 
 .dc-search-wrap {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: white;
+  background: #f5f8fb;
   border: 2px solid #C8D9E6;
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
-  min-width: 220px;
+  min-width: 160px;
+  flex: 1;
+  max-width: 250px;
   transition: border-color 0.2s;
 }
 
