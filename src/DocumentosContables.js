@@ -9,13 +9,7 @@ import './DocumentosContables.css';
 // ============================================
 // CONSTANTES
 // ============================================
-const RUBROS = [
-  'Aldenor', 'Anulada', 'Aqua', 'Ares', 'Body Health', 'Candela',
-  'Centenario', 'Classys', 'Cocoon', 'Daeyang', 'Dermlite', 'Ecleris',
-  'Endymed', 'Fine', 'Forma-Tk', 'Fotona', 'Hydra', 'Insumos', 'Intermedic',
-  'Laseroptek', 'Lumenis', 'Mascaras', 'MtoS', 'ServTec', 'Sothys',
-  'Venus', 'Viora'
-];
+// RUBROS se carga dinámicamente desde Supabase (estado: rubros)
 
 const MONEDAS = ['₲', 'USD'];
 const MODALIDADES = ['Contado', 'Crédito', 'Anulada', 'Bonificación'];
@@ -1011,7 +1005,7 @@ export default function DocumentosContables() {
             <label>Rubro</label>
             <select value={formData.rubro} onChange={e => setFormData({ ...formData, rubro: e.target.value })}>
               <option value="">— Sin rubro —</option>
-              {RUBROS.map(r => <option key={r}>{r}</option>)}
+              {rubros.map(r => <option key={r.id} value={r.nombre}>{r.nombre}</option>)}
             </select>
           </div>
 
