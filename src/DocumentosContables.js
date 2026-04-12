@@ -700,7 +700,6 @@ export default function DocumentosContables() {
         exportData = datosFiltrados.map(r => ({
           'REM': r.rem, 'FECHA': r.fecha, 'CLIENTE': r.cliente,
           'FACTURA': r.factura || '', 'OS': r.os || '',
-          'USD': r.usd || '', 'GS': r.gs || '',
           'RUBRO': r.rubros?.nombre || '',
           'DETALLE': r.detalle || ''
         }));
@@ -904,8 +903,6 @@ export default function DocumentosContables() {
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
           <th onClick={() => handleSort('factura')}>FACTURA <SortIcon field="factura" /></th>
           <th onClick={() => handleSort('os')}>OS <SortIcon field="os" /></th>
-          <th onClick={() => handleSort('usd')}>USD <SortIcon field="usd" /></th>
-          <th onClick={() => handleSort('gs')}>GS <SortIcon field="gs" /></th>
           <th onClick={() => handleSort('rubros')}>RUBRO <SortIcon field="rubros" /></th>
           <th onClick={() => handleSort('detalle')}>DETALLE <SortIcon field="detalle" /></th>
           <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
@@ -918,8 +915,6 @@ export default function DocumentosContables() {
               <td>{r.cliente}</td>
               <td>{r.factura || <span className="muted">—</span>}</td>
               <td>{r.os || <span className="muted">—</span>}</td>
-              <td className="num">{r.usd ? 'US$ ' + formatNumber(r.usd, 'USD') : <span className="muted">—</span>}</td>
-              <td className="num">{r.gs ? 'Ғ ' + formatNumber(r.gs, 'Ғ') : <span className="muted">—</span>}</td>
               <td>{r.rubros?.nombre || <span className="muted">—</span>}</td>
               <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.detalle || <span className="muted">—</span>}
@@ -1121,16 +1116,6 @@ export default function DocumentosContables() {
             <input value={formData.os || ''} onChange={e => setFormData({ ...formData, os: e.target.value })} placeholder="N° de OS (o S/O)" />
           </div>
 
-          <div className="dc-form-group">
-            <label>Valor USD</label>
-            <input value={formData.usd || ''} onChange={e => setFormData({ ...formData, usd: e.target.value })} placeholder="0.00" />
-          </div>
-
-          <div className="dc-form-group">
-            <label>Valor Gs</label>
-            <input value={formData.gs || ''} onChange={e => setFormData({ ...formData, gs: e.target.value })} placeholder="0" />
-          </div>
-
           <div className="dc-form-group span2">
             <label>Rubro</label>
             <select value={formData.rubro_id || ''} onChange={e => setFormData({ ...formData, rubro_id: e.target.value })}>
@@ -1202,8 +1187,6 @@ export default function DocumentosContables() {
         { key: 'cliente', label: 'Cliente' },
         { key: 'factura', label: 'Factura' },
         { key: 'os', label: 'Orden de Servicio' },
-        { key: 'usd', label: 'USD' },
-        { key: 'gs', label: 'Guaraníes' },
         { key: '_rubro', label: 'Rubro' },
         { key: 'detalle', label: 'Detalle' },
       ],
