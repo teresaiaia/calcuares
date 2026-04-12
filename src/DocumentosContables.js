@@ -493,6 +493,13 @@ export default function DocumentosContables() {
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
       if (rows.length < 2) { alert('Archivo sin datos'); return; }
 
+      // Asegurar rubros frescos (evita problema de closure en estado React)
+      let rubrosActuales = rubros;
+      if (activeTab === 'remisiones' && rubrosActuales.length === 0) {
+        const { data: rubrosData } = await supabase.from('rubros').select('*');
+        rubrosActuales = rubrosData || [];
+      }
+
       const parsed = [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
@@ -554,12 +561,18 @@ export default function DocumentosContables() {
           // Buscar rubro_id: acepta ID numérico directo o nombre de texto
           const rubroVal = r[7];
           let rubroId = null;
-          if (typeof rubroVal === 'number') {
-            rubroId = rubroVal;
-          } else {
-            const rubroNombre = String(rubroVal || '').trim();
-            const rubroMatch = rubros.find(rb => rb.nombre.toLowerCase() === rubroNombre.toLowerCase());
-            rubroId = rubroMatch ? rubroMatch.id : null;
+          if (rubroVal !== undefined && rubroVal !== null && rubroVal !== '') {
+            if (typeof rubroVal === 'number') {
+              rubroId = rubroVal;
+            } else {
+              const rubroNombre = String(rubroVal).trim();
+              if (rubroNombre) {
+                const rubroMatch = rubrosActuales.find(
+                  rb => rb.nombre.toLowerCase() === rubroNombre.toLowerCase()
+                );
+                rubroId = rubroMatch ? rubroMatch.id : null;
+              }
+            }
           }
 
           record = {
