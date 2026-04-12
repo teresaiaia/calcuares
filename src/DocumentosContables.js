@@ -237,8 +237,8 @@ export default function DocumentosContables() {
     }
 
     data.sort((a, b) => {
-      let va = a[sortField] ?? '';
-      let vb = b[sortField] ?? '';
+      let va = sortField === 'rubros' ? (a.rubros?.nombre ?? '') : (a[sortField] ?? '');
+      let vb = sortField === 'rubros' ? (b.rubros?.nombre ?? '') : (b[sortField] ?? '');
       if (typeof va === 'string') va = va.toLowerCase();
       if (typeof vb === 'string') vb = vb.toLowerCase();
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
