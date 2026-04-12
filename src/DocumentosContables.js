@@ -158,7 +158,7 @@ export default function DocumentosContables() {
     nro_recibo: '', tipo: 'RO', detalle: '',
     vinculos: [],
     // remisiones
-    rem: '', factura: '', os: '', usd: '', gs: '', rubro_id: ''
+    rem: '', factura: '', os: '', rubro_id: ''
   };
 
   const [formData, setFormData] = useState(formInit);
@@ -428,8 +428,6 @@ export default function DocumentosContables() {
           cliente: formData.cliente.trim(),
           factura: formData.factura?.trim() || null,
           os: formData.os?.trim() || null,
-          usd: formData.usd ? parseMonto(formData.usd, 'USD') : null,
-          gs: formData.gs ? parseMonto(formData.gs, 'Ғ') : null,
           rubro_id: formData.rubro_id ? parseInt(formData.rubro_id) : null,
           detalle: formData.detalle?.trim() || null,
         };
@@ -553,13 +551,13 @@ export default function DocumentosContables() {
           if (!record.nro_recibo || !record.cliente) continue;
 
         } else if (activeTab === 'remisiones') {
-          // REM | FECHA | CLIENTE | FACTURA | OS | USD | GS | RUBRO_ID | DETALLE
+          // REM | FECHA | CLIENTE | FACTURA | OS | RUBRO_ID | DETALLE
           const remVal = String(r[0] || '').trim();
           const clienteVal = String(r[2] || '').trim();
           if (!remVal || !clienteVal) continue;
 
           // Buscar rubro_id: acepta ID numérico directo o nombre de texto
-          const rubroVal = r[7];
+          const rubroVal = r[5];
           let rubroId = null;
           if (rubroVal !== undefined && rubroVal !== null && rubroVal !== '') {
             if (typeof rubroVal === 'number') {
@@ -580,11 +578,8 @@ export default function DocumentosContables() {
             fecha: parseExcelDate(r[1]),
             cliente: clienteVal,
             factura: String(r[3] || '').trim() || null,
-            os: String(r[4] || '').trim() || null,
-            usd: r[5] !== undefined && r[5] !== null && r[5] !== '' ? parseMonto(r[5], 'USD') : null,
-            gs: r[6] !== undefined && r[6] !== null && r[6] !== '' ? parseMonto(r[6], '₲') : null,
-            rubro_id: rubroId,
-            detalle: String(r[8] || '').trim() || null,
+            os: String(r[4] || '').trim() || null,            rubro_id: rubroId,
+            detalle: String(r[6] || '').trim() || null,
           };
         }
 
@@ -753,12 +748,10 @@ export default function DocumentosContables() {
           { val: r.detalle || '' }
         ]), totHTML);
     } else if (activeTab === 'remisiones') {
-      exportarPDF('Remisiones', ['N° REM', 'FECHA', 'CLIENTE', 'FACTURA', 'OS', 'USD', 'GS', 'RUBRO', 'DETALLE'],
+      exportarPDF('Remisiones', ['N° REM', 'FECHA', 'CLIENTE', 'FACTURA', 'OS', 'RUBRO', 'DETALLE'],
         datosFiltrados.map(r => [
           { val: r.rem }, { val: formatDate(r.fecha) }, { val: r.cliente },
           { val: r.factura || '—' }, { val: r.os || '—' },
-          { val: r.usd ? formatNumber(r.usd, 'USD') : '—', cls: 'num' },
-          { val: r.gs ? formatNumber(r.gs) : '—', cls: 'num' },
           { val: r.rubros?.nombre || '—' },
           { val: r.detalle || '' }
         ]), totHTML);
