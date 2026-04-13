@@ -172,11 +172,11 @@ export default function DocumentosContables() {
     setLoading(true);
     try {
       const [fRes, osRes, rRes, remRes, rdRes, rubRes] = await Promise.all([
-        supabase.from('facturas').select('*').order('fecha', { ascending: false }),
-        supabase.from('ordenes_servicio').select('*').order('fecha', { ascending: false }),
-        supabase.from('recibos').select('*').order('fecha', { ascending: false }),
-        supabase.from('remisiones').select('*, rubros(nombre)').order('fecha', { ascending: false }),
-        supabase.from('recibo_documentos').select('*'),
+        supabase.from('facturas').select('*').order('fecha', { ascending: false }).limit(10000),
+        supabase.from('ordenes_servicio').select('*').order('fecha', { ascending: false }).limit(10000),
+        supabase.from('recibos').select('*').order('fecha', { ascending: false }).limit(10000),
+        supabase.from('remisiones').select('*, rubros(nombre)').order('fecha', { ascending: false }).limit(10000),
+        supabase.from('recibo_documentos').select('*').limit(10000),
         supabase.from('rubros').select('*').order('nombre'),
       ]);
       setFacturas(fRes.data || []);
