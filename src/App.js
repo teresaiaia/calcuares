@@ -30,6 +30,1291 @@ export default function Calcuares() {
   const [view, setView] = useState('admin');
   const [activeModule, setActiveModule] = useState('calculos');
   const [ventasModule, setVentasModule] = useState('precios');
+  const [stModule, setStModule] = useState('servicios');
+  const [expandedFlete, setExpandedFlete] = useState({});
+  
+  // Estados de autenticación
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
+
+  const categories = ['UC', 'HP', 'ACC', 'CONS', 'SRVP'];
+
+  useEffect(() => {
+    localStorage.setItem('exchangeRate', exchangeRate);
+  }, [exchangeRate]);
+
+  useEffect(() => {
+    localStorage.setItem('globalInterest', globalInterest);
+  }, [globalInterest]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      setView(user.rol === 'admin' ? 'admin' : user.rol === 'servicio_tecnico' ? 'servicio_tecnico' : 'ventas');
+      fetchProducts();
+    } else {
+      setLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ============= FUNCIONES DE AUTENTICACIÓN =============
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoggingIn(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('email', loginEmail.toLowerCase().trim())
+        .eq('activo', true)
+        .single();
+
+      if (error || !data) {
+        setLoginError('Usuario o contraseña incorrectos');
+        setLoggingIn(false);
+        return;
+      }
+
+      const isValidPassword = loginPassword === 'administrando' || loginPassword === 'vendedor123' || loginPassword === 'servtec2026';
+      
+      if (!isValidPassword) {
+        setLoginError('Usuario o contraseña incorrectos');
+        setLoggingIn(false);
+        return;
+      }
+
+      await supabase
+        .from('usuarios')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', data.id);
+
+      const userSession = {
+        id: data.id,
+        email: data.email,
+        nombre: data.nombre,
+        rol: data.rol
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(userSession));
+      setCurrentUser(userSession);
+      setIsAuthenticated(true);
+      setView(userSession.rol === 'admin' ? 'admin' : userSession.rol === 'servicio_tecnico' ? 'servicio_tecnico' : 'ventas');
+
+      if (window.PasswordCredential) {
+        try {
+          const cred = new window.PasswordCredential({
+            id: loginEmail,
+            password: loginPassword,
+            name: userSession.nombre || loginEmail
+          });
+          await navigator.credentials.store(cred);
+        } catch (credErr) {
+          // Silenciar
+        }
+      }
+
+      try {
+        const iframe = document.createElement('iframe');
+        iframe.name = 'login-save-frame';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'about:blank';
+        form.target = 'login-save-frame';
+
+        const emailInput = document.createElement('input');
+        emailInput.type = 'email';
+        emailInput.name = 'email';
+        emailInput.autocomplete = 'username';
+        emailInput.value = loginEmail;
+        form.appendChild(emailInput);
+
+        const passInput = document.createElement('input');
+        passInput.type = 'password';
+        passInput.name = 'password';
+        passInput.autocomplete = 'current-password';
+        passInput.value = loginPassword;
+        form.appendChild(passInput);
+
+        document.body.appendChild(form);
+        form.submit();
+
+        setTimeout(() => {
+          document.body.removeChild(form);
+          document.body.removeChild(iframe);
+        }, 2000);
+      } catch (e) {
+        // Silenciar
+      }
+      
+      await fetchProducts();
+      
+    } catch (error) {
+      console.error('Error en login:', error);
+      setLoginError('Error al iniciar sesión. Intenta de nuevo.');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setLoginEmail('');
+    setLoginPassword('');
+    setView('admin');
+  };
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      alert('Error al cargar productos desde Supabase.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveProduct = async (product) => {
+    try {
+      setSaving(true);
+      
+      const productData = {
+        cod: product.cod || '',
+        brand: product.brand || '',
+        ori: product.ori || '',
+        prod: product.prod || '',
+        cat: product.cat || 'UC',
+        pp: parseFloat(product.pp || 0),
+        frt: parseFloat(product.frt || 0),
+        bnk: parseFloat(product.bnk || 0),
+        adu: parseFloat(product.adu || 0),
+        serv: parseFloat(product.serv || 0),
+        trng: parseFloat(product.trng || 0),
+        extr: parseFloat(product.extr || 0),
+        margin: parseFloat(product.margin || 0),
+        fixed_price: parseFloat(product.fixed_price || 0),
+        price_in_eur: product.price_in_eur || false,
+        observaciones: product.observaciones || '',
+        precio_verificado: product.precio_verificado || false,
+        flete_alto: parseFloat(product.flete_alto || 0),
+        flete_ancho: parseFloat(product.flete_ancho || 0),
+        flete_profundidad: parseFloat(product.flete_profundidad || 0),
+        flete_peso_real: parseFloat(product.flete_peso_real || 0),
+        flete_coeficiente: parseFloat(product.flete_coeficiente || 5000),
+        flete_precio_kg_real: parseFloat(product.flete_precio_kg_real || 0),
+        flete_precio_kg_vol: parseFloat(product.flete_precio_kg_vol || 0),
+        flete_precio_fijo: parseFloat(product.flete_precio_fijo || 0),
+        flete_origen: product.flete_origen || '',
+        flete_obs: product.flete_obs || ''
+      };
+      
+      if (product.id && product.id > 0) {
+        const { error } = await supabase
+          .from('productos')
+          .update(productData)
+          .eq('id', product.id);
+        
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('productos')
+          .insert([productData])
+          .select();
+        
+        if (error) throw error;
+        
+        setProducts(prev => prev.map(p => 
+          p.id === product.id ? data[0] : p
+        ));
+      }
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert('Error al guardar producto: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteProduct = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar este producto?')) return;
+    
+    try {
+      if (id < 0) {
+        setProducts(prev => prev.filter(p => p.id !== id));
+        return;
+      }
+
+      const { error } = await supabase
+        .from('productos')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setProducts(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Error al eliminar producto: ' + error.message);
+    }
+  };
+
+  const calculateFleteProduct = useCallback((product) => {
+    const alto = parseFloat(product.flete_alto || 0);
+    const ancho = parseFloat(product.flete_ancho || 0);
+    const prof = parseFloat(product.flete_profundidad || 0);
+    const pesoReal = parseFloat(product.flete_peso_real || 0);
+    const coef = parseFloat(product.flete_coeficiente || 5000);
+    const precioKgReal = parseFloat(product.flete_precio_kg_real || 0);
+    const precioKgVol = parseFloat(product.flete_precio_kg_vol || 0);
+    
+    const pesoVolumetrico = (alto * ancho * prof) / coef;
+    const diferencia = pesoVolumetrico - pesoReal;
+    const costoTotal = (pesoReal * precioKgReal) + (Math.max(0, diferencia) * precioKgVol);
+    
+    return { pesoVolumetrico, diferencia, costoTotal };
+  }, []);
+
+  const addProduct = () => {
+    const tempId = -Date.now();
+    const newProduct = {
+      id: tempId,
+      cod: '', brand: '', ori: '', prod: '', cat: 'UC',
+      pp: 0, frt: 0, bnk: 0, adu: 0, serv: 0, trng: 0, extr: 0,
+      margin: 0, fixed_price: 0, price_in_eur: false, observaciones: '',
+      precio_verificado: false, flete_alto: 0, flete_ancho: 0,
+      flete_profundidad: 0, flete_peso_real: 0, flete_coeficiente: 5000,
+      flete_precio_kg_real: 0, flete_precio_kg_vol: 0, flete_precio_fijo: 0,
+      flete_origen: '', flete_obs: ''
+    };
+    setProducts(prev => [newProduct, ...prev]);
+  };
+
+  const handleInputChange = useCallback((id, field, value) => {
+    setProducts(prev => prev.map(p => 
+      p.id === id ? { ...p, [field]: value } : p
+    ));
+    
+    setTimeout(() => {
+      setProducts(current => {
+        const product = current.find(p => p.id === id);
+        if (product) saveProduct(product);
+        return current;
+      });
+    }, 1000);
+  }, []);
+
+  const calculateBackend = useCallback((product) => {
+    const ppOriginal = parseFloat(product.pp || 0);
+    const rate = parseFloat(exchangeRate);
+    const ppInUSD = product.price_in_eur ? ppOriginal * rate : ppOriginal;
+    
+    const fob = ppInUSD + parseFloat(product.frt || 0);
+    const gtia = fob * 0.03;
+    const desp = fob * (parseFloat(product.adu || 0) / 100);
+    const kst = fob + parseFloat(product.bnk || 0) + desp + parseFloat(product.serv || 0) + gtia + parseFloat(product.trng || 0) + parseFloat(product.extr || 0);
+    
+    return { fob, gtia, desp, kst, ppOriginal, ppInUSD, isEUR: product.price_in_eur };
+  }, [exchangeRate]);
+
+  const calculateSales = useCallback((kst, margin, interest, fixedPrice = null) => {
+    const cashNet = fixedPrice && parseFloat(fixedPrice) > 0 
+      ? parseFloat(fixedPrice) 
+      : kst * (1 + margin / 100);
+    
+    const cashIva = cashNet * 1.10;
+    const initialPayment = cashIva * 0.50;
+    const financedAmount = cashIva * 0.50;
+    
+    const monthlyRate = interest / 100 / 12;
+    const months = 12;
+    let cuot = 0;
+    
+    if (interest > 0) {
+      cuot = financedAmount * (monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+    } else {
+      cuot = financedAmount / months;
+    }
+    
+    const finIva = initialPayment + (cuot * months);
+    
+    return { cashNet, cashIva, finIva, cuot, initialPayment, isFixedPrice: fixedPrice && parseFloat(fixedPrice) > 0 };
+  }, []);
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-PY', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
+  const handleFileImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      let data = [];
+      
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        data = XLSX.utils.sheet_to_json(worksheet);
+      } else {
+        const text = await file.text();
+        const lines = text.split('\n').filter(line => line.trim());
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        
+        data = lines.slice(1).map(line => {
+          const values = line.split(',');
+          const obj = {};
+          headers.forEach((header, i) => {
+            obj[header] = values[i]?.trim() || '';
+          });
+          return obj;
+        });
+      }
+
+      const newProducts = data.map(row => ({
+        cod: row.cod || row.codigo || '',
+        brand: row.brand || row.marca || '',
+        ori: row.ori || row.origen || '',
+        prod: row.prod || row.producto || '',
+        cat: (row.cat || row.categoria || 'UC').toUpperCase(),
+        pp: parseFloat(row.pp || row.precio || 0),
+        frt: parseFloat(row.frt || row.flete || 0),
+        bnk: parseFloat(row.bnk || row.banco || 0),
+        adu: parseFloat(row.adu || row.aduana || 0),
+        serv: parseFloat(row.serv || row.servicio || 0),
+        trng: parseFloat(row.trng || row.capacitacion || 0),
+        extr: parseFloat(row.extr || row.imprevistos || 0),
+        margin: parseFloat(row.margin || row.margen || 0),
+        fixed_price: parseFloat(row.fixedprice || row.precio_fijo || 0),
+        price_in_eur: (row.priceineur || row.eur || '').toLowerCase() === 'true',
+        observaciones: row.observaciones || row.obs || ''
+      }));
+
+      for (const product of newProducts) {
+        const { error } = await supabase.from('productos').insert([product]);
+        if (error) console.error('Error importing product:', error);
+      }
+      
+      await fetchProducts();
+      alert(`✅ ${newProducts.length} productos importados exitosamente`);
+    } catch (error) {
+      console.error('Error importing file:', error);
+      alert('Error al importar archivo: ' + error.message);
+    }
+    
+    e.target.value = '';
+  };
+
+  const exportData = () => {
+    let csv = 'COD,BRAND,ORI,PROD,CAT,PP,FRT,BNK,ADU,SERV,TRNG,EXTR,MARGIN,FIXEDPRICE,PRICEINEUR\n';
+    products.forEach(p => {
+      csv += `${p.cod},${p.brand},${p.ori},${p.prod},${p.cat},${p.pp},${p.frt},${p.bnk},${p.adu},${p.serv},${p.trng},${p.extr},${p.margin},${p.fixed_price || 0},${p.price_in_eur ? 'true' : 'false'}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `productos_ares_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Lista de Precios - Ares Medical Equipment</title>
+        <style>
+          @page { size: A4; margin: 15mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.3; }
+          .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #567C8D; padding-bottom: 10px; }
+          .header h1 { color: #567C8D; font-size: 18pt; margin-bottom: 5px; }
+          .header p { color: #666; font-size: 10pt; }
+          .products { display: block; width: 100%; }
+          .product { border: 1px solid #ddd; padding: 10px; border-radius: 6px; page-break-inside: avoid; margin-bottom: 8px; display: flex; gap: 12px; }
+          .product-info { flex: 1; }
+          .product-prices { flex: 1; }
+          .product-code { font-size: 7pt; color: #666; }
+          .product-title { font-size: 10pt; font-weight: bold; color: #1e293b; margin: 3px 0; }
+          .product-obs { font-size: 7pt; color: #1e293b; font-style: italic; font-weight: bold; margin: 3px 0; line-height: 1.2; }
+          .badges { display: flex; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
+          .badge { font-size: 6pt; padding: 2px 5px; border-radius: 10px; background: #e8ecf1; color: #1e293b; }
+          .prices { background: #C8D9E6; padding: 8px; border-radius: 6px; height: 100%; }
+          .price-row { display: flex; justify-content: space-between; margin: 2px 0; font-size: 8pt; }
+          .price-highlight { background: #2F4156; color: white; padding: 4px; border-radius: 4px; margin: 3px 0; font-weight: bold; font-size: 9pt; }
+          .price-small { font-size: 6pt; color: #2F4156; border-top: 1px solid #567C8D; padding-top: 3px; margin-top: 3px; }
+          .footer { text-align: center; margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 7pt; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Lista de Precios - Ares</h1>
+          <p>Catálogo de Productos y Cotizaciones</p>
+          <p style="font-size: 8pt; margin-top: 5px;">Interés Anual: ${globalInterest}% | Tipo de Cambio EUR→USD: ${exchangeRate} | Fecha: ${new Date().toLocaleDateString('es-PY')}</p>
+        </div>
+        <div class="products">
+          ${filteredProducts.map(product => {
+            const calc = calculateBackend(product);
+            const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+            return `
+              <div class="product">
+                <div class="product-info">
+                  <div class="product-code">${product.cod}</div>
+                  <div class="product-title">${product.prod || 'Sin nombre'}</div>
+                  ${product.observaciones ? `<div class="product-obs">${product.observaciones}</div>` : ''}
+                  <div class="badges">
+                    <span class="badge">${product.brand}</span>
+                    <span class="badge">${product.ori}</span>
+                    <span class="badge">${product.cat}</span>
+                  </div>
+                </div>
+                <div class="product-prices">
+                  <div class="prices">
+                    <div class="price-row"><span>Contado (Neto):</span><span>$${formatCurrency(sales.cashNet)}</span></div>
+                    <div class="price-highlight"><div class="price-row" style="color: white;"><span>CONT. IVA INC.:</span><span>$${formatCurrency(sales.cashIva)}</span></div></div>
+                    <div class="price-small">
+                      <div class="price-row"><span>💰 Financiado + IVA:</span><span>$${formatCurrency(sales.finIva)}</span></div>
+                      <div class="price-row"><span>📅 Cuota (12 meses):</span><span>$${formatCurrency(sales.cuot)}</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div class="footer">
+          <p>Ares Medical Equipment | Lista de Precios</p>
+          <p>Interés: ${globalInterest}% anual | Pago inicial: 50% | Precios sujetos a cambios sin previo aviso</p>
+        </div>
+      </body>
+      </html>
+    `;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => { printWindow.print(); };
+  };
+
+  const exportAdminToPDF = () => {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Panel Administrativo - Calcuares</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; font-size: 8pt; line-height: 1.2; }
+          .header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #567C8D; padding-bottom: 8px; }
+          .header h1 { color: #567C8D; font-size: 16pt; margin-bottom: 3px; }
+          .header p { color: #666; font-size: 9pt; }
+          .product { border: 1px solid #ddd; padding: 8px; border-radius: 4px; page-break-inside: avoid; margin-bottom: 8px; }
+          .product-header { background: #f8fafc; padding: 6px; border-radius: 4px; margin-bottom: 6px; border-left: 3px solid #567C8D; }
+          .product-code { font-size: 7pt; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+          .product-title { font-size: 10pt; font-weight: bold; color: #1e293b; margin: 2px 0; }
+          .product-obs { font-size: 7pt; color: #1e293b; font-style: italic; font-weight: bold; margin: 3px 0; }
+          .section { background: #f8fafc; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 6px; }
+          .section-title { font-weight: bold; font-size: 8pt; color: #1e293b; margin-bottom: 4px; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; }
+          .data-row { display: flex; justify-content: space-between; font-size: 7pt; padding: 2px 0; }
+          .data-row.highlight { background: #C8D9E6; padding: 3px 4px; margin: 2px -4px; border-radius: 3px; font-weight: bold; }
+          .data-row.profit { background: #d1fae5; padding: 3px 4px; margin: 2px -4px; border-radius: 3px; font-weight: bold; color: #065f46; }
+          .label { color: #64748b; }
+          .value { font-weight: 600; color: #1e293b; }
+          .footer { text-align: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 7pt; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📊 Panel Administrativo - Calcuares</h1>
+          <p>Reporte Completo de Productos y Costos</p>
+          <p style="font-size: 7pt; margin-top: 3px;">Interés: ${globalInterest}% | Tipo de Cambio: ${exchangeRate} EUR→USD | Fecha: ${new Date().toLocaleDateString('es-PY')} ${new Date().toLocaleTimeString('es-PY')}</p>
+        </div>
+        ${filteredProducts.map(product => {
+          const calc = calculateBackend(product);
+          const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+          const profit = sales.cashNet - calc.kst;
+          return `
+            <div class="product">
+              <div class="product-header">
+                <div class="product-code">${product.cod || 'SIN CÓDIGO'}</div>
+                <div class="product-title">${product.prod || 'Sin nombre'}</div>
+                ${product.observaciones ? `<div class="product-obs">${product.observaciones}</div>` : ''}
+              </div>
+              <div class="section">
+                <div class="section-title">📋 Datos Básicos</div>
+                <div class="data-row"><span class="label">Marca:</span><span class="value">${product.brand}</span></div>
+                <div class="data-row"><span class="label">Origen:</span><span class="value">${product.ori}</span></div>
+                <div class="data-row"><span class="label">Categoría:</span><span class="value">${product.cat}</span></div>
+                <div class="data-row"><span class="label">Precio PP:</span><span class="value">${product.price_in_eur ? '€' : '$'}${formatCurrency(product.pp)}</span></div>
+                ${calc.isEUR ? `<div class="data-row"><span class="label">PP en USD:</span><span class="value">$${formatCurrency(calc.ppInUSD)}</span></div>` : ''}
+                <div class="data-row"><span class="label">Margen:</span><span class="value">${product.margin}%</span></div>
+                ${sales.isFixedPrice ? `<div class="data-row" style="color: #fb923c;"><span class="label">⚠️ Precio Fijo:</span><span class="value">$${formatCurrency(product.fixed_price)}</span></div>` : ''}
+              </div>
+              <div class="section">
+                <div class="section-title">💼 Costos Backend</div>
+                <div class="data-row"><span class="label">Flete:</span><span class="value">$${formatCurrency(product.frt)}</span></div>
+                <div class="data-row"><span class="label">Banco:</span><span class="value">$${formatCurrency(product.bnk)}</span></div>
+                <div class="data-row"><span class="label">Aduana (${product.adu}%):</span><span class="value">$${formatCurrency(calc.desp)}</span></div>
+                <div class="data-row"><span class="label">Servicio:</span><span class="value">$${formatCurrency(product.serv)}</span></div>
+                <div class="data-row"><span class="label">Garantía (3%):</span><span class="value">$${formatCurrency(calc.gtia)}</span></div>
+                <div class="data-row"><span class="label">Capacitación:</span><span class="value">$${formatCurrency(product.trng)}</span></div>
+                <div class="data-row"><span class="label">Imprevistos:</span><span class="value">$${formatCurrency(product.extr)}</span></div>
+                <div class="data-row highlight"><span>FOB:</span><span>$${formatCurrency(calc.fob)}</span></div>
+                <div class="data-row highlight"><span>KST TOTAL:</span><span>$${formatCurrency(calc.kst)}</span></div>
+              </div>
+              <div class="section">
+                <div class="section-title">💰 Precios de Venta</div>
+                <div class="data-row"><span class="label">Contado (Neto):</span><span class="value">$${formatCurrency(sales.cashNet)}</span></div>
+                <div class="data-row highlight"><span>Cont. IVA inc.:</span><span>$${formatCurrency(sales.cashIva)}</span></div>
+                <div class="data-row"><span class="label">Financiado + IVA:</span><span class="value">$${formatCurrency(sales.finIva)}</span></div>
+                <div class="data-row"><span class="label">Cuota (12 meses):</span><span class="value">$${formatCurrency(sales.cuot)}</span></div>
+                <div class="data-row profit"><span>✅ GANANCIA NETA:</span><span>$${formatCurrency(profit)}</span></div>
+                <div class="data-row" style="font-size: 6pt; color: #059669;"><span>% sobre KST:</span><span>${((profit / calc.kst) * 100).toFixed(2)}%</span></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        <div class="footer">
+          <p>Calcuares - Panel Administrativo | Documento Confidencial</p>
+          <p>Este documento contiene información sensible de costos y márgenes de ganancia</p>
+        </div>
+      </body>
+      </html>
+    `;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => { printWindow.print(); };
+  };
+
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm) return products;
+    const allTerms = searchTerm.toLowerCase().split(' ').filter(t => t.length > 0);
+    const includeTerms = allTerms.filter(t => !t.startsWith('-'));
+    const excludeTerms = allTerms.filter(t => t.startsWith('-')).map(t => t.substring(1)).filter(t => t.length > 0);
+    return products.filter(p => {
+      const searchableText = [
+        p.cod, p.brand, p.ori, p.prod, p.cat, p.observaciones,
+        p.cat === 'UC' ? 'unidad central equipo' : '',
+        p.cat === 'HP' ? 'handpiece pieza mano' : '',
+        p.cat === 'ACC' ? 'accesorio' : '',
+        p.cat === 'CONS' ? 'consumible' : '',
+        p.cat === 'SRVP' ? 'servicio' : ''
+      ].filter(Boolean).join(' ').toLowerCase();
+      const includesAll = includeTerms.length === 0 || includeTerms.every(term => searchableText.includes(term));
+      const excludesAll = excludeTerms.length === 0 || excludeTerms.every(term => !searchableText.includes(term));
+      return includesAll && excludesAll;
+    });
+  }, [products, searchTerm]);
+
+  if (loading) {
+    return (
+      <div className="loading">
+        <RefreshCw className="animate-spin" size={32} />
+        <span style={{ marginLeft: '1rem' }}>Cargando productos...</span>
+      </div>
+    );
+  }
+
+  // Pantalla de Login
+  if (!isAuthenticated) {
+    return (
+      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div className="card" style={{ maxWidth: '450px', width: '100%', padding: '3rem', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '700', color: '#567C8D', marginBottom: '0.5rem' }}>Calcuares</h1>
+            <p style={{ color: '#64748b', fontSize: '1rem' }}>Sistema de Gestión de Precios</p>
+            <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>Ares Medical Equipment</p>
+          </div>
+          <form onSubmit={handleLogin} id="login-form" method="post" action="#">
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label" htmlFor="login-email" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
+                📧 Correo Electrónico
+              </label>
+              <input
+                id="login-email" type="email" name="email" autoComplete="username"
+                value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="usuario@ares.com" className="input" required autoFocus
+                style={{ fontSize: '0.95rem', padding: '0.75rem' }}
+              />
+            </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label" htmlFor="login-password" style={{ fontSize: '0.875rem', fontWeight: '600', color: '#1e293b' }}>
+                🔒 Contraseña
+              </label>
+              <input
+                id="login-password" type="password" name="password" autoComplete="current-password"
+                value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="••••••••" className="input" required
+                style={{ fontSize: '0.95rem', padding: '0.75rem' }}
+              />
+            </div>
+            {loginError && (
+              <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b', padding: '0.75rem', borderRadius: '6px', marginBottom: '1.5rem', fontSize: '0.875rem', textAlign: 'center' }}>
+                {loginError}
+              </div>
+            )}
+            <button type="submit" disabled={loggingIn} className="btn btn-primary"
+              style={{ width: '100%', padding: '0.875rem', fontSize: '1rem', fontWeight: '600', background: '#567C8D', opacity: loggingIn ? 0.7 : 1, cursor: loggingIn ? 'not-allowed' : 'pointer' }}>
+              {loggingIn ? (
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <RefreshCw className="animate-spin" size={18} /> Iniciando sesión...
+                </span>
+              ) : 'Iniciar Sesión'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // ESTILOS COMPARTIDOS PARA TABS DE HEADER (reutilizables)
+  // ============================================================
+  const tabStyle = (isActive) => ({
+    flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+    fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+    background: isActive ? 'white' : 'transparent',
+    color: isActive ? '#2F4156' : 'rgba(255,255,255,0.65)',
+    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+    transition: 'all 0.2s ease'
+  });
+
+  return (
+    <div className="app-container">
+      {view === 'ventas' ? (
+        // =============================================
+        // VISTA DE VENTAS (rol: vendedor)
+        // =============================================
+        <>
+          <div className="card header-card" style={{ background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '0.25rem' }}>⚡ Ares Medical</h1>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Portal de Ventas</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.15)', padding: '0.5rem 1rem', borderRadius: '8px' }}>
+                  <User size={16} />
+                  <span style={{ fontSize: '0.875rem' }}>{currentUser?.nombre || 'Usuario'}</span>
+                </div>
+                {currentUser?.rol === 'admin' && (
+                  <button onClick={() => setView('admin')} style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <DollarSign size={16} /> Admin
+                  </button>
+                )}
+                <button onClick={handleLogout} style={{ padding: '0.5rem', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)', cursor: 'pointer' }} title="Cerrar Sesión">
+                  <LogOut size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs ventas — ahora con Documentos */}
+            <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.15)', padding: '0.35rem', borderRadius: '12px', marginBottom: '1rem' }}>
+              <button onClick={() => setVentasModule('precios')} style={tabStyle(ventasModule === 'precios')}>
+                <DollarSign size={16} /> Lista de Precios
+              </button>
+              <button onClick={() => setVentasModule('seguimiento')} style={tabStyle(ventasModule === 'seguimiento')}>
+                <Users size={16} /> Comercial
+              </button>
+              <button onClick={() => setVentasModule('documentos')} style={tabStyle(ventasModule === 'documentos')}>
+                🗂️ Documentos
+              </button>
+            </div>
+
+            {ventasModule === 'precios' && (
+              <div style={{ background: 'rgba(255,255,255,0.12)', padding: '0.75rem 1rem', borderRadius: '10px', color: 'white' }}>
+                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.85rem' }}>
+                  <div><strong>💵 Interés:</strong> {globalInterest}%</div>
+                  <div><strong>💱 EUR→USD:</strong> {exchangeRate}</div>
+                  <div><strong>📊 Productos:</strong> {products.length}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {ventasModule === 'seguimiento' ? (
+            <SeguimientoComercial />
+          ) : ventasModule === 'documentos' ? (
+            <DocumentosContables />
+          ) : (
+          <>
+          <div className="card">
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div className="search-container" style={{ flex: 1, margin: 0 }}>
+                <Search className="search-icon" size={20} />
+                <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
+                  className="input search-input" />
+              </div>
+              <button onClick={exportToPDF} className="btn btn-primary" title="Exportar a PDF">
+                <Download size={20} /> Exportar PDF
+              </button>
+            </div>
+            <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
+              📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'disponibles'}
+            </div>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+              <p style={{ color: '#64748b', fontSize: '1.1rem' }}>
+                {products.length === 0 ? '📦 No hay productos disponibles' : '🔍 No se encontraron productos'}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+              {filteredProducts.map(product => {
+                const calc = calculateBackend(product);
+                const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+                return (
+                  <div key={product.id} className="card" style={{ border: '2px solid #e2e8f0', padding: '1rem' }}>
+                    <div style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '0.75rem' }}>
+                      <div style={{ fontSize: '0.65rem', color: '#64748b', marginBottom: '0.25rem' }}>{product.cod}</div>
+                      <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.25rem', lineHeight: '1.2' }}>
+                        {product.prod || 'Sin nombre'}
+                      </h3>
+                      {product.observaciones && (
+                        <p style={{ fontSize: '0.75rem', color: '#1e293b', marginBottom: '0.5rem', fontWeight: '700', lineHeight: '1.3', fontStyle: 'italic' }}>
+                          {product.observaciones}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                        {[{val: product.brand, w: '700'}, {val: product.ori, w: '500'}, {val: product.cat, w: '500'}].map((b, i) => (
+                          <span key={i} style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '4px', background: '#f1f5f9', color: i === 0 ? '#1e293b' : '#64748b', fontWeight: b.w, border: '1px solid #e2e8f0' }}>{b.val}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ background: '#C8D9E6', borderRadius: '8px', padding: '0.75rem', border: '2px solid #567C8D' }}>
+                      <h4 style={{ color: '#2F4156', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        PRECIOS DE VENTA
+                        {!!sales.isFixedPrice && <span className="badge badge-orange" style={{ marginLeft: '0.25rem', fontSize: '0.55rem' }}>ESPECIAL</span>}
+                        {product.precio_verificado && (
+                          <span style={{ background: '#10b981', color: 'white', fontSize: '0.6rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.25rem', border: '1px solid #059669' }}>✓ VERIFICADO</span>
+                        )}
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#2F4156', fontSize: '0.7rem' }}>Contado (Neto):</span>
+                          <span style={{ fontWeight: '600', fontSize: '0.7rem' }}>${formatCurrency(sales.cashNet)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', background: '#2F4156', padding: '0.5rem', borderRadius: '6px', margin: '0.25rem 0' }}>
+                          <span style={{ color: 'white', fontWeight: '700', fontSize: '0.55rem' }}>CONT. IVA INC.:</span>
+                          <span style={{ color: 'white', fontWeight: '700', fontSize: '1.1rem' }}>${formatCurrency(sales.cashIva)}</span>
+                        </div>
+                        <div style={{ paddingTop: '0.35rem', borderTop: '1px solid #567C8D', marginTop: '0.25rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
+                            <span style={{ color: '#2F4156', fontSize: '0.6rem' }}>💰 Financiado + IVA:</span>
+                            <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.finIva)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#2F4156', fontSize: '0.6rem' }}>📅 Cuota (12 meses):</span>
+                            <span style={{ fontWeight: '600', fontSize: '0.6rem' }}>${formatCurrency(sales.cuot)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.6rem', color: '#64748b', textAlign: 'center', paddingTop: '0.5rem', borderTop: '1px solid #e2e8f0' }}>
+                      Interés: {globalInterest}% anual | Pago inicial: 50%
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          </>
+          )}
+        </>
+      ) : view === 'servicio_tecnico' ? (
+        // =============================================
+        // VISTA SERVICIO TÉCNICO (rol: servicio_tecnico)
+        // =============================================
+        <>
+          <div className="card header-card" style={{ background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '0.15rem' }}>🔧 Servicio Técnico</h1>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>Ares Paraguay — Gestión de Servicios</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.15)', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                  <User size={14} /> {currentUser?.nombre || 'Técnico'}
+                </div>
+                <button onClick={handleLogout} style={{ padding: '0.4rem', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)', cursor: 'pointer' }} title="Salir">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs ST — ahora con Documentos */}
+            <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '12px' }}>
+              <button onClick={() => setStModule('servicios')} style={tabStyle(stModule === 'servicios')}>🔧 Servicios</button>
+              <button onClick={() => setStModule('calendario')} style={tabStyle(stModule === 'calendario')}>📅 Mantenimientos</button>
+              <button onClick={() => setStModule('tickets')} style={tabStyle(stModule === 'tickets')}>🎫 Tickets</button>
+              <button onClick={() => setStModule('repuestos')} style={tabStyle(stModule === 'repuestos')}>🔩 Repuestos</button>
+              <button onClick={() => setStModule('documentos')} style={tabStyle(stModule === 'documentos')}>🗂️ Documentos</button>
+            </div>
+          </div>
+
+          {stModule === 'calendario' ? (
+            <CalendarioMantenimiento />
+          ) : stModule === 'tickets' ? (
+            <TicketsErrores />
+          ) : stModule === 'repuestos' ? (
+            <CatalogoRepuestos />
+          ) : stModule === 'documentos' ? (
+            <DocumentosContables />
+          ) : (
+            <ServicioTecnico />
+          )}
+        </>
+      ) : (
+        // =============================================
+        // VISTA ADMIN
+        // =============================================
+        <>
+          <div className="card header-card" style={{ background: 'linear-gradient(135deg, #567C8D 0%, #2F4156 100%)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '0.15rem' }}>⚡ Adminares</h1>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>Sistema de Gestión - Ares Medical Equipment</p>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {saving && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#567C8D', fontWeight: '600', background: 'white', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                    <RefreshCw className="animate-spin" size={16} /> Guardando...
+                  </div>
+                )}
+                <button onClick={() => setActiveModule('proveedores')} style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: 'none', background: activeModule === 'proveedores' ? 'white' : 'rgba(255,255,255,0.2)', color: activeModule === 'proveedores' ? '#2F4156' : 'white', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem', transition: 'all 0.2s ease' }}>
+                  <Building2 size={14} /> Proveedores
+                </button>
+                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.15)', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                  <User size={14} /> {currentUser?.nombre || 'Admin'}
+                </div>
+                <button onClick={() => setView('ventas')} style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Eye size={14} /> Ventas
+                </button>
+                <button onClick={handleLogout} style={{ padding: '0.4rem', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)', cursor: 'pointer' }} title="Salir">
+                  <LogOut size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs Admin */}
+            <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '12px', marginBottom: '1rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              {[
+                { key: 'calculos', label: 'Cálculos', icon: <DollarSign size={16} /> },
+                { key: 'compras', label: 'Compras', icon: <Package size={16} /> },
+                { key: 'operaciones', label: 'Operaciones', icon: <TrendingUp size={16} /> },
+                { key: 'seguimiento', label: 'Comercial', icon: <Users size={16} /> },
+                { key: 'articulos', label: 'Artículos', icon: <Package size={16} /> },
+                { key: 'servicio_tecnico', label: 'Serv. Técnico', icon: null },
+                { key: 'documentos', label: 'DC', icon: null, discrete: true }
+              ].map(tab => (
+                <button key={tab.key} onClick={() => setActiveModule(tab.key)} style={{
+                  flex: tab.discrete ? 0 : 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                  fontWeight: tab.discrete ? '600' : '700', fontSize: tab.discrete ? '0.7rem' : '0.8rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
+                  background: activeModule === tab.key ? 'white' : 'transparent',
+                  color: activeModule === tab.key ? '#2F4156' : tab.discrete ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.65)',
+                  boxShadow: activeModule === tab.key ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+                  transition: 'all 0.2s ease', whiteSpace: 'nowrap', flexShrink: 0,
+                  minWidth: tab.discrete ? '36px' : 'fit-content'
+                }} title={tab.discrete ? 'Documentos Contables' : tab.label}>
+                  {tab.icon && <>{tab.icon} </>}{tab.label}
+                </button>
+              ))}
+            </div>
+
+            {activeModule === 'calculos' && (
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.3rem' }}>💵 Interés Anual (%)</label>
+                  <input type="number" step="0.01" value={globalInterest} onChange={(e) => setGlobalInterest(e.target.value)} className="input" placeholder="12" style={{ height: '38px' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.3rem' }}>💱 EUR → USD</label>
+                  <input type="number" step="0.01" value={exchangeRate} onChange={(e) => setExchangeRate(e.target.value)} className="input" placeholder="1.10" style={{ height: '38px' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', fontWeight: '600', display: 'block', marginBottom: '0.3rem' }}>📁 Importar / Exportar</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <label className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', cursor: 'pointer', height: '38px', fontSize: '0.85rem' }}>
+                      <Upload size={16} /> Importar
+                      <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileImport} style={{ display: 'none' }} />
+                    </label>
+                    <button onClick={exportData} className="btn btn-secondary" style={{ height: '38px' }}><Download size={16} /></button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Contenido según módulo activo */}
+          {activeModule === 'compras' ? (
+            <ComprasCargas />
+          ) : activeModule === 'proveedores' ? (
+            <Proveedores />
+          ) : activeModule === 'articulos' ? (
+            <Articulos />
+          ) : activeModule === 'operaciones' ? (
+            <OperacionesComerciales />
+          ) : activeModule === 'seguimiento' ? (
+            <SeguimientoComercial isAdmin={true} />
+          ) : activeModule === 'documentos' ? (
+            <DocumentosContables />
+          ) : activeModule === 'servicio_tecnico' ? (
+            <>
+              <div style={{ display: 'flex', gap: '4px', background: 'rgba(47,65,86,0.1)', padding: '4px', borderRadius: '12px', marginBottom: '1rem' }}>
+                {[
+                  { key: 'servicios', label: '🔧 Servicios' },
+                  { key: 'calendario', label: '📅 Mantenimientos' },
+                  { key: 'tickets', label: '🎫 Tickets' },
+                  { key: 'repuestos', label: '🔩 Repuestos' },
+                ].map(t => (
+                  <button key={t.key} onClick={() => setStModule(t.key)} style={{
+                    flex: 1, padding: '0.55rem 0.5rem', borderRadius: '10px', border: 'none',
+                    fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    background: stModule === t.key ? '#2F4156' : 'transparent',
+                    color: stModule === t.key ? 'white' : '#64748b',
+                    transition: 'all 0.2s ease'
+                  }}>{t.label}</button>
+                ))}
+              </div>
+              {stModule === 'calendario' ? <CalendarioMantenimiento />
+                : stModule === 'tickets' ? <TicketsErrores />
+                : stModule === 'repuestos' ? <CatalogoRepuestos />
+                : <ServicioTecnico />}
+            </>
+          ) : (
+          <>
+          <div className="card">
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div className="search-container" style={{ flex: 1, margin: 0 }}>
+                <Search className="search-icon" size={20} />
+                <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="🔍 Buscar por código, marca, origen, producto o categoría..."
+                  className="input search-input" />
+              </div>
+              <button onClick={addProduct} className="btn btn-success"><Plus size={20} /> Agregar Producto</button>
+              <button onClick={exportAdminToPDF} className="btn btn-primary" title="Exportar Panel Admin a PDF"><Download size={20} /> Exportar PDF</button>
+              <button onClick={fetchProducts} className="btn btn-secondary" title="Recargar productos"><RefreshCw size={20} /></button>
+            </div>
+            <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
+              📊 {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} {searchTerm ? 'encontrados' : 'totales'}
+            </div>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+              <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '1.1rem' }}>
+                {products.length === 0 ? '📦 No hay productos registrados' : '🔍 No se encontraron productos'}
+              </p>
+              {products.length === 0 && (
+                <button onClick={addProduct} className="btn btn-primary"><Plus size={20} /> Agregar Primer Producto</button>
+              )}
+            </div>
+          ) : (
+            filteredProducts.map(product => {
+              const calc = calculateBackend(product);
+              const sales = calculateSales(calc.kst, parseFloat(product.margin || 0), parseFloat(globalInterest || 0), product.fixed_price);
+              return (
+                <div key={product.id} className="card product-card" style={{ padding: '0.75rem' }}>
+                  <div className="product-header" style={{ marginBottom: '0.5rem', paddingBottom: '0.5rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.6rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{product.cod || '🆕 NUEVO'}</div>
+                      <h2 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1e293b', lineHeight: '1.2' }}>
+                        {product.prod || 'Sin modelo definido'}
+                        {product.observaciones && (
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '500', fontStyle: 'italic', marginLeft: '0.5rem' }}>— {product.observaciones}</span>
+                        )}
+                      </h2>
+                    </div>
+                    <button onClick={() => deleteProduct(product.id)} className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', alignSelf: 'flex-start' }}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '0.75rem' }}>
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                        {[
+                          { label: '📝 Código', field: 'cod', placeholder: 'COD' },
+                          { label: '🏢 Marca', field: 'brand', placeholder: 'Marca' },
+                          { label: '🌍 Origen', field: 'ori', placeholder: 'País' },
+                          { label: '📦 Producto', field: 'prod', placeholder: 'Modelo' },
+                        ].map(f => (
+                          <div key={f.field}>
+                            <label className="input-label" style={{ fontSize: '0.65rem' }}>{f.label}</label>
+                            <input type="text" defaultValue={product[f.field]}
+                              onBlur={(e) => handleInputChange(product.id, f.field, e.target.value)}
+                              className="input" style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }} placeholder={f.placeholder} />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>🏷️ Categoría</label>
+                          <select defaultValue={product.cat} onChange={(e) => handleInputChange(product.id, 'cat', e.target.value)} className="input" style={{ padding: '0.35rem 0.3rem', fontSize: '0.8rem' }}>
+                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>💰 Precio {product.price_in_eur && <span style={{ color: '#2563eb', fontSize: '0.6rem' }}>EUR</span>}</label>
+                          <input type="number" step="0.01" defaultValue={product.pp} onBlur={(e) => handleInputChange(product.id, 'pp', e.target.value)} className="input" style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }} placeholder="0" />
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>💶 EUR?</label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', marginTop: '0.3rem' }}>
+                            <input type="checkbox" checked={product.price_in_eur} onChange={(e) => handleInputChange(product.id, 'price_in_eur', e.target.checked)} style={{ width: '1rem', height: '1rem' }} />
+                            <span style={{ fontSize: '0.75rem', fontWeight: '500' }}>{product.price_in_eur ? '✅' : '❌'}</span>
+                          </label>
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>🚚 Flete</label>
+                          <input type="number" step="0.01" defaultValue={product.frt} onBlur={(e) => handleInputChange(product.id, 'frt', e.target.value)} className="input" style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }} placeholder="0" />
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>🏦 Banco</label>
+                          <input type="number" step="0.01" defaultValue={product.bnk} onBlur={(e) => handleInputChange(product.id, 'bnk', e.target.value)} className="input" style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }} placeholder="0" />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                        {[
+                          { label: '📋 Aduana %', field: 'adu' },
+                          { label: '🔧 Servicio', field: 'serv' },
+                          { label: '👨‍🏫 Capacitación', field: 'trng' },
+                          { label: '⚠️ Imprevistos', field: 'extr' },
+                          { label: '📊 Margen %', field: 'margin' },
+                        ].map(f => (
+                          <div key={f.field}>
+                            <label className="input-label" style={{ fontSize: '0.65rem' }}>{f.label}</label>
+                            <input type="number" step="0.01" defaultValue={product[f.field]} onBlur={(e) => handleInputChange(product.id, f.field, e.target.value)} className="input" style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }} placeholder="0" />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '0.35rem' }}>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>🎯 Precio Fijo (Opc.)</label>
+                          <input type="number" step="0.01" defaultValue={product.fixed_price || ''} onBlur={(e) => handleInputChange(product.id, 'fixed_price', e.target.value)} className="input" style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', background: '#fff7ed', borderColor: '#fb923c' }} placeholder="0 = auto" />
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>✓ Verificado</label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', padding: '0.35rem 0.5rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', marginTop: '0.1rem' }}>
+                            <input type="checkbox" checked={product.precio_verificado || false} onChange={(e) => handleInputChange(product.id, 'precio_verificado', e.target.checked)} style={{ width: '1rem', height: '1rem', accentColor: '#10b981' }} />
+                            <span style={{ fontSize: '0.75rem', fontWeight: '600', color: product.precio_verificado ? '#059669' : '#94a3b8' }}>{product.precio_verificado ? '✓ Sí' : 'No'}</span>
+                          </label>
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '0.65rem' }}>📝 Observaciones</label>
+                          <input type="text" defaultValue={product.observaciones || ''} onBlur={(e) => handleInputChange(product.id, 'observaciones', e.target.value)} className="input" style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }} placeholder="Visible en Vista Ventas" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.6rem' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Costos Backend</div>
+                        {calc.isEUR && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.2rem 0.4rem', background: '#C8D9E6', borderRadius: '4px', marginBottom: '0.3rem' }}>
+                            <span style={{ color: '#2F4156' }}>💶 PP EUR:</span>
+                            <span style={{ fontWeight: '700' }}>€{formatCurrency(calc.ppOriginal)}</span>
+                          </div>
+                        )}
+                        {calc.isEUR && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.15rem 0' }}>
+                            <span style={{ color: '#64748b' }}>💵 PP USD:</span>
+                            <span>${formatCurrency(calc.ppInUSD)}</span>
+                          </div>
+                        )}
+                        {[
+                          { label: 'FOB:', val: calc.fob },
+                          { label: 'Garantía 3%:', val: calc.gtia },
+                          { label: 'Despacho:', val: calc.desp },
+                        ].map(r => (
+                          <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.15rem 0' }}>
+                            <span style={{ color: '#64748b' }}>{r.label}</span>
+                            <span>${formatCurrency(r.val)}</span>
+                          </div>
+                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: '700', padding: '0.3rem 0', marginTop: '0.3rem', borderTop: '1px solid #cbd5e1', color: '#2563eb' }}>
+                          <span>KST Total:</span><span>${formatCurrency(calc.kst)}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#C8D9E6', border: '1px solid #567C8D', borderRadius: '8px', padding: '0.6rem', flex: 1 }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: '700', color: '#2F4156', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          Precios de Venta
+                          {!!sales.isFixedPrice && <span className="badge badge-orange" style={{ fontSize: '0.55rem', padding: '1px 6px' }}>FIJO</span>}
+                        </div>
+                        {[
+                          { label: 'Contado Neto:', val: sales.cashNet, bold: false },
+                          { label: 'Cont. + IVA:', val: sales.cashIva, bold: true },
+                        ].map(r => (
+                          <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.15rem 0' }}>
+                            <span style={{ color: '#2F4156' }}>{r.label}</span>
+                            <span style={{ fontWeight: r.bold ? '700' : '600' }}>${formatCurrency(r.val)}</span>
+                          </div>
+                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: '700', padding: '0.3rem 0', marginTop: '0.2rem', borderTop: '1px solid #567C8D', color: '#2F4156' }}>
+                          <span>Financ. + IVA:</span><span>${formatCurrency(sales.finIva)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', padding: '0.15rem 0' }}>
+                          <span style={{ color: '#2F4156' }}>Cuota 12m:</span>
+                          <span style={{ fontWeight: '600' }}>${formatCurrency(sales.cuot)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: '700', padding: '0.35rem 0.4rem', marginTop: '0.3rem', background: 'rgba(255,255,255,0.5)', borderRadius: '6px', color: '#2F4156' }}>
+                          <span>✅ Ganancia:</span><span>${formatCurrency(sales.cashNet - calc.kst)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {product.cat === 'UC' && (
+                    <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
+                      <button onClick={() => setExpandedFlete(prev => ({ ...prev, [product.id]: !prev[product.id] }))} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          📦 Cotización de Flete (Referencia)
+                          <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '400' }}>• No afecta precio final</span>
+                        </span>
+                        <ChevronDown size={18} style={{ color: '#64748b', transition: 'transform 0.2s', transform: expandedFlete[product.id] ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                      </button>
+                      
+                      {expandedFlete[product.id] && (
+                      <div style={{ marginTop: '0.5rem' }}>
+                      {(() => {
+                        const fleteCalc = calculateFleteProduct(product);
+                        return (
+                          <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                              {[
+                                { label: 'Alto (cm)', field: 'flete_alto' },
+                                { label: 'Ancho (cm)', field: 'flete_ancho' },
+                                { label: 'Prof (cm)', field: 'flete_profundidad' },
+                                { label: 'Peso Real (kg)', field: 'flete_peso_real' },
+                                { label: 'Coeficiente', field: 'flete_coeficiente', step: '1' },
+                              ].map(f => (
+                                <div key={f.field}>
+                                  <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>{f.label}</label>
+                                  <input type="number" step={f.step || '0.1'} defaultValue={product[f.field]} onBlur={(e) => handleInputChange(product.id, f.field, e.target.value)} className="input" style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem' }} />
+                                </div>
+                              ))}
+                              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                                <div style={{ background: '#f0f9ff', padding: '0.3rem 0.4rem', borderRadius: '4px', border: '1px solid #bae6fd', textAlign: 'center' }}>
+                                  <div style={{ fontSize: '0.6rem', color: '#0369a1', fontWeight: '600' }}>Peso Vol</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#0c4a6e', fontWeight: '700' }}>{fleteCalc.pesoVolumetrico.toFixed(2)} kg</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                              {[
+                                { label: '$/kg Real', field: 'flete_precio_kg_real', step: '0.01' },
+                                { label: '$/kg Vol', field: 'flete_precio_kg_vol', step: '0.01' },
+                                { label: 'Precio Fijo', field: 'flete_precio_fijo', step: '0.01', bg: '#fffbeb', placeholder: 'Opcional' },
+                                { label: 'Origen', field: 'flete_origen', type: 'text', placeholder: 'País' },
+                                { label: 'Observación', field: 'flete_obs', type: 'text', placeholder: 'Ej: Dic 2024' },
+                              ].map(f => (
+                                <div key={f.field}>
+                                  <label style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600', display: 'block', marginBottom: '0.2rem' }}>{f.label}</label>
+                                  <input type={f.type || 'number'} step={f.step} defaultValue={product[f.field]} onBlur={(e) => handleInputChange(product.id, f.field, e.target.value)} placeholder={f.placeholder} className="input" style={{ padding: '0.3rem 0.4rem', fontSize: '0.7rem', ...(f.bg ? { background: f.bg } : {}) }} />
+                                </div>
+                              ))}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                <div style={{ background: fleteCalc.diferencia > 0 ? '#fee2e2' : '#d1fae5', padding: '0.2rem 0.4rem', borderRadius: '4px', border: `1px solid ${fleteCalc.diferencia > 0 ? '#fca5a5' : '#86efac'}`, textAlign: 'center' }}>
+                                  <div style={{ fontSize: '0.6rem', color: fleteCalc.diferencia > 0 ? '#991b1b' : '#065f46', fontWeight: '600' }}>Diferencia</div>
+                                  <div style={{ fontSize: '0.7rem', color: fleteCalc.diferencia > 0 ? '#7f1d1d' : '#064e3b', fontWeight: '700' }}>{fleteCalc.diferencia > 0 ? '+' : ''}{fleteCalc.diferencia.toFixed(2)}</div>
+                                </div>
+                                <div style={{ background: '#C8D9E6', padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid #567C8D', textAlign: 'center' }}>
+                                  <div style={{ fontSize: '0.6rem', color: '#2F4156', fontWeight: '600' }}>Costo Total</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#2F4156', fontWeight: '700' }}>${formatCurrency(fleteCalc.costoTotal)}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+          </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase } from './supabaseClient';
+import { Trash2, Plus, Upload, Search, Download, RefreshCw, Eye, DollarSign, LogOut, User, Package, Building2, ChevronDown, TrendingUp, Users } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import ComprasCargas from './ComprasCargas';
+import Proveedores from './Proveedores';
+import OperacionesComerciales from './OperacionesComerciales';
+import SeguimientoComercial from './SeguimientoComercial';
+import Articulos from './Articulos';
+import ServicioTecnico from './ServicioTecnico';
+import DocumentosContables from './DocumentosContables';
+import CalendarioMantenimiento from './CalendarioMantenimiento';
+import TicketsErrores from './TicketsErrores';
+import CatalogoRepuestos from './CatalogoRepuestos';
+import './App.css';
+
+export default function Calcuares() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(() => {
+    const saved = localStorage.getItem('exchangeRate');
+    return saved ? parseFloat(saved) : 1.20;
+  });
+  const [globalInterest, setGlobalInterest] = useState(() => {
+    const saved = localStorage.getItem('globalInterest');
+    return saved ? parseFloat(saved) : 12;
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [view, setView] = useState('admin');
+  const [activeModule, setActiveModule] = useState('calculos');
+  const [ventasModule, setVentasModule] = useState('precios');
   const [stModule, setStModule] = useState('servicios'); // 'servicios' o 'calendario'
   const [expandedFlete, setExpandedFlete] = useState({}); // Para controlar qué tarjetas tienen flete expandido
   
