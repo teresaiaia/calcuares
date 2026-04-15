@@ -158,7 +158,7 @@ export default function DocumentosContables() {
     nro_recibo: '', tipo: 'RO', detalle: '',
     vinculos: [],
     // remisiones
-    rem: '', factura: '', os: '', rubro_id: ''
+    rem: '', factura: '', os: '',
   };
 
   const [formData, setFormData] = useState(formInit);
@@ -175,7 +175,7 @@ export default function DocumentosContables() {
         supabase.from('facturas').select('*').order('fecha', { ascending: false }).limit(10000),
         supabase.from('ordenes_servicio').select('*').order('fecha', { ascending: false }).limit(10000),
         supabase.from('recibos').select('*').order('fecha', { ascending: false }).limit(10000),
-        supabase.from('remisiones').select('*, rubros(nombre)').order('fecha', { ascending: false }).limit(10000),
+        supabase.from('remisiones').select('*').order('fecha', { ascending: false }).limit(10000),
         supabase.from('recibo_documentos').select('*').limit(10000),
         supabase.from('rubros').select('*').order('nombre'),
       ]);
@@ -237,8 +237,8 @@ export default function DocumentosContables() {
     }
 
     data.sort((a, b) => {
-      let va = sortField === 'rubros' ? (a.rubros?.nombre ?? '') : (a[sortField] ?? '');
-      let vb = sortField === 'rubros' ? (b.rubros?.nombre ?? '') : (b[sortField] ?? '');
+      let va = a[sortField] ?? '';
+      let vb = b[sortField] ?? '';
       if (typeof va === 'string') va = va.toLowerCase();
       if (typeof vb === 'string') vb = vb.toLowerCase();
       if (va < vb) return sortDir === 'asc' ? -1 : 1;
@@ -310,9 +310,6 @@ export default function DocumentosContables() {
             : (ordenesServicio.find(o => o.id === rd.documento_id)?.nro_os || '')
         }));
       base.vinculos = vins;
-    }
-    if (base.rubro_id !== undefined && base.rubro_id !== null) {
-      base.rubro_id = base.rubro_id.toString();
     }
     setFormData(base);
     setShowModal(true);
@@ -428,7 +425,7 @@ export default function DocumentosContables() {
           cliente: formData.cliente.trim(),
           factura: formData.factura?.trim() || null,
           os: formData.os?.trim() || null,
-          rubro_id: formData.rubro_id ? parseInt(formData.rubro_id) : null,
+          rubro: formData.rubro || null,
           detalle: formData.detalle?.trim() || null,
         };
         const { error } = editingItem
@@ -491,13 +488,6 @@ export default function DocumentosContables() {
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
       if (rows.length < 2) { alert('Archivo sin datos'); return; }
 
-      // Asegurar rubros frescos (evita problema de closure en estado React)
-      let rubrosActuales = rubros;
-      if (activeTab === 'remisiones' && rubrosActuales.length === 0) {
-        const { data: rubrosData } = await supabase.from('rubros').select('*');
-        rubrosActuales = rubrosData || [];
-      }
-
       const parsed = [];
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
@@ -551,34 +541,18 @@ export default function DocumentosContables() {
           if (!record.nro_recibo || !record.cliente) continue;
 
         } else if (activeTab === 'remisiones') {
-          // REM | FECHA | CLIENTE | FACTURA | OS | RUBRO_ID | DETALLE
+          // REM | FECHA | CLIENTE | FACTURA | OS | RUBRO | DETALLE
           const remVal = String(r[0] || '').trim();
           const clienteVal = String(r[2] || '').trim();
           if (!remVal || !clienteVal) continue;
-
-          // Buscar rubro_id: acepta ID numérico directo o nombre de texto
-          const rubroVal = r[5];
-          let rubroId = null;
-          if (rubroVal !== undefined && rubroVal !== null && rubroVal !== '') {
-            if (typeof rubroVal === 'number') {
-              rubroId = rubroVal;
-            } else {
-              const rubroNombre = String(rubroVal).trim();
-              if (rubroNombre) {
-                const rubroMatch = rubrosActuales.find(
-                  rb => rb.nombre.toLowerCase() === rubroNombre.toLowerCase()
-                );
-                rubroId = rubroMatch ? rubroMatch.id : null;
-              }
-            }
-          }
 
           record = {
             rem: parseInt(remVal),
             fecha: parseExcelDate(r[1]),
             cliente: clienteVal,
             factura: String(r[3] || '').trim() || null,
-            os: String(r[4] || '').trim() || null,            rubro_id: rubroId,
+            os: String(r[4] || '').trim() || null,
+            rubro: String(r[5] || '').trim() || null,
             detalle: String(r[6] || '').trim() || null,
           };
         }
@@ -588,7 +562,6 @@ export default function DocumentosContables() {
 
       if (parsed.length === 0) { alert('No se encontraron registros válidos'); return; }
 
-      // Detectar duplicados
       const nroField = activeTab === 'facturas' ? 'nro_factura'
         : activeTab === 'ordenes_servicio' ? 'nro_os'
         : activeTab === 'recibos' ? 'nro_recibo'
@@ -641,7 +614,6 @@ export default function DocumentosContables() {
           reciboId = isDupe;
           updated++;
         } else {
-          console.log('INSERT remision:', JSON.stringify(recordLimpio));
           const { data, error } = await supabase.from(table).insert([recordLimpio]).select().single();
           if (error) throw error;
           reciboId = data.id;
@@ -708,7 +680,7 @@ export default function DocumentosContables() {
         exportData = datosFiltrados.map(r => ({
           'REM': r.rem, 'FECHA': r.fecha, 'CLIENTE': r.cliente,
           'FACTURA': r.factura || '', 'OS': r.os || '',
-          'RUBRO': r.rubros?.nombre || '',
+          'RUBRO': r.rubro || '',
           'DETALLE': r.detalle || ''
         }));
       }
@@ -752,7 +724,7 @@ export default function DocumentosContables() {
         datosFiltrados.map(r => [
           { val: r.rem }, { val: formatDate(r.fecha) }, { val: r.cliente },
           { val: r.factura || '—' }, { val: r.os || '—' },
-          { val: r.rubros?.nombre || '—' },
+          { val: r.rubro || '—' },
           { val: r.detalle || '' }
         ]), totHTML);
     }
@@ -909,7 +881,7 @@ export default function DocumentosContables() {
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
           <th onClick={() => handleSort('factura')}>FACTURA <SortIcon field="factura" /></th>
           <th onClick={() => handleSort('os')}>OS <SortIcon field="os" /></th>
-          <th onClick={() => handleSort('rubros')}>RUBRO <SortIcon field="rubros" /></th>
+          <th onClick={() => handleSort('rubro')}>RUBRO <SortIcon field="rubro" /></th>
           <th onClick={() => handleSort('detalle')}>DETALLE <SortIcon field="detalle" /></th>
           <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
         </tr></thead>
@@ -921,7 +893,7 @@ export default function DocumentosContables() {
               <td>{r.cliente}</td>
               <td>{r.factura || <span className="muted">—</span>}</td>
               <td>{r.os || <span className="muted">—</span>}</td>
-              <td>{r.rubros?.nombre || <span className="muted">—</span>}</td>
+              <td>{r.rubro || <span className="muted">—</span>}</td>
               <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.detalle || <span className="muted">—</span>}
               </td>
@@ -953,25 +925,21 @@ export default function DocumentosContables() {
 
     return (
       <div className="dc-form-grid">
-        {/* N° documento */}
         <div className="dc-form-group">
           <label>{nroLabel} *</label>
           <input value={formData[nroField] || ''} onChange={e => setFormData({ ...formData, [nroField]: e.target.value })} placeholder={nroLabel} />
         </div>
 
-        {/* Fecha */}
         <div className="dc-form-group">
           <label>Fecha *</label>
           <input type="date" value={formData.fecha} onChange={e => setFormData({ ...formData, fecha: e.target.value })} />
         </div>
 
-        {/* Cliente */}
         <div className="dc-form-group span2">
           <label>Cliente *</label>
           <input value={formData.cliente} onChange={e => setFormData({ ...formData, cliente: e.target.value })} placeholder="Nombre del cliente" />
         </div>
 
-        {/* Campos específicos Factura / OS */}
         {isFacturaOS && (<>
           <div className="dc-form-group">
             <label>Modalidad</label>
@@ -1032,7 +1000,6 @@ export default function DocumentosContables() {
           </div>
         </>)}
 
-        {/* Campos específicos Recibos */}
         {activeTab === 'recibos' && (<>
           <div className="dc-form-group">
             <label>Tipo</label>
@@ -1058,7 +1025,6 @@ export default function DocumentosContables() {
             <input value={formData.detalle || ''} onChange={e => setFormData({ ...formData, detalle: e.target.value })} placeholder="Descripción del recibo" />
           </div>
 
-          {/* Vínculos */}
           <div className="dc-form-group span2">
             <label>Aplica a (Facturas / OS)</label>
             {formData.vinculos.map((v, idx) => (
@@ -1110,7 +1076,6 @@ export default function DocumentosContables() {
           </div>
         </>)}
 
-        {/* Campos específicos Remisiones */}
         {activeTab === 'remisiones' && (<>
           <div className="dc-form-group">
             <label>Factura asociada</label>
@@ -1124,9 +1089,9 @@ export default function DocumentosContables() {
 
           <div className="dc-form-group span2">
             <label>Rubro</label>
-            <select value={formData.rubro_id || ''} onChange={e => setFormData({ ...formData, rubro_id: e.target.value })}>
+            <select value={formData.rubro || ''} onChange={e => setFormData({ ...formData, rubro: e.target.value })}>
               <option value="">— Sin rubro —</option>
-              {rubros.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+              {rubros.map(r => <option key={r.id} value={r.nombre}>{r.nombre}</option>)}
             </select>
           </div>
 
@@ -1151,7 +1116,6 @@ export default function DocumentosContables() {
   const renderViewModal = () => {
     if (!viewItem) return null;
 
-    // Campos por tab con etiquetas legibles
     const fieldDefs = {
       facturas: [
         { key: 'nro_factura', label: 'N° Factura' },
@@ -1193,7 +1157,7 @@ export default function DocumentosContables() {
         { key: 'cliente', label: 'Cliente' },
         { key: 'factura', label: 'Factura' },
         { key: 'os', label: 'Orden de Servicio' },
-        { key: '_rubro', label: 'Rubro' },
+        { key: 'rubro', label: 'Rubro' },
         { key: 'detalle', label: 'Detalle' },
       ],
     };
@@ -1203,17 +1167,13 @@ export default function DocumentosContables() {
     return (
       <div className="dc-view-grid">
         {fields.map(({ key, label }) => {
+          const val = viewItem[key];
           let displayVal;
-          if (key === '_rubro') {
-            displayVal = viewItem.rubros?.nombre || '—';
-          } else {
-            const val = viewItem[key];
-            if (key === 'fecha') displayVal = formatDate(val);
-            else if ((key === 'monto' || key === 'usd') && val) displayVal = formatNumber(val, 'USD');
-            else if (key === 'gs' && val) displayVal = formatNumber(val, '₲');
-            else if (val === null || val === undefined || val === '') displayVal = '—';
-            else displayVal = String(val);
-          }
+          if (key === 'fecha') displayVal = formatDate(val);
+          else if ((key === 'monto' || key === 'usd') && val) displayVal = formatNumber(val, 'USD');
+          else if (key === 'gs' && val) displayVal = formatNumber(val, '₲');
+          else if (val === null || val === undefined || val === '') displayVal = '—';
+          else displayVal = String(val);
           return (
             <div key={key} className="dc-view-field">
               <span className="dc-view-label">{label}</span>
@@ -1230,7 +1190,6 @@ export default function DocumentosContables() {
   // ============================================
   return (
     <div className="dc-container">
-      {/* TABS */}
       <div className="dc-tabs">
         {[
           { key: 'facturas', label: 'Facturas' },
@@ -1248,7 +1207,6 @@ export default function DocumentosContables() {
         ))}
       </div>
 
-      {/* TOOLBAR */}
       <div className="dc-toolbar">
         <div className="dc-search-wrap">
           <Search size={15} className="dc-search-icon" />
@@ -1282,7 +1240,6 @@ export default function DocumentosContables() {
         </div>
 
         <div className="dc-actions">
-          {/* Tipo de cambio */}
           <div className="dc-tc-wrap" title="Tipo de cambio USD/₲">
             <span className="dc-tc-label">TC:</span>
             <input
@@ -1296,13 +1253,11 @@ export default function DocumentosContables() {
             />
           </div>
 
-          {/* Import */}
           <button className="dc-btn secondary" onClick={() => importFileRef.current?.click()}>
             <Upload size={14} /> Importar
           </button>
           <input ref={importFileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }} onChange={handleImportFile} />
 
-          {/* Export */}
           <div className="dc-export-wrap" ref={exportMenuRef}>
             <button className="dc-btn secondary" onClick={() => setShowExportMenu(v => !v)}>
               <Download size={14} /> Exportar
@@ -1315,19 +1270,16 @@ export default function DocumentosContables() {
             )}
           </div>
 
-          {/* Nuevo */}
           <button className="dc-btn primary" onClick={handleNew}>
             <Plus size={14} /> Nuevo
           </button>
 
-          {/* Refresh */}
           <button className="dc-btn-icon" onClick={fetchAll} title="Actualizar">
             <RefreshCw size={15} />
           </button>
         </div>
       </div>
 
-      {/* TOTALES */}
       {activeTab !== 'remisiones' && (
         <div className="dc-totales">
           <span>Registros: <strong>{datosFiltrados.length}</strong></span>
@@ -1342,12 +1294,10 @@ export default function DocumentosContables() {
         </div>
       )}
 
-      {/* TABLA */}
       <div className="dc-table-wrap">
         {renderTabla()}
       </div>
 
-      {/* MODAL NUEVO / EDITAR */}
       {showModal && (
         <div className="dc-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="dc-modal">
@@ -1368,7 +1318,6 @@ export default function DocumentosContables() {
         </div>
       )}
 
-      {/* MODAL VER */}
       {showViewModal && viewItem && (
         <div className="dc-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowViewModal(false); }}>
           <div className="dc-modal">
@@ -1389,7 +1338,6 @@ export default function DocumentosContables() {
         </div>
       )}
 
-      {/* MODAL IMPORT */}
       {showImportModal && (
         <div className="dc-modal-overlay">
           <div className="dc-modal dc-modal-import">
