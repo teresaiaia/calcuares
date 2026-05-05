@@ -659,15 +659,15 @@ export default function DocumentosContables() {
       if (activeTab === 'facturas') {
         exportData = datosFiltrados.map(f => ({
           'N° FAC': f.nro_factura, 'FECHA': f.fecha, 'CLIENTE': f.cliente,
-          'MODALIDAD': f.modalidad, 'MONEDA': f.moneda, 'MONTO': f.monto,
-          'CONCEPTO': f.concepto || '', 'RUBRO': f.rubro || '',
+          'MODALIDAD': f.modalidad, 'MONEDA': f.moneda,
+          'CONCEPTO': f.concepto || '', 'RUBRO': f.rubro || '', 'MONTO': f.monto,
           'ESTADO': f.estado || '', 'OBS': f.observaciones || ''
         }));
       } else if (activeTab === 'ordenes_servicio') {
         exportData = datosFiltrados.map(o => ({
           'N° OS': o.nro_os, 'FECHA': o.fecha, 'CLIENTE': o.cliente,
-          'MODALIDAD': o.modalidad, 'MONEDA': o.moneda, 'MONTO': o.monto,
-          'CONCEPTO': o.concepto || '', 'RUBRO': o.rubro || '',
+          'MODALIDAD': o.modalidad, 'MONEDA': o.moneda,
+          'CONCEPTO': o.concepto || '', 'RUBRO': o.rubro || '', 'MONTO': o.monto,
           'ESTADO': o.estado || '', 'OBS': o.observaciones || ''
         }));
       } else if (activeTab === 'recibos') {
@@ -699,18 +699,20 @@ export default function DocumentosContables() {
     const totHTML = `<span><strong>Registros:</strong> ${datosFiltrados.length}</span>${totales.guaranies > 0 ? `<span><strong>₲:</strong> ₲${formatNumber(totales.guaranies)}</span>` : ''}${totales.dolares > 0 ? `<span><strong>USD:</strong> US$ ${formatNumber(totales.dolares, 'USD')}</span>` : ''}<span><strong>Total USD:</strong> US$ ${formatNumber(totales.totalUSD, 'USD')}</span>`;
 
     if (activeTab === 'facturas') {
-      exportarPDF('Facturas', ['N° FAC', 'FECHA', 'CLIENTE', 'MODALIDAD', 'MONEDA', 'MONTO', 'RUBRO', 'ESTADO'],
+      exportarPDF('Facturas', ['N° FAC', 'FECHA', 'CLIENTE', 'MODALIDAD', 'MONEDA', 'CONCEPTO', 'RUBRO', 'MONTO', 'ESTADO', 'OBS'],
         datosFiltrados.map(f => [
           { val: f.nro_factura }, { val: formatDate(f.fecha) }, { val: f.cliente },
-          { val: f.modalidad }, { val: f.moneda }, { val: f.monto ? formatNumber(f.monto, f.moneda) : '', cls: 'num' },
-          { val: f.rubro || '' }, { val: f.estado || '', cls: 'center' }
+          { val: f.modalidad }, { val: f.moneda }, { val: f.concepto || '' },
+          { val: f.rubro || '' }, { val: f.monto ? formatNumber(f.monto, f.moneda) : '', cls: 'num' },
+          { val: f.estado || '', cls: 'center' }, { val: f.observaciones || '' }
         ]), totHTML);
     } else if (activeTab === 'ordenes_servicio') {
-      exportarPDF('Órdenes de Servicio', ['N° OS', 'FECHA', 'CLIENTE', 'MODALIDAD', 'MONEDA', 'MONTO', 'RUBRO', 'ESTADO'],
+      exportarPDF('Órdenes de Servicio', ['N° OS', 'FECHA', 'CLIENTE', 'MODALIDAD', 'MONEDA', 'CONCEPTO', 'RUBRO', 'MONTO', 'ESTADO', 'OBS'],
         datosFiltrados.map(o => [
           { val: o.nro_os }, { val: formatDate(o.fecha) }, { val: o.cliente },
-          { val: o.modalidad }, { val: o.moneda }, { val: o.monto ? formatNumber(o.monto, o.moneda) : '', cls: 'num' },
-          { val: o.rubro || '' }, { val: o.estado || '', cls: 'center' }
+          { val: o.modalidad }, { val: o.moneda }, { val: o.concepto || '' },
+          { val: o.rubro || '' }, { val: o.monto ? formatNumber(o.monto, o.moneda) : '', cls: 'num' },
+          { val: o.estado || '', cls: 'center' }, { val: o.observaciones || '' }
         ]), totHTML);
     } else if (activeTab === 'recibos') {
       exportarPDF('Recibos', ['N° RECIBO', 'TIPO', 'FECHA', 'CLIENTE', 'MONEDA', 'MONTO', 'DETALLE'],
