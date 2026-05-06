@@ -139,6 +139,9 @@ export default function DocumentosContables() {
   const [importDuplicates, setImportDuplicates] = useState([]);
   const importFileRef = useRef(null);
 
+  // Selección múltiple
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
   // Export menu
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [tipoCambio, setTipoCambio] = useState(() => {
@@ -327,6 +330,21 @@ export default function DocumentosContables() {
     }
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`¿Eliminar ${selectedIds.size} registro${selectedIds.size > 1 ? 's' : ''}? Esta acción no se puede deshacer.`)) return;
+    const table = activeTab === 'ordenes_servicio' ? 'ordenes_servicio' : activeTab;
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase.from(table).delete().in('id', ids);
+      if (error) throw error;
+      setSelectedIds(new Set());
+      await fetchAll();
+    } catch (e) {
+      alert('Error al eliminar: ' + e.message);
+    }
+  };
+
   // ---- GUARDAR ----
   const handleSave = async () => {
     setSaving(true);
@@ -456,6 +474,7 @@ export default function DocumentosContables() {
     setFilterFechaHasta('');
     setSortField('fecha');
     setSortDir('desc');
+    setSelectedIds(new Set());
   };
 
   // ---- IMPORT ----
@@ -761,6 +780,15 @@ export default function DocumentosContables() {
     if (activeTab === 'facturas') return (
       <table className="dc-table">
         <thead><tr>
+          <th className="no-sort dc-th-check">
+            <input type="checkbox"
+              checked={datosFiltrados.length > 0 && datosFiltrados.every(f => selectedIds.has(f.id))}
+              onChange={e => {
+                if (e.target.checked) setSelectedIds(new Set(datosFiltrados.map(f => f.id)));
+                else setSelectedIds(new Set());
+              }}
+            />
+          </th>
           <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
           <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
@@ -773,7 +801,16 @@ export default function DocumentosContables() {
         </tr></thead>
         <tbody>
           {datosFiltrados.map(f => (
-            <tr key={f.id}>
+            <tr key={f.id} className={selectedIds.has(f.id) ? 'dc-row-selected' : ''}>
+              <td className="dc-td-check">
+                <input type="checkbox" checked={selectedIds.has(f.id)}
+                  onChange={e => {
+                    const s = new Set(selectedIds);
+                    e.target.checked ? s.add(f.id) : s.delete(f.id);
+                    setSelectedIds(s);
+                  }}
+                />
+              </td>
               <td style={{ fontWeight: 700 }}>{f.nro_factura}</td>
               <td>{formatDate(f.fecha)}</td>
               <td>{f.cliente}</td>
@@ -796,6 +833,15 @@ export default function DocumentosContables() {
     if (activeTab === 'ordenes_servicio') return (
       <table className="dc-table">
         <thead><tr>
+          <th className="no-sort dc-th-check">
+            <input type="checkbox"
+              checked={datosFiltrados.length > 0 && datosFiltrados.every(o => selectedIds.has(o.id))}
+              onChange={e => {
+                if (e.target.checked) setSelectedIds(new Set(datosFiltrados.map(o => o.id)));
+                else setSelectedIds(new Set());
+              }}
+            />
+          </th>
           <th onClick={() => handleSort('nro_os')}>N° OS <SortIcon field="nro_os" /></th>
           <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
@@ -808,7 +854,16 @@ export default function DocumentosContables() {
         </tr></thead>
         <tbody>
           {datosFiltrados.map(o => (
-            <tr key={o.id}>
+            <tr key={o.id} className={selectedIds.has(o.id) ? 'dc-row-selected' : ''}>
+              <td className="dc-td-check">
+                <input type="checkbox" checked={selectedIds.has(o.id)}
+                  onChange={e => {
+                    const s = new Set(selectedIds);
+                    e.target.checked ? s.add(o.id) : s.delete(o.id);
+                    setSelectedIds(s);
+                  }}
+                />
+              </td>
               <td style={{ fontWeight: 700 }}>{o.nro_os}</td>
               <td>{formatDate(o.fecha)}</td>
               <td>{o.cliente}</td>
@@ -831,6 +886,15 @@ export default function DocumentosContables() {
     if (activeTab === 'recibos') return (
       <table className="dc-table">
         <thead><tr>
+          <th className="no-sort dc-th-check">
+            <input type="checkbox"
+              checked={datosFiltrados.length > 0 && datosFiltrados.every(r => selectedIds.has(r.id))}
+              onChange={e => {
+                if (e.target.checked) setSelectedIds(new Set(datosFiltrados.map(r => r.id)));
+                else setSelectedIds(new Set());
+              }}
+            />
+          </th>
           <th onClick={() => handleSort('nro_recibo')}>N° RECIBO <SortIcon field="nro_recibo" /></th>
           <th onClick={() => handleSort('tipo')}>TIPO <SortIcon field="tipo" /></th>
           <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
@@ -854,7 +918,16 @@ export default function DocumentosContables() {
               }
             }).filter(Boolean).join(', ');
             return (
-              <tr key={r.id}>
+              <tr key={r.id} className={selectedIds.has(r.id) ? 'dc-row-selected' : ''}>
+                <td className="dc-td-check">
+                  <input type="checkbox" checked={selectedIds.has(r.id)}
+                    onChange={e => {
+                      const s = new Set(selectedIds);
+                      e.target.checked ? s.add(r.id) : s.delete(r.id);
+                      setSelectedIds(s);
+                    }}
+                  />
+                </td>
                 <td style={{ fontWeight: 700 }}>{r.nro_recibo}</td>
                 <td><span className={`dc-badge ${r.tipo === 'RO' ? 'ro' : 'rno'}`}>{r.tipo}</span></td>
                 <td>{formatDate(r.fecha)}</td>
@@ -878,6 +951,15 @@ export default function DocumentosContables() {
     if (activeTab === 'remisiones') return (
       <table className="dc-table">
         <thead><tr>
+          <th className="no-sort dc-th-check">
+            <input type="checkbox"
+              checked={datosFiltrados.length > 0 && datosFiltrados.every(r => selectedIds.has(r.id))}
+              onChange={e => {
+                if (e.target.checked) setSelectedIds(new Set(datosFiltrados.map(r => r.id)));
+                else setSelectedIds(new Set());
+              }}
+            />
+          </th>
           <th onClick={() => handleSort('rem')}>N° REM <SortIcon field="rem" /></th>
           <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
@@ -889,7 +971,16 @@ export default function DocumentosContables() {
         </tr></thead>
         <tbody>
           {datosFiltrados.map(r => (
-            <tr key={r.id}>
+            <tr key={r.id} className={selectedIds.has(r.id) ? 'dc-row-selected' : ''}>
+              <td className="dc-td-check">
+                <input type="checkbox" checked={selectedIds.has(r.id)}
+                  onChange={e => {
+                    const s = new Set(selectedIds);
+                    e.target.checked ? s.add(r.id) : s.delete(r.id);
+                    setSelectedIds(s);
+                  }}
+                />
+              </td>
               <td style={{ fontWeight: 700 }}>REM {r.rem}</td>
               <td>{formatDate(r.fecha)}</td>
               <td>{r.cliente}</td>
@@ -1242,6 +1333,11 @@ export default function DocumentosContables() {
         </div>
 
         <div className="dc-actions">
+          {selectedIds.size > 0 && (
+            <button className="dc-btn danger" onClick={handleDeleteSelected}>
+              <Trash2 size={14} /> Eliminar ({selectedIds.size})
+            </button>
+          )}
           <div className="dc-tc-wrap" title="Tipo de cambio USD/₲">
             <span className="dc-tc-label">TC:</span>
             <input
