@@ -155,8 +155,9 @@ export default function DocumentosContables() {
     // facturas / OS
     nro_factura: '', nro_os: '',
     fecha: new Date().toISOString().split('T')[0],
-    cliente: '', modalidad: 'Contado', moneda: '₲',
+    cliente: '', cat: 'FAC', modalidad: 'Contado', moneda: '₲',
     concepto: '', rubro: '', monto: '', estado: '', observaciones: '',
+    nro_remision: '',
     // recibos
     nro_recibo: '', tipo: 'RO', detalle: '',
     vinculos: [],
@@ -358,6 +359,7 @@ export default function DocumentosContables() {
           nro_factura: formData.nro_factura.trim(),
           fecha: formData.fecha,
           cliente: formData.cliente.trim(),
+          cat: formData.cat || 'FAC',
           modalidad: formData.modalidad,
           moneda: formData.moneda,
           concepto: formData.concepto?.trim() || null,
@@ -365,6 +367,7 @@ export default function DocumentosContables() {
           monto: parseMonto(formData.monto, formData.moneda),
           estado: formData.modalidad === 'Contado' ? 'Pagado' : formData.estado,
           observaciones: formData.observaciones?.trim() || null,
+          nro_remision: formData.nro_remision?.trim() || null,
         };
         const { error } = editingItem
           ? await supabase.from('facturas').update(payload).eq('id', editingItem.id)
@@ -514,18 +517,20 @@ export default function DocumentosContables() {
         let record = {};
 
         if (activeTab === 'facturas') {
-          // NRO_FAC | FECHA | CLIENTE | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS
+          // NRO_FAC | FECHA | CLIENTE | CAT | MODALIDAD | MONEDA | CONCEPTO | RUBRO | MONTO | ESTADO | OBS | NRO_REMISION
           record = {
             nro_factura: String(r[0] || '').trim(),
             fecha: parseExcelDate(r[1]),
             cliente: String(r[2] || '').trim(),
-            modalidad: String(r[3] || 'Contado').trim(),
-            moneda: String(r[4] || '₲').trim(),
-            concepto: String(r[5] || '').trim() || null,
-            rubro: String(r[6] || '').trim() || null,
-            monto: parseMonto(r[7]),
-            estado: String(r[8] || 'Pendiente').trim(),
-            observaciones: String(r[9] || '').trim() || null,
+            cat: String(r[3] || 'FAC').trim() || 'FAC',
+            modalidad: String(r[4] || 'Contado').trim(),
+            moneda: String(r[5] || '₲').trim(),
+            concepto: String(r[6] || '').trim() || null,
+            rubro: String(r[7] || '').trim() || null,
+            monto: parseMonto(r[8]),
+            estado: String(r[9] || 'Pendiente').trim(),
+            observaciones: String(r[10] || '').trim() || null,
+            nro_remision: String(r[11] || '').trim() || null,
           };
           if (!record.nro_factura || !record.cliente) continue;
 
@@ -677,10 +682,13 @@ export default function DocumentosContables() {
       let exportData = [];
       if (activeTab === 'facturas') {
         exportData = datosFiltrados.map(f => ({
-          'N° FAC': f.nro_factura, 'FECHA': f.fecha, 'CLIENTE': f.cliente,
-          'MODALIDAD': f.modalidad, 'MONEDA': f.moneda,
-          'CONCEPTO': f.concepto || '', 'RUBRO': f.rubro || '', 'MONTO': f.monto,
-          'ESTADO': f.estado || '', 'OBS': f.observaciones || ''
+          'FECHA': f.fecha, 'CLIENTE': f.cliente, 'CAT': f.cat || 'FAC',
+          'N° FAC': f.nro_factura, 'REM N°': f.nro_remision || '',
+          'COND': f.modalidad,
+          'TOT USD': f.moneda === 'USD' ? f.monto : '',
+          'TOT GS': f.moneda === '₲' ? f.monto : '',
+          'RUBRO': f.rubro || '', 'ESTADO': f.estado || '',
+          'CONCEPTO': f.concepto || '', 'OBS': f.observaciones || ''
         }));
       } else if (activeTab === 'ordenes_servicio') {
         exportData = datosFiltrados.map(o => ({
@@ -791,12 +799,15 @@ export default function DocumentosContables() {
           </th>
           <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
+          <th onClick={() => handleSort('cat')} className="center">CAT <SortIcon field="cat" /></th>
           <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
-          <th onClick={() => handleSort('modalidad')}>CONDICIÓN <SortIcon field="modalidad" /></th>
+          <th onClick={() => handleSort('nro_remision')}>REM N° <SortIcon field="nro_remision" /></th>
+          <th onClick={() => handleSort('modalidad')}>COND <SortIcon field="modalidad" /></th>
           <th onClick={() => handleSort('monto')} className="num">TOT USD <SortIcon field="monto" /></th>
           <th onClick={() => handleSort('monto')} className="num">TOT GS <SortIcon field="monto" /></th>
           <th onClick={() => handleSort('rubro')}>RUBRO <SortIcon field="rubro" /></th>
           <th onClick={() => handleSort('estado')}>ESTADO <SortIcon field="estado" /></th>
+          <th className="no-sort">RECIBO N°</th>
           <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
         </tr></thead>
         <tbody>
@@ -816,7 +827,9 @@ export default function DocumentosContables() {
                 </td>
                 <td>{formatDate(f.fecha)}</td>
                 <td>{f.cliente}</td>
+                <td style={{ textAlign: 'center' }}><span className="dc-badge-cat">{f.cat || 'FAC'}</span></td>
                 <td style={{ fontWeight: 700 }}>{f.nro_factura}</td>
+                <td style={{ color: '#567C8D' }}>{f.nro_remision || <span className="muted">—</span>}</td>
                 <td>
                   {anulada
                     ? <span className="muted">—</span>
@@ -835,6 +848,13 @@ export default function DocumentosContables() {
                 </td>
                 <td>{f.rubro || <span className="muted">-</span>}</td>
                 <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
+                <td style={{ fontSize: '0.75rem', color: '#567C8D' }}>
+                  {(() => {
+                    const vins = reciboDocumentos.filter(rd => rd.tipo_documento === 'factura' && rd.documento_id === f.id);
+                    const nros = vins.map(v => recibos.find(r => r.id === v.recibo_id)?.nro_recibo).filter(Boolean);
+                    return nros.length ? nros.join(', ') : <span className="muted">—</span>;
+                  })()}
+                </td>
                 <td><div className="dc-table-actions">
                   <button className="dc-btn-icon" title="Ver" onClick={() => handleView(f)}><Eye size={14} /></button>
                   <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(f)}><Edit2 size={14} /></button>
@@ -1050,6 +1070,15 @@ export default function DocumentosContables() {
           <input value={formData.cliente} onChange={e => setFormData({ ...formData, cliente: e.target.value })} placeholder="Nombre del cliente" />
         </div>
 
+        {activeTab === 'facturas' && (
+          <div className="dc-form-group">
+            <label>CAT</label>
+            <select value={formData.cat || 'FAC'} onChange={e => setFormData({ ...formData, cat: e.target.value })}>
+              {['FAC', 'FAE', 'T2'].map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+
         {isFacturaOS && (<>
           <div className="dc-form-group">
             <label>Modalidad</label>
@@ -1101,6 +1130,13 @@ export default function DocumentosContables() {
               <select value={formData.estado} onChange={e => setFormData({ ...formData, estado: e.target.value })}>
                 {ESTADOS_FAC_OS(formData.modalidad).map(s => <option key={s}>{s}</option>)}
               </select>
+            </div>
+          )}
+
+          {activeTab === 'facturas' && (
+            <div className="dc-form-group">
+              <label>REM N°</label>
+              <input value={formData.nro_remision || ''} onChange={e => setFormData({ ...formData, nro_remision: e.target.value })} placeholder="N° de remisión asociada" />
             </div>
           )}
 
@@ -1228,10 +1264,12 @@ export default function DocumentosContables() {
 
     const fieldDefs = {
       facturas: [
-        { key: 'nro_factura', label: 'N° Factura' },
         { key: 'fecha', label: 'Fecha' },
         { key: 'cliente', label: 'Cliente' },
-        { key: 'modalidad', label: 'Modalidad' },
+        { key: 'cat', label: 'CAT' },
+        { key: 'nro_factura', label: 'N° Factura' },
+        { key: 'nro_remision', label: 'REM N°' },
+        { key: 'modalidad', label: 'Condición' },
         { key: 'moneda', label: 'Moneda' },
         { key: 'monto', label: 'Monto' },
         { key: 'rubro', label: 'Rubro' },

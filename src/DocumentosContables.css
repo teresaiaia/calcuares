@@ -355,6 +355,17 @@
   font-weight: 600;
 }
 
+.dc-badge-cat {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #e8f0f7;
+  color: #2F4156;
+  letter-spacing: 0.03em;
+}
+
 .dc-monto-usd {
   color: #2563eb;
   font-weight: 600;
