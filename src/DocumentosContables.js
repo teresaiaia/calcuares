@@ -532,7 +532,7 @@ export default function DocumentosContables() {
             moneda: String(r[5] || '₲').trim(),
             concepto: String(r[6] || '').trim() || null,
             rubro: String(r[7] || '').trim() || null,
-            monto: parseMonto(r[8]),
+            monto: parseMonto(r[8], String(r[5] || '₲').trim()),
             estado: String(r[9] || 'Pendiente').trim(),
             observaciones: String(r[10] || '').trim() || null,
             nro_remision: String(r[11] || '').trim() || null,
