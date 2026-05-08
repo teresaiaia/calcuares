@@ -41,6 +41,11 @@ const formatDate = (dateStr) => {
 
 const parseMonto = (val, moneda) => {
   if (val === '' || val === null || val === undefined) return 0;
+  // Si ya es número (viene de Excel como celda numérica), usarlo directo
+  if (typeof val === 'number') {
+    return moneda === 'USD' ? Math.round(val * 100) / 100 : Math.round(val);
+  }
+  // Si es string (ingresado manualmente en formato es-PY: punto=miles, coma=decimal)
   const limpio = String(val).replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.]/g, '');
   const num = parseFloat(limpio) || 0;
   return moneda === 'USD' ? Math.round(num * 100) / 100 : Math.round(num);
