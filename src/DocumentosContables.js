@@ -789,43 +789,60 @@ export default function DocumentosContables() {
               }}
             />
           </th>
-          <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
           <th onClick={() => handleSort('fecha')}>FECHA <SortIcon field="fecha" /></th>
           <th onClick={() => handleSort('cliente')}>CLIENTE <SortIcon field="cliente" /></th>
-          <th onClick={() => handleSort('modalidad')}>MODALIDAD <SortIcon field="modalidad" /></th>
-          <th className="no-sort">MONEDA</th>
-          <th onClick={() => handleSort('monto')}>MONTO <SortIcon field="monto" /></th>
+          <th onClick={() => handleSort('nro_factura')}>N° FAC <SortIcon field="nro_factura" /></th>
+          <th onClick={() => handleSort('modalidad')}>CONDICIÓN <SortIcon field="modalidad" /></th>
+          <th onClick={() => handleSort('monto')} className="num">TOT USD <SortIcon field="monto" /></th>
+          <th onClick={() => handleSort('monto')} className="num">TOT GS <SortIcon field="monto" /></th>
           <th onClick={() => handleSort('rubro')}>RUBRO <SortIcon field="rubro" /></th>
           <th onClick={() => handleSort('estado')}>ESTADO <SortIcon field="estado" /></th>
           <th className="no-sort" style={{ textAlign: 'center' }}>ACCIONES</th>
         </tr></thead>
         <tbody>
-          {datosFiltrados.map(f => (
-            <tr key={f.id} className={selectedIds.has(f.id) ? 'dc-row-selected' : ''}>
-              <td className="dc-td-check">
-                <input type="checkbox" checked={selectedIds.has(f.id)}
-                  onChange={e => {
-                    const s = new Set(selectedIds);
-                    e.target.checked ? s.add(f.id) : s.delete(f.id);
-                    setSelectedIds(s);
-                  }}
-                />
-              </td>
-              <td style={{ fontWeight: 700 }}>{f.nro_factura}</td>
-              <td>{formatDate(f.fecha)}</td>
-              <td>{f.cliente}</td>
-              <td>{(f.modalidad === 'Anulada' || f.estado === 'Anulada') ? <span className="muted">—</span> : <span className={`dc-badge ${f.modalidad === 'Contado' ? 'contado' : f.modalidad === 'Bonificación' ? 'bonificacion' : 'credito'}`}>{f.modalidad}</span>}</td>
-              <td>{(f.modalidad === 'Anulada' || f.estado === 'Anulada' || f.modalidad === 'Bonificación') ? <span className="muted">—</span> : <span className="dc-badge-moneda">{f.moneda}</span>}</td>
-              <td className="num">{f.monto ? (f.moneda === 'USD' ? 'US$ ' : '₲') + formatNumber(f.monto, f.moneda) : ''}</td>
-              <td>{f.rubro || <span className="muted">-</span>}</td>
-              <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
-              <td><div className="dc-table-actions">
-                <button className="dc-btn-icon" title="Ver" onClick={() => handleView(f)}><Eye size={14} /></button>
-                <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(f)}><Edit2 size={14} /></button>
-                <button className="dc-btn-icon danger" onClick={() => handleDelete(f.id)}><Trash2 size={14} /></button>
-              </div></td>
-            </tr>
-          ))}
+          {datosFiltrados.map(f => {
+            const anulada = f.modalidad === 'Anulada' || f.estado === 'Anulada';
+            const bonif = f.modalidad === 'Bonificación';
+            return (
+              <tr key={f.id} className={selectedIds.has(f.id) ? 'dc-row-selected' : ''}>
+                <td className="dc-td-check">
+                  <input type="checkbox" checked={selectedIds.has(f.id)}
+                    onChange={e => {
+                      const s = new Set(selectedIds);
+                      e.target.checked ? s.add(f.id) : s.delete(f.id);
+                      setSelectedIds(s);
+                    }}
+                  />
+                </td>
+                <td>{formatDate(f.fecha)}</td>
+                <td>{f.cliente}</td>
+                <td style={{ fontWeight: 700 }}>{f.nro_factura}</td>
+                <td>
+                  {anulada
+                    ? <span className="muted">—</span>
+                    : <span className={`dc-badge ${bonif ? 'bonificacion' : f.modalidad === 'Contado' ? 'contado' : 'credito'}`}>{f.modalidad}</span>
+                  }
+                </td>
+                <td className="num">
+                  {!anulada && !bonif && f.moneda === 'USD' && f.monto
+                    ? <span className="dc-monto-usd">US$ {formatNumber(f.monto, 'USD')}</span>
+                    : <span className="muted">—</span>}
+                </td>
+                <td className="num">
+                  {!anulada && !bonif && f.moneda === '₲' && f.monto
+                    ? <span className="dc-monto-gs">₲ {formatNumber(f.monto)}</span>
+                    : <span className="muted">—</span>}
+                </td>
+                <td>{f.rubro || <span className="muted">-</span>}</td>
+                <td><span className={`dc-badge ${estadoBadgeClass(f.estado)}`}>{f.estado}</span></td>
+                <td><div className="dc-table-actions">
+                  <button className="dc-btn-icon" title="Ver" onClick={() => handleView(f)}><Eye size={14} /></button>
+                  <button className="dc-btn-icon" title="Editar" onClick={() => handleEdit(f)}><Edit2 size={14} /></button>
+                  <button className="dc-btn-icon danger" onClick={() => handleDelete(f.id)}><Trash2 size={14} /></button>
+                </div></td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     );
@@ -1381,9 +1398,9 @@ export default function DocumentosContables() {
       {activeTab !== 'remisiones' && (
         <div className="dc-totales">
           <span>Registros: <strong>{datosFiltrados.length}</strong></span>
-          {totales.guaranies > 0 && <span>₲ <strong>{formatNumber(totales.guaranies)}</strong></span>}
-          {totales.dolares > 0 && <span>USD <strong>{formatNumber(totales.dolares, 'USD')}</strong></span>}
-          <span>Total USD: <strong>{formatNumber(totales.totalUSD, 'USD')}</strong></span>
+          {totales.guaranies > 0 && <span>TOT GS: <strong className="dc-monto-gs">₲ {formatNumber(totales.guaranies)}</strong></span>}
+          {totales.dolares > 0 && <span>TOT USD: <strong className="dc-monto-usd">US$ {formatNumber(totales.dolares, 'USD')}</strong></span>}
+          <span>Total USD equiv.: <strong>US$ {formatNumber(totales.totalUSD, 'USD')}</strong></span>
         </div>
       )}
       {activeTab === 'remisiones' && (

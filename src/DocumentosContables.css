@@ -348,10 +348,23 @@
   vertical-align: middle;
 }
 
-.dc-table td.num {
+.dc-table td.num,
+.dc-table th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+.dc-monto-usd {
+  color: #2563eb;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-monto-gs {
+  color: #0f766e;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .dc-table td.center {
